@@ -25,7 +25,7 @@ export default function AuditLedger({ auditLogs }) {
   };
 
   return (
-    <div className="glass-card" style={{ gridColumn: 'span 6', minHeight: '340px', display: 'flex', flexDirection: 'column' }}>
+    <div className="glass-card" style={{ gridColumn: 'span 12', minHeight: '340px', display: 'flex', flexDirection: 'column' }}>
       <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px' }}>
         <div>
           <h3 style={{ fontSize: '1.1rem', fontWeight: 600 }}>Cryptographic Decision Audit Ledger</h3>

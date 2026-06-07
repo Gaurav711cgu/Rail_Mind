@@ -36,7 +36,7 @@ export default function RACPredictor() {
   };
 
   return (
-    <div className="glass-card" style={{ gridColumn: 'span 6', minHeight: '340px' }}>
+    <div className="glass-card" style={{ gridColumn: 'span 12', minHeight: '340px' }}>
       <div className="card-header" style={{ marginBottom: '15px' }}>
         <h3 style={{ fontSize: '1.1rem', fontWeight: 600 }}>ML RAC / Waitlist Confirmation Predictor</h3>
         <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>XGBoost Classifier trained on ticketing dynamics</p>

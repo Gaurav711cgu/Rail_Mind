@@ -247,3 +247,108 @@ body {
   0% { transform: translateY(-100%); }
   100% { transform: translateY(100%); }
 }
+
+/* Navigation Tab styling */
+.nav-tab {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--color-text-muted);
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0 5px;
+  height: 100%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.nav-tab:hover {
+  color: var(--color-text-main);
+  border-bottom: 2px solid rgba(0, 240, 255, 0.3);
+}
+
+.nav-tab.active {
+  color: var(--color-primary);
+  border-bottom: 2px solid var(--color-primary);
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
+}
+
+/* Control Toolbar */
+.control-toolbar {
+  background: rgba(13, 20, 35, 0.4);
+  border-bottom: 1px solid var(--border-color);
+  padding: 10px 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Timeline Step Buttons */
+.timeline-step-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: transparent;
+  border: 2px solid var(--border-color);
+  color: var(--color-text-muted);
+  font-size: 0.65rem;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.timeline-step-btn:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.3);
+}
+
+.timeline-step-btn.passed {
+  border-color: var(--color-primary);
+  background: rgba(0, 240, 255, 0.1);
+  color: var(--color-primary);
+}
+
+.timeline-step-btn.active {
+  border-color: #FFFFFF;
+  background: var(--color-primary);
+  color: #04060A;
+  box-shadow: var(--shadow-neon-cyan);
+  transform: scale(1.1);
+}
+
+/* Crisp styling overrides (Artha theme vibes) */
+.glass-card {
+  border-radius: 8px;
+  background: rgba(10, 15, 28, 0.7);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+}
+
+.card-header h3 {
+  letter-spacing: 0.5px;
+  color: #FFFFFF;
+  font-weight: 700;
+}
+
+/* Responsive adjustments */
+@media (max-width: 900px) {
+  .control-toolbar {
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 15px 20px;
+  }
+  .toolbar-desc {
+    display: none;
+  }
+}
