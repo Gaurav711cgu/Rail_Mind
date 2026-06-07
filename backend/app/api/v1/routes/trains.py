@@ -91,7 +91,7 @@ def get_mock_route_for_train(train_no: str, delay: int) -> List[TrainRouteNode]:
     return []
 
 
-@router.get("/", response_model=List[TrainPosition])
+@router.get("", response_model=List[TrainPosition])
 async def list_trains(db: AsyncSession = Depends(get_db)):
     if settings.SCENARIO_MODE:
         state = scenario_engine.get_state()

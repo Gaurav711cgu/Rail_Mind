@@ -9,7 +9,7 @@ from app.models.recommendation import ReroutingSuggestion, AlternativeTrain
 
 router = APIRouter()
 
-@router.get("/", response_model=List[ReroutingSuggestion])
+@router.get("", response_model=List[ReroutingSuggestion])
 async def list_rerouting_suggestions(disruption_id: Optional[str] = None, db: AsyncSession = Depends(get_db)):
     if settings.SCENARIO_MODE:
         # Provide suggestions matching the scenario presentation

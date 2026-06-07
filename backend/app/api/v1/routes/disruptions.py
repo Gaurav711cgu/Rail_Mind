@@ -11,7 +11,7 @@ from app.models.disruption import Disruption
 
 router = APIRouter()
 
-@router.get("/", response_model=List[Disruption])
+@router.get("", response_model=List[Disruption])
 async def list_disruptions(db: AsyncSession = Depends(get_db)):
     if settings.SCENARIO_MODE:
         state = scenario_engine.get_state()
@@ -108,7 +108,7 @@ async def get_disruption(disruption_id: str, db: AsyncSession = Depends(get_db))
         )
 
 
-@router.post("/", response_model=Disruption)
+@router.post("", response_model=Disruption)
 async def create_disruption(disruption: Disruption, db: AsyncSession = Depends(get_db)):
     db_disruption = DBDisruption(
         id=disruption.id or f"disp-{int(datetime.utcnow().timestamp())}",

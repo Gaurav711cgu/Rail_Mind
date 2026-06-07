@@ -19,7 +19,7 @@ def calculate_content_hash(entry: DBAuditEntry) -> str:
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
-@router.get("/", response_model=List[AuditLogEntry])
+@router.get("", response_model=List[AuditLogEntry])
 async def list_audit_logs(db: AsyncSession = Depends(get_db)):
     # Order by ID asc to read chronological chain
     result = await db.execute(select(DBAuditEntry).order_by(DBAuditEntry.id.asc()))

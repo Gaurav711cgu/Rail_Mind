@@ -33,8 +33,9 @@ def run_tests():
     # Use randomized username to avoid duplicates in local db
     import time
     username = f"verify_user_{int(time.time())}"
+    email = f"verify_{int(time.time())}@railmind.gov.in"
     res = client.post(
-        "/api/v1/auth/register?email=verify@railmind.gov.in&role=CONTROLLER&zone=NR",
+        f"/api/v1/auth/register?email={email}&role=CONTROLLER&zone=NR",
         json={"username": username, "password": "securepassword123"}
     )
     assert res.status_code == 200
