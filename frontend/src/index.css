@@ -1,0 +1,249 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+:root {
+  --bg-base: #080C14;
+  --bg-card: rgba(13, 20, 35, 0.55);
+  --bg-card-hover: rgba(18, 28, 48, 0.75);
+  --bg-terminal: #04060A;
+  
+  --border-color: rgba(255, 255, 255, 0.07);
+  --border-color-glow: rgba(0, 240, 255, 0.25);
+  
+  --color-primary: #00F0FF;
+  --color-secondary: #BD00FF;
+  --color-accent: #39FF14;
+  --color-danger: #FF3131;
+  --color-warning: #FF9F00;
+  
+  --color-text-main: #F1F5F9;
+  --color-text-muted: #8A99AD;
+  --color-text-dark: #475569;
+  
+  --shadow-neon-cyan: 0 0 15px rgba(0, 240, 255, 0.3);
+  --shadow-neon-purple: 0 0 15px rgba(189, 0, 255, 0.3);
+  --shadow-neon-green: 0 0 15px rgba(57, 255, 20, 0.3);
+  --shadow-neon-red: 0 0 15px rgba(255, 49, 49, 0.3);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-base);
+  color: var(--color-text-main);
+  font-family: 'Outfit', sans-serif;
+  overflow-x: hidden;
+  line-height: 1.5;
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(0, 240, 255, 0.03) 0px, transparent 50%),
+    radial-gradient(at 50% 0%, rgba(189, 0, 255, 0.03) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(57, 255, 20, 0.02) 0px, transparent 50%);
+  background-attachment: fixed;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-base);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary);
+}
+
+/* Glassmorphism Cards */
+.glass-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  overflow: hidden;
+  position: relative;
+}
+
+.glass-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--border-color), transparent);
+  transition: transform 0.5s;
+  transform: translateX(-100%);
+}
+
+.glass-card:hover::before {
+  transform: translateX(100%);
+}
+
+.glass-card:hover {
+  border-color: var(--border-color-glow);
+  box-shadow: 0 8px 32px 0 rgba(0, 240, 255, 0.05), 0 0 1px 1px var(--border-color-glow);
+  transform: translateY(-2px);
+  background: var(--bg-card-hover);
+}
+
+/* Bento Grid System */
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 20px;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* App Header */
+.app-header {
+  border-bottom: 1px solid var(--border-color);
+  padding: 15px 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(8, 12, 20, 0.85);
+  backdrop-filter: blur(10px);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.brand-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-logo {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  color: white;
+  box-shadow: var(--shadow-neon-cyan);
+}
+
+.brand-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  background: linear-gradient(90deg, #FFFFFF, #B2C3DF);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.brand-tagline {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-top: -2px;
+}
+
+/* Neon Glow Indicators */
+.led-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  position: relative;
+}
+
+.led-indicator.active {
+  background-color: var(--color-accent);
+  box-shadow: var(--shadow-neon-green);
+  animation: pulse-green 2s infinite;
+}
+
+.led-indicator.warning {
+  background-color: var(--color-warning);
+  box-shadow: 0 0 10px var(--color-warning);
+}
+
+.led-indicator.danger {
+  background-color: var(--color-danger);
+  box-shadow: var(--shadow-neon-red);
+  animation: pulse-red 2s infinite;
+}
+
+/* Animations */
+@keyframes pulse-green {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(57, 255, 20, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(57, 255, 20, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(57, 255, 20, 0); }
+}
+
+@keyframes pulse-red {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 49, 49, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(255, 49, 49, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 49, 49, 0); }
+}
+
+/* Buttons */
+.btn-primary {
+  background: linear-gradient(135deg, var(--color-primary), rgba(0, 240, 255, 0.5));
+  color: #04060A;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-neon-cyan);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--color-text-main);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.btn-secondary:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.15);
+}
+
+/* Matrix Scanner Effect */
+.scanner-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to bottom, transparent, rgba(57, 255, 20, 0.15), transparent);
+  animation: scan-vertical 1.5s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes scan-vertical {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}

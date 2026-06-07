@@ -1,0 +1,17 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+backend/railmind_local.db
+backend/app/railmind_local.db
+
+# Node
+node_modules/
+dist/
+.eslintcache
+
+# OS
+.DS_Store
+Thumbs.db
