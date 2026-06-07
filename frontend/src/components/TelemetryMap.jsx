@@ -125,10 +125,10 @@ export default function TelemetryMap({ trains, disruptions, onNextStep, scenario
 
   // Station coordinate projection
   const stations = {
-    "NDLS": { name: "New Delhi", x: 100, y_up: 80, y_down: 140 },
-    "GZB": { name: "Ghaziabad", x: 280, y_up: 80, y_down: 140 },
-    "ALJN": { name: "Aligarh", x: 550, y_up: 80, y_down: 140 },
-    "CNB": { name: "Kanpur Central", x: 800, y_up: 80, y_down: 140 }
+    "NDLS": { name: "New Delhi", x: 100, y_up: 70, y_down: 135 },
+    "GZB": { name: "Ghaziabad", x: 280, y_up: 70, y_down: 135 },
+    "ALJN": { name: "Aligarh", x: 550, y_up: 70, y_down: 135 },
+    "CNB": { name: "Kanpur Central", x: 800, y_up: 70, y_down: 135 }
   };
 
   const isSectionDisrupted = (fromCode, toCode) => {
@@ -157,7 +157,7 @@ export default function TelemetryMap({ trains, disruptions, onNextStep, scenario
     else if (lon <= 80.350) x = 550 + ((lon - 78.078) / (80.350 - 78.078)) * 250;
     else x = 800;
     
-    let y = train.train_no === "22415" ? 80 : 140;
+    let y = train.train_no === "22415" ? 70 : 135;
     let xOffset = 0;
     if (train.train_no === "BOXN-902" && trains.some(t => t.train_no === "12002" && Math.abs(t.longitude - train.longitude) < 0.02)) {
       xOffset = 18;
@@ -277,22 +277,22 @@ export default function TelemetryMap({ trains, disruptions, onNextStep, scenario
             <line 
               key={`cross-${idx}`} 
               x1={s.x} 
-              y1="80" 
+              y1={s.y_up} 
               x2={s.x} 
-              y2="140" 
+              y2={s.y_down} 
               className={`crossover-line ${disruptions.some(d => d.status === 'ACTIVE' && d.section_from === Object.keys(stations)[idx]) ? 'active' : ''}`}
             />
           ))}
 
           {/* UP Line Segments */}
-          {drawTrackSegment("NDLS", "GZB", 80, true)}
-          {drawTrackSegment("GZB", "ALJN", 80, true)}
-          {drawTrackSegment("ALJN", "CNB", 80, true)}
+          {drawTrackSegment("NDLS", "GZB", 70, true)}
+          {drawTrackSegment("GZB", "ALJN", 70, true)}
+          {drawTrackSegment("ALJN", "CNB", 70, true)}
 
           {/* DOWN Line Segments */}
-          {drawTrackSegment("NDLS", "GZB", 140, false)}
-          {drawTrackSegment("GZB", "ALJN", 140, false)}
-          {drawTrackSegment("ALJN", "CNB", 140, false)}
+          {drawTrackSegment("NDLS", "GZB", 135, false)}
+          {drawTrackSegment("GZB", "ALJN", 135, false)}
+          {drawTrackSegment("ALJN", "CNB", 135, false)}
 
           {/* Station Platform Nodes */}
           {Object.entries(stations).map(([code, station]) => {
@@ -304,17 +304,17 @@ export default function TelemetryMap({ trains, disruptions, onNextStep, scenario
 
             return (
               <g key={code} onClick={() => hasDisruption ? fetchDisruptionDetails(disp) : null}>
-                <rect x={station.x - 4} y="74" width="8" height="72" rx="2" fill="rgba(255, 255, 255, 0.02)" stroke="rgba(255, 255, 255, 0.05)" strokeWidth="1" />
+                <rect x={station.x - 4} y={station.y_up - 6} width="8" height={station.y_down - station.y_up + 12} rx="2" fill="rgba(255, 255, 255, 0.02)" stroke="rgba(255, 255, 255, 0.05)" strokeWidth="1" />
                 
-                <circle cx={station.x} cy="80" r="8" className={outerClass} />
-                <circle cx={station.x} cy="80" r="3.5" className={innerClass} />
+                <circle cx={station.x} cy={station.y_up} r="8" className={outerClass} />
+                <circle cx={station.x} cy={station.y_up} r="3.5" className={innerClass} />
 
-                <circle cx={station.x} cy="140" r="8" className={outerClass} />
-                <circle cx={station.x} cy="140" r="3.5" className={innerClass} />
+                <circle cx={station.x} cy={station.y_down} r="8" className={outerClass} />
+                <circle cx={station.x} cy={station.y_down} r="3.5" className={innerClass} />
 
-                <rect x={station.x - 45} y="174" width="90" height="26" rx="4" fill="rgba(3, 5, 10, 0.85)" stroke="var(--border-color)" strokeWidth="1" />
-                <text x={station.x} y="186" textAnchor="middle" fill="var(--color-text-main)" fontSize="0.65rem" fontWeight="800" letterSpacing="0.5px">{station.name}</text>
-                <text x={station.x} y="197" textAnchor="middle" fill="var(--color-primary)" fontSize="0.55rem" fontWeight="600" letterSpacing="1px">{code}</text>
+                <rect x={station.x - 45} y="180" width="90" height="26" rx="4" fill="rgba(3, 5, 10, 0.85)" stroke="var(--border-color)" strokeWidth="1" />
+                <text x={station.x} y="192" textAnchor="middle" fill="var(--color-text-main)" fontSize="0.65rem" fontWeight="800" letterSpacing="0.5px">{station.name}</text>
+                <text x={station.x} y="203" textAnchor="middle" fill="var(--color-primary)" fontSize="0.55rem" fontWeight="600" letterSpacing="1px">{code}</text>
               </g>
             );
           })}
@@ -329,13 +329,29 @@ export default function TelemetryMap({ trains, disruptions, onNextStep, scenario
             
             return (
               <g key={train.train_no} className="train-node" transform={`translate(${pos.x}, ${pos.y})`} onClick={() => { setSelectedTrain(train); setSelectedDisruption(null); }}>
-                <circle cx="0" cy="0" r="12" fill="transparent" stroke={trainColor} strokeWidth="1.2" opacity="0.3" className="pulse-ring" />
-                <circle cx="0" cy="0" r="7.5" fill={trainColor} filter="url(#svg-neon-glow)" />
-                <circle cx="0" cy="0" r="3" fill="#FFFFFF" />
+                {/* Double Pulsing Radar Rings using native SVG <animate> */}
+                <circle cx="0" cy="0" r="7.5" fill="none" stroke={trainColor} strokeWidth="1.2" opacity="0.8">
+                  <animate attributeName="r" values="7.5;22" dur="2s" repeatCount="indefinite" />
+                  <animate attributeName="opacity" values="0.8;0" dur="2s" repeatCount="indefinite" />
+                </circle>
+                <circle cx="0" cy="0" r="7.5" fill="none" stroke={trainColor} strokeWidth="1.2" opacity="0.8">
+                  <animate attributeName="r" values="7.5;22" dur="2s" begin="1s" repeatCount="indefinite" />
+                  <animate attributeName="opacity" values="0.8;0" dur="2s" begin="1s" repeatCount="indefinite" />
+                </circle>
 
-                <g transform={`translate(0, ${pos.y === 80 ? -24 : 24})`}>
+                {/* Train Core Node */}
+                <circle cx="0" cy="0" r="8" fill={trainColor} filter="url(#svg-neon-glow)" />
+                
+                {/* Direction Chevrons (UP: ▶, DOWN: ◀) */}
+                {pos.y === 70 ? (
+                  <path d="M-1.5,-3 L2,0 L-1.5,3" fill="none" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                ) : (
+                  <path d="M1.5,-3 L-2,0 L1.5,3" fill="none" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                )}
+
+                <g transform={`translate(0, ${pos.y === 70 ? -24 : 24})`}>
                   <rect x="-35" y="-10" width="70" height="15" rx="3" className="train-label-bg" fill="#030712" stroke={trainColor} strokeWidth="1" />
-                  <text x="0" y="0" textAnchor="middle" fill="var(--color-text-main)" fontSize="0.55rem" fontWeight="800" letterSpacing="0.5px">
+                  <text x="0" y="0.5" textAnchor="middle" fill="var(--color-text-main)" fontSize="0.55rem" fontWeight="800" letterSpacing="0.5px">
                     {train.train_no}
                   </text>
                   {isDelayed && (
