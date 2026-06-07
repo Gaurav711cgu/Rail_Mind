@@ -355,3 +355,25 @@ body {
     display: none;
   }
 }
+
+/* Leaflet custom overrides */
+.leaflet-container {
+  font-family: inherit;
+  background: #030712 !important;
+}
+.custom-map-tooltip {
+  background: #090d16 !important;
+  border: 1px solid var(--border-color) !important;
+  color: var(--color-text-main) !important;
+  font-family: inherit !important;
+  font-size: 0.65rem !important;
+  border-radius: 4px !important;
+  padding: 4px 8px !important;
+  box-shadow: 0px 4px 12px rgba(0,0,0,0.5) !important;
+  opacity: 0.95 !important;
+}
+.custom-map-tooltip::before {
+  border-top-color: var(--border-color) !important;
+  border-bottom-color: var(--border-color) !important;
+}
+

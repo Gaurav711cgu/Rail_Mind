@@ -6,6 +6,7 @@ export default function TelemetryMap({ trains, disruptions, onNextStep, scenario
   const [selectedDisruption, setSelectedDisruption] = useState(null);
   const [autoplay, setAutoplay] = useState(false);
   const [autoplayCountdown, setAutoplayCountdown] = useState(6); // 6s countdown
+  const [viewMode, setViewMode] = useState('schematic'); // 'schematic' or 'geo'
   const [kavachStates, setKavachStates] = useState({
     "DLI-GZB": true,
     "GZB-ALJN": true,
@@ -131,6 +132,153 @@ export default function TelemetryMap({ trains, disruptions, onNextStep, scenario
     "CNB": { name: "Kanpur Central", x: 800, y_up: 70, y_down: 135 }
   };
 
+  const stationsGeo = {
+    "NDLS": { name: "New Delhi", lat: 28.643, lng: 77.222 },
+    "GZB": { name: "Ghaziabad", lat: 28.672, lng: 77.436 },
+    "ALJN": { name: "Aligarh", lat: 27.892, lng: 78.078 },
+    "CNB": { name: "Kanpur Central", lat: 26.448, lng: 80.350 }
+  };
+
+  const mapRef = useRef(null);
+  const leafletInstance = useRef(null);
+  const markersRef = useRef({});
+
+  // Leaflet map initialization
+  useEffect(() => {
+    if (viewMode === 'geo' && mapRef.current && !leafletInstance.current && window.L) {
+      const L = window.L;
+      
+      const map = L.map(mapRef.current, {
+        center: [27.5, 78.8],
+        zoom: 7,
+        zoomControl: false,
+        attributionControl: false
+      });
+
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        maxZoom: 18
+      }).addTo(map);
+
+      L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+      const stationCoords = [
+        [28.643, 77.222], // NDLS
+        [28.672, 77.436], // GZB
+        [27.892, 78.078], // ALJN
+        [26.448, 80.350]  // CNB
+      ];
+
+      // UP Track (Cyan)
+      L.polyline(stationCoords, {
+        color: '#00F0FF',
+        weight: 3,
+        opacity: 0.6,
+        dashArray: '5, 8'
+      }).addTo(map);
+
+      // DOWN Track (Purple)
+      L.polyline(stationCoords.map(c => [c[0] - 0.02, c[1] - 0.02]), {
+        color: '#A855F7',
+        weight: 3,
+        opacity: 0.6,
+        dashArray: '5, 8'
+      }).addTo(map);
+
+      // Station Pins
+      Object.entries(stationsGeo).forEach(([code, station]) => {
+        const outerCircle = L.circleMarker([station.lat, station.lng], {
+          radius: 7,
+          color: '#ffffff',
+          weight: 1.5,
+          fillColor: '#030712',
+          fillOpacity: 1
+        }).addTo(map);
+
+        outerCircle.bindTooltip(`<strong style="color: var(--color-primary)">${station.name} (${code})</strong>`, {
+          permanent: false,
+          direction: 'top',
+          className: 'custom-map-tooltip'
+        });
+      });
+
+      leafletInstance.current = map;
+    }
+
+    return () => {
+      if (leafletInstance.current) {
+        leafletInstance.current.remove();
+        leafletInstance.current = null;
+        markersRef.current = {};
+      }
+    };
+  }, [viewMode]);
+
+  // Update train markers on live geographic map
+  useEffect(() => {
+    if (viewMode === 'geo' && leafletInstance.current && window.L) {
+      const L = window.L;
+      const map = leafletInstance.current;
+
+      trains.forEach(train => {
+        const lat = train.latitude;
+        const lng = train.longitude;
+        const isFreight = train.train_no === 'BOXN-902';
+        const isDelayed = train.current_delay > 0;
+        const trainColor = isFreight ? 'var(--color-warning)' : isDelayed ? 'var(--color-danger)' : 'var(--color-accent)';
+
+        // Offset DOWN trains slightly so they align with the DOWN polyline
+        const latOffset = train.train_no === '22415' ? 0 : -0.02;
+        const lngOffset = train.train_no === '22415' ? 0 : -0.02;
+
+        const tooltipContent = `
+          <div style="font-family: monospace; font-size: 0.7rem; line-height: 1.3;">
+            <strong style="color:#ffffff">${train.train_no}</strong><br/>
+            <span style="color:${trainColor}">${train.train_name}</span><br/>
+            Status: <strong>${train.status}</strong><br/>
+            Speed: <strong>${train.train_no === '22415' ? '130' : isFreight ? '65' : '110'} km/h</strong>
+            ${isDelayed ? `<br/><span style="color:var(--color-danger)">Delay: +${train.current_delay}m</span>` : ''}
+          </div>
+        `;
+
+        if (markersRef.current[train.train_no]) {
+          markersRef.current[train.train_no].setLatLng([lat + latOffset, lng + lngOffset]);
+          markersRef.current[train.train_no].setStyle({ fillColor: trainColor, color: trainColor });
+          markersRef.current[train.train_no].getTooltip().setContent(tooltipContent);
+        } else {
+          const marker = L.circleMarker([lat + latOffset, lng + lngOffset], {
+            radius: 8,
+            fillColor: trainColor,
+            color: '#ffffff',
+            weight: 1.5,
+            fillOpacity: 1
+          }).addTo(map);
+
+          marker.bindTooltip(tooltipContent, {
+            permanent: true,
+            direction: 'top',
+            offset: [0, -10],
+            className: 'custom-map-tooltip'
+          });
+
+          marker.on('click', () => {
+            setSelectedTrain(train);
+            setSelectedDisruption(null);
+          });
+
+          markersRef.current[train.train_no] = marker;
+        }
+      });
+
+      // Cleanup removed trains
+      Object.keys(markersRef.current).forEach(trainNo => {
+        if (!trains.some(t => t.train_no === trainNo)) {
+          markersRef.current[trainNo].remove();
+          delete markersRef.current[trainNo];
+        }
+      });
+    }
+  }, [trains, viewMode]);
+
   const isSectionDisrupted = (fromCode, toCode) => {
     return disruptions.some(d => 
       d.status === 'ACTIVE' && 
@@ -215,156 +363,198 @@ export default function TelemetryMap({ trains, disruptions, onNextStep, scenario
           <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Interactive Indian Railways Kavach Interlocking Desk</p>
         </div>
         <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+          {/* View Mode Toggle */}
+          <div className="toggle-group" style={{ display: 'flex', background: 'rgba(255,255,255,0.03)', padding: '2px', borderRadius: '6px', border: '1px solid var(--border-color)', marginRight: '10px' }}>
+            <button 
+              onClick={() => setViewMode('schematic')} 
+              style={{
+                padding: '4px 10px',
+                fontSize: '0.65rem',
+                fontWeight: 'bold',
+                background: viewMode === 'schematic' ? 'var(--color-primary)' : 'transparent',
+                color: viewMode === 'schematic' ? 'black' : 'var(--color-text-muted)',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+            >
+              SCHEMATIC VIEW
+            </button>
+            <button 
+              onClick={() => setViewMode('geo')} 
+              style={{
+                padding: '4px 10px',
+                fontSize: '0.65rem',
+                fontWeight: 'bold',
+                background: viewMode === 'geo' ? 'var(--color-primary)' : 'transparent',
+                color: viewMode === 'geo' ? 'black' : 'var(--color-text-muted)',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+            >
+              GEOGRAPHIC RADAR
+            </button>
+          </div>
+
           <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-accent)' }}>
             <span className="led-indicator active" style={{ width: '8px', height: '8px' }}></span> KAVACH DESK SYNCED
           </span>
         </div>
       </div>
 
-      {/* SVG Railway Track Map */}
-      <div className="map-container" style={{ position: 'relative', background: 'var(--bg-terminal)', borderRadius: '10px', padding: '15px', border: '1px solid var(--border-color)', marginBottom: '20px' }}>
-        <svg viewBox="0 0 900 220" width="100%" height="190px" style={{ minWidth: '700px' }}>
-          <defs>
-            <filter id="svg-neon-glow" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="4" result="blur" />
-              <feMerge>
-                <feMergeNode in="blur" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-            <pattern id="radar-grid" width="30" height="30" patternUnits="userSpaceOnUse">
-              <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(255, 255, 255, 0.01)" strokeWidth="1" />
-            </pattern>
-          </defs>
+      {/* SVG Railway Track Map or Geographic Map */}
+      {viewMode === 'schematic' ? (
+        <div className="map-container" style={{ position: 'relative', background: 'var(--bg-terminal)', borderRadius: '10px', padding: '15px', border: '1px solid var(--border-color)', marginBottom: '20px' }}>
+          <svg viewBox="0 0 900 220" width="100%" height="190px" style={{ minWidth: '700px' }}>
+            <defs>
+              <filter id="svg-neon-glow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="4" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+              <pattern id="radar-grid" width="30" height="30" patternUnits="userSpaceOnUse">
+                <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(255, 255, 255, 0.01)" strokeWidth="1" />
+              </pattern>
+            </defs>
 
-          <rect width="900" height="220" fill="url(#radar-grid)" />
+            <rect width="900" height="220" fill="url(#radar-grid)" />
 
-          <style>{`
-            .track-glow { stroke-width: 8; stroke-linecap: round; opacity: 0.12; transition: all 0.5s; }
-            .track-glow.up-line { stroke: var(--color-primary); }
-            .track-glow.down-line { stroke: var(--color-secondary); }
-            .track-glow.disrupted { stroke: var(--color-warning); opacity: 0.35; animation: pulse-glow 1.5s infinite; filter: url(#svg-neon-glow); }
-            .track-glow.disrupted.critical { stroke: var(--color-danger); opacity: 0.45; animation: pulse-glow-fast 1s infinite; }
-            
-            .track-core { stroke-width: 2.5; stroke-linecap: round; stroke-dasharray: 6 5; transition: all 0.5s; }
-            .track-core.up-line { stroke: var(--color-primary); opacity: 0.5; }
-            .track-core.down-line { stroke: var(--color-secondary); opacity: 0.5; }
-            .track-core.disrupted { stroke: var(--color-warning); opacity: 0.8; animation: blink-yellow 1.5s infinite; }
-            .track-core.disrupted.critical { stroke: var(--color-danger); opacity: 0.95; animation: blink-red 1s infinite; }
+            <style>{`
+              .track-glow { stroke-width: 8; stroke-linecap: round; opacity: 0.12; transition: all 0.5s; }
+              .track-glow.up-line { stroke: var(--color-primary); }
+              .track-glow.down-line { stroke: var(--color-secondary); }
+              .track-glow.disrupted { stroke: var(--color-warning); opacity: 0.35; animation: pulse-glow 1.5s infinite; filter: url(#svg-neon-glow); }
+              .track-glow.disrupted.critical { stroke: var(--color-danger); opacity: 0.45; animation: pulse-glow-fast 1s infinite; filter: url(#svg-neon-glow); }
+              
+              .track-core { stroke-width: 2.5; stroke-linecap: round; stroke-dasharray: 6 5; transition: all 0.5s; }
+              .track-core.up-line { stroke: var(--color-primary); opacity: 0.5; }
+              .track-core.down-line { stroke: var(--color-secondary); opacity: 0.5; }
+              .track-core.disrupted { stroke: var(--color-warning); opacity: 0.8; animation: blink-yellow 1.5s infinite; }
+              .track-core.disrupted.critical { stroke: var(--color-danger); opacity: 0.95; animation: blink-red 1s infinite; }
 
-            .crossover-line { stroke: rgba(255, 255, 255, 0.06); stroke-width: 1.5; stroke-dasharray: 3 3; }
-            .crossover-line.active { stroke: var(--color-primary); opacity: 0.3; }
+              .crossover-line { stroke: rgba(255, 255, 255, 0.06); stroke-width: 1.5; stroke-dasharray: 3 3; }
+              .crossover-line.active { stroke: var(--color-primary); opacity: 0.3; }
 
-            .station-outer { fill: #030712; stroke: rgba(255, 255, 255, 0.1); stroke-width: 1.5; cursor: pointer; transition: all 0.3s; }
-            .station-outer.active { stroke: var(--color-primary); }
-            .station-outer.danger { stroke: var(--color-danger); filter: url(#svg-neon-glow); }
-            .station-inner { fill: rgba(255, 255, 255, 0.15); transition: all 0.3s; }
-            .station-inner.active { fill: var(--color-primary); }
-            .station-inner.danger { fill: var(--color-danger); }
-            
-            .train-node { transition: all 0.8s cubic-bezier(0.25, 1, 0.5, 1); cursor: pointer; }
-            .train-node:hover { filter: drop-shadow(0px 0px 8px var(--color-primary)); }
-            .train-label-bg { fill: #090d16; stroke-width: 1; }
-            
-            @keyframes pulse-glow { 0%, 100% { opacity: 0.15; } 50% { opacity: 0.4; } }
-            @keyframes pulse-glow-fast { 0%, 100% { opacity: 0.25; } 50% { opacity: 0.6; } }
-            @keyframes blink-yellow { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
-            @keyframes blink-red { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
-          `}</style>
+              .station-outer { fill: #030712; stroke: rgba(255, 255, 255, 0.1); stroke-width: 1.5; cursor: pointer; transition: all 0.3s; }
+              .station-outer.active { stroke: var(--color-primary); }
+              .station-outer.danger { stroke: var(--color-danger); filter: url(#svg-neon-glow); }
+              .station-inner { fill: rgba(255, 255, 255, 0.15); transition: all 0.3s; }
+              .station-inner.active { fill: var(--color-primary); }
+              .station-inner.danger { fill: var(--color-danger); }
+              
+              .train-node { transition: all 0.8s cubic-bezier(0.25, 1, 0.5, 1); cursor: pointer; }
+              .train-node:hover { filter: drop-shadow(0px 0px 8px var(--color-primary)); }
+              .train-label-bg { fill: #090d16; stroke-width: 1; }
+              
+              @keyframes pulse-glow { 0%, 100% { opacity: 0.15; } 50% { opacity: 0.4; } }
+              @keyframes pulse-glow-fast { 0%, 100% { opacity: 0.25; } 50% { opacity: 0.6; } }
+              @keyframes blink-yellow { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+              @keyframes blink-red { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+            `}</style>
 
-          {/* Draw Station Crossovers */}
-          {Object.values(stations).map((s, idx) => (
-            <line 
-              key={`cross-${idx}`} 
-              x1={s.x} 
-              y1={s.y_up} 
-              x2={s.x} 
-              y2={s.y_down} 
-              className={`crossover-line ${disruptions.some(d => d.status === 'ACTIVE' && d.section_from === Object.keys(stations)[idx]) ? 'active' : ''}`}
-            />
-          ))}
+            {/* Draw Station Crossovers */}
+            {Object.values(stations).map((s, idx) => (
+              <line 
+                key={`cross-${idx}`} 
+                x1={s.x} 
+                y1={s.y_up} 
+                x2={s.x} 
+                y2={s.y_down} 
+                className={`crossover-line ${disruptions.some(d => d.status === 'ACTIVE' && d.section_from === Object.keys(stations)[idx]) ? 'active' : ''}`}
+              />
+            ))}
 
-          {/* UP Line Segments */}
-          {drawTrackSegment("NDLS", "GZB", 70, true)}
-          {drawTrackSegment("GZB", "ALJN", 70, true)}
-          {drawTrackSegment("ALJN", "CNB", 70, true)}
+            {/* UP Line Segments */}
+            {drawTrackSegment("NDLS", "GZB", 70, true)}
+            {drawTrackSegment("GZB", "ALJN", 70, true)}
+            {drawTrackSegment("ALJN", "CNB", 70, true)}
 
-          {/* DOWN Line Segments */}
-          {drawTrackSegment("NDLS", "GZB", 135, false)}
-          {drawTrackSegment("GZB", "ALJN", 135, false)}
-          {drawTrackSegment("ALJN", "CNB", 135, false)}
+            {/* DOWN Line Segments */}
+            {drawTrackSegment("NDLS", "GZB", 135, false)}
+            {drawTrackSegment("GZB", "ALJN", 135, false)}
+            {drawTrackSegment("ALJN", "CNB", 135, false)}
 
-          {/* Station Platform Nodes */}
-          {Object.entries(stations).map(([code, station]) => {
-            const disp = disruptions.find(d => d.status === 'ACTIVE' && d.section_from === code);
-            const hasDisruption = !!disp;
+            {/* Station Platform Nodes */}
+            {Object.entries(stations).map(([code, station]) => {
+              const disp = disruptions.find(d => d.status === 'ACTIVE' && d.section_from === code);
+              const hasDisruption = !!disp;
 
-            let outerClass = hasDisruption ? "station-outer danger" : "station-outer active";
-            let innerClass = hasDisruption ? "station-inner danger" : "station-inner active";
+              let outerClass = hasDisruption ? "station-outer danger" : "station-outer active";
+              let innerClass = hasDisruption ? "station-inner danger" : "station-inner active";
 
-            return (
-              <g key={code} onClick={() => hasDisruption ? fetchDisruptionDetails(disp) : null}>
-                <rect x={station.x - 4} y={station.y_up - 6} width="8" height={station.y_down - station.y_up + 12} rx="2" fill="rgba(255, 255, 255, 0.02)" stroke="rgba(255, 255, 255, 0.05)" strokeWidth="1" />
-                
-                <circle cx={station.x} cy={station.y_up} r="8" className={outerClass} />
-                <circle cx={station.x} cy={station.y_up} r="3.5" className={innerClass} />
+              return (
+                <g key={code} onClick={() => hasDisruption ? fetchDisruptionDetails(disp) : null}>
+                  <rect x={station.x - 4} y={station.y_up - 6} width="8" height={station.y_down - station.y_up + 12} rx="2" fill="rgba(255, 255, 255, 0.02)" stroke="rgba(255, 255, 255, 0.05)" strokeWidth="1" />
+                  
+                  <circle cx={station.x} cy={station.y_up} r="8" className={outerClass} />
+                  <circle cx={station.x} cy={station.y_up} r="3.5" className={innerClass} />
 
-                <circle cx={station.x} cy={station.y_down} r="8" className={outerClass} />
-                <circle cx={station.x} cy={station.y_down} r="3.5" className={innerClass} />
+                  <circle cx={station.x} cy={station.y_down} r="8" className={outerClass} />
+                  <circle cx={station.x} cy={station.y_down} r="3.5" className={innerClass} />
 
-                <rect x={station.x - 45} y="180" width="90" height="26" rx="4" fill="rgba(3, 5, 10, 0.85)" stroke="var(--border-color)" strokeWidth="1" />
-                <text x={station.x} y="192" textAnchor="middle" fill="var(--color-text-main)" fontSize="0.65rem" fontWeight="800" letterSpacing="0.5px">{station.name}</text>
-                <text x={station.x} y="203" textAnchor="middle" fill="var(--color-primary)" fontSize="0.55rem" fontWeight="600" letterSpacing="1px">{code}</text>
-              </g>
-            );
-          })}
-
-          {/* Active Train Nodes */}
-          {trains.map((train) => {
-            const pos = getTrainPosition(train);
-            const isDelayed = train.current_delay > 0;
-            const isFreight = train.train_no === "BOXN-902";
-            
-            const trainColor = isFreight ? "var(--color-warning)" : isDelayed ? "var(--color-danger)" : "var(--color-accent)";
-            
-            return (
-              <g key={train.train_no} className="train-node" transform={`translate(${pos.x}, ${pos.y})`} onClick={() => { setSelectedTrain(train); setSelectedDisruption(null); }}>
-                {/* Double Pulsing Radar Rings using native SVG <animate> */}
-                <circle cx="0" cy="0" r="7.5" fill="none" stroke={trainColor} strokeWidth="1.2" opacity="0.8">
-                  <animate attributeName="r" values="7.5;22" dur="2s" repeatCount="indefinite" />
-                  <animate attributeName="opacity" values="0.8;0" dur="2s" repeatCount="indefinite" />
-                </circle>
-                <circle cx="0" cy="0" r="7.5" fill="none" stroke={trainColor} strokeWidth="1.2" opacity="0.8">
-                  <animate attributeName="r" values="7.5;22" dur="2s" begin="1s" repeatCount="indefinite" />
-                  <animate attributeName="opacity" values="0.8;0" dur="2s" begin="1s" repeatCount="indefinite" />
-                </circle>
-
-                {/* Train Core Node */}
-                <circle cx="0" cy="0" r="8" fill={trainColor} filter="url(#svg-neon-glow)" />
-                
-                {/* Direction Chevrons (UP: ▶, DOWN: ◀) */}
-                {pos.y === 70 ? (
-                  <path d="M-1.5,-3 L2,0 L-1.5,3" fill="none" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                ) : (
-                  <path d="M1.5,-3 L-2,0 L1.5,3" fill="none" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                )}
-
-                <g transform={`translate(0, ${pos.y === 70 ? -24 : 24})`}>
-                  <rect x="-35" y="-10" width="70" height="15" rx="3" className="train-label-bg" fill="#030712" stroke={trainColor} strokeWidth="1" />
-                  <text x="0" y="0.5" textAnchor="middle" fill="var(--color-text-main)" fontSize="0.55rem" fontWeight="800" letterSpacing="0.5px">
-                    {train.train_no}
-                  </text>
-                  {isDelayed && (
-                    <text x="0" y="10" textAnchor="middle" fill="var(--color-danger)" fontSize="0.45rem" fontWeight="700">
-                      +{train.current_delay}m
-                    </text>
-                  )}
+                  <rect x={station.x - 45} y="180" width="90" height="26" rx="4" fill="rgba(3, 5, 10, 0.85)" stroke="var(--border-color)" strokeWidth="1" />
+                  <text x={station.x} y="192" textAnchor="middle" fill="var(--color-text-main)" fontSize="0.65rem" fontWeight="800" letterSpacing="0.5px">{station.name}</text>
+                  <text x={station.x} y="203" textAnchor="middle" fill="var(--color-primary)" fontSize="0.55rem" fontWeight="600" letterSpacing="1px">{code}</text>
                 </g>
-              </g>
-            );
-          })}
-        </svg>
-      </div>
+              );
+            })}
+
+            {/* Active Train Nodes */}
+            {trains.map((train) => {
+              const pos = getTrainPosition(train);
+              const isDelayed = train.current_delay > 0;
+              const isFreight = train.train_no === "BOXN-902";
+              
+              const trainColor = isFreight ? "var(--color-warning)" : isDelayed ? "var(--color-danger)" : "var(--color-accent)";
+              
+              return (
+                <g key={train.train_no} className="train-node" transform={`translate(${pos.x}, ${pos.y})`} onClick={() => { setSelectedTrain(train); setSelectedDisruption(null); }}>
+                  {/* Double Pulsing Radar Rings using native SVG <animate> */}
+                  <circle cx="0" cy="0" r="7.5" fill="none" stroke={trainColor} strokeWidth="1.2" opacity="0.8">
+                    <animate attributeName="r" values="7.5;22" dur="2s" repeatCount="indefinite" />
+                    <animate attributeName="opacity" values="0.8;0" dur="2s" repeatCount="indefinite" />
+                  </circle>
+                  <circle cx="0" cy="0" r="7.5" fill="none" stroke={trainColor} strokeWidth="1.2" opacity="0.8">
+                    <animate attributeName="r" values="7.5;22" dur="2s" begin="1s" repeatCount="indefinite" />
+                    <animate attributeName="opacity" values="0.8;0" dur="2s" begin="1s" repeatCount="indefinite" />
+                  </circle>
+
+                  {/* Train Core Node */}
+                  <circle cx="0" cy="0" r="8" fill={trainColor} filter="url(#svg-neon-glow)" />
+                  
+                  {/* Direction Chevrons (UP: ▶, DOWN: ◀) */}
+                  {pos.y === 70 ? (
+                    <path d="M-1.5,-3 L2,0 L-1.5,3" fill="none" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                  ) : (
+                    <path d="M1.5,-3 L-2,0 L1.5,3" fill="none" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                  )}
+
+                  <g transform={`translate(0, ${pos.y === 70 ? -24 : 24})`}>
+                    <rect x="-35" y="-10" width="70" height="15" rx="3" className="train-label-bg" fill="#030712" stroke={trainColor} strokeWidth="1" />
+                    <text x="0" y="0.5" textAnchor="middle" fill="var(--color-text-main)" fontSize="0.55rem" fontWeight="800" letterSpacing="0.5px">
+                      {train.train_no}
+                    </text>
+                    {isDelayed && (
+                      <text x="0" y="10" textAnchor="middle" fill="var(--color-danger)" fontSize="0.45rem" fontWeight="700">
+                        +{train.current_delay}m
+                      </text>
+                    )}
+                  </g>
+                </g>
+              );
+            })}
+          </svg>
+        </div>
+      ) : (
+        <div className="map-container" style={{ position: 'relative', background: '#030712', borderRadius: '10px', height: '190px', border: '1px solid var(--border-color)', marginBottom: '20px', overflow: 'hidden' }}>
+          <div ref={mapRef} style={{ width: '100%', height: '100%' }} />
+        </div>
+      )}
 
       {/* Grid: 3 Interactive Control Panels */}
       <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.5fr 1.3fr', gap: '15px' }}>
