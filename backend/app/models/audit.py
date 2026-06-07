@@ -20,3 +20,9 @@ class AuditVerification(BaseModel):
     last_verified: datetime
     total_records: int
     corrupted_records: List[str] = []
+    genesis_valid: Optional[bool] = True
+    links_valid: Optional[bool] = True
+    signatures_valid: Optional[bool] = True
+    timestamps_valid: Optional[bool] = True
+    payloads_valid: Optional[bool] = True
+

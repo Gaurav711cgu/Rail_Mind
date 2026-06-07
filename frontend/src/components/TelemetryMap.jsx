@@ -1,7 +1,129 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
-export default function TelemetryMap({ trains, disruptions }) {
-  // Map stations to X-coordinates on a 900x240 SVG canvas
+export default function TelemetryMap({ trains, disruptions, onNextStep, scenarioStep }) {
+  // States for interactive features
+  const [selectedTrain, setSelectedTrain] = useState(null);
+  const [selectedDisruption, setSelectedDisruption] = useState(null);
+  const [autoplay, setAutoplay] = useState(false);
+  const [autoplayCountdown, setAutoplayCountdown] = useState(6); // 6s countdown
+  const [kavachStates, setKavachStates] = useState({
+    "DLI-GZB": true,
+    "GZB-ALJN": true,
+    "ALJN-CNB": false
+  });
+  const [weatherState, setWeatherState] = useState({
+    visibility_meters: 2200,
+    fog_density: 12,
+    wind_speed: 14,
+    temperature: 29.5,
+    active_warning: "NONE",
+    recommended_speed_limit: 130
+  });
+  const [speedLimits, setSpeedLimits] = useState({
+    "DLI-GZB": 110,
+    "GZB-ALJN": 130,
+    "ALJN-CNB": 130
+  });
+  const [metrics, setMetrics] = useState({
+    efficiency_score: 94.5,
+    capacity_load: 34.0,
+    average_speed: 104.2,
+    safety_index: 100.0
+  });
+
+  const timerRef = useRef(null);
+
+  // Sync selected train data when scenario step updates
+  useEffect(() => {
+    if (selectedTrain) {
+      const updated = trains.find(t => t.train_no === selectedTrain.train_no);
+      if (updated) setSelectedTrain(updated);
+    }
+  }, [trains]);
+
+  // Fetch metrics dynamically based on scenario step
+  useEffect(() => {
+    const fetchMetrics = async () => {
+      try {
+        const res = await fetch('/api/v1/cascade/corridor-metrics');
+        if (res.ok) {
+          const data = await res.json();
+          setMetrics(data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch corridor metrics", err);
+      }
+    };
+    fetchMetrics();
+  }, [scenarioStep]);
+
+  // Autoplay handler
+  useEffect(() => {
+    if (autoplay) {
+      timerRef.current = setInterval(() => {
+        setAutoplayCountdown((prev) => {
+          if (prev <= 1) {
+            onNextStep();
+            return 6;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      clearInterval(timerRef.current);
+    }
+    return () => clearInterval(timerRef.current);
+  }, [autoplay, onNextStep]);
+
+  // Reset countdown if step changes manually
+  useEffect(() => {
+    setAutoplayCountdown(6);
+  }, [scenarioStep]);
+
+  // Handle Kavach toggles via backend
+  const handleKavachToggle = async (sectionCode) => {
+    const nextVal = !kavachStates[sectionCode];
+    setKavachStates(prev => ({ ...prev, [sectionCode]: nextVal }));
+    try {
+      await fetch(`/api/v1/cascade/kavach-toggle?section_code=${sectionCode}&active=${nextVal}`, { method: 'POST' });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Handle speed limit overrides
+  const handleSpeedLimitChange = async (sectionCode, newLimit) => {
+    setSpeedLimits(prev => ({ ...prev, [sectionCode]: newLimit }));
+    try {
+      await fetch(`/api/v1/trains/speed-lock?section_code=${sectionCode}&speed_limit=${newLimit}`, { method: 'POST' });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Fog visibility simulation slider
+  const handleVisibilitySlider = async (e) => {
+    const visibility = parseInt(e.target.value);
+    const density = Math.round((1 - (visibility / 3000)) * 100);
+    const speedLimit = visibility < 500 ? 30 : visibility < 1000 ? 60 : 130;
+    
+    const nextWeather = {
+      ...weatherState,
+      visibility_meters: visibility,
+      fog_density: density,
+      recommended_speed_limit: speedLimit,
+      active_warning: visibility < 500 ? "SEVERE_FOG_WARNING" : "NONE"
+    };
+    setWeatherState(nextWeather);
+
+    try {
+      await fetch(`/api/v1/cascade/weather?visibility=${visibility}&fog_density=${density}&speed_limit=${speedLimit}`, { method: 'POST' });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Station coordinate projection
   const stations = {
     "NDLS": { name: "New Delhi", x: 100, y_up: 80, y_down: 140 },
     "GZB": { name: "Ghaziabad", x: 280, y_up: 80, y_down: 140 },
@@ -9,16 +131,14 @@ export default function TelemetryMap({ trains, disruptions }) {
     "CNB": { name: "Kanpur Central", x: 800, y_up: 80, y_down: 140 }
   };
 
-  // Helper to find if a section is blocked by a disruption
   const isSectionDisrupted = (fromCode, toCode) => {
     return disruptions.some(d => 
       d.status === 'ACTIVE' && 
       ((d.section_from === fromCode && d.section_to === toCode) ||
-       (d.section_from === fromCode && toCode === 'ALJN')) // Cascade extends
+       (d.section_from === fromCode && toCode === 'ALJN'))
     );
   };
 
-  // Get segment class names based on disruption state
   const getSegmentClass = (fromCode, toCode) => {
     if (isSectionDisrupted(fromCode, toCode)) {
       const activeDisp = disruptions.find(d => d.status === 'ACTIVE');
@@ -27,42 +147,37 @@ export default function TelemetryMap({ trains, disruptions }) {
     return '';
   };
 
-  // Map train GPS longitude to visual X coordinate, and train direction/no to Y coordinate
   const getTrainPosition = (train) => {
     const lon = train.longitude;
-    let x = 450; // default middle fallback
+    let x = 450;
     
-    // Project longitude mapping NDLS(77.222) -> GZB(77.436) -> ALJN(78.078) -> CNB(80.350)
-    if (lon <= 77.222) {
-      x = 100;
-    } else if (lon <= 77.436) {
-      const pct = (lon - 77.222) / (77.436 - 77.222);
-      x = 100 + pct * (280 - 100);
-    } else if (lon <= 78.078) {
-      const pct = (lon - 77.436) / (78.078 - 77.436);
-      x = 280 + pct * (550 - 280);
-    } else if (lon <= 80.350) {
-      const pct = (lon - 78.078) / (80.350 - 78.078);
-      x = 550 + pct * (800 - 550);
-    } else {
-      x = 800;
-    }
+    if (lon <= 77.222) x = 100;
+    else if (lon <= 77.436) x = 100 + ((lon - 77.222) / (77.436 - 77.222)) * 180;
+    else if (lon <= 78.078) x = 280 + ((lon - 77.436) / (78.078 - 77.436)) * 270;
+    else if (lon <= 80.350) x = 550 + ((lon - 78.078) / (80.350 - 78.078)) * 250;
+    else x = 800;
     
-    // Determine track Y coordinate:
-    // Train 22415 (Vande Bharat) is UP line -> Y = 80
-    // Train 12002 (Shatabdi) and BOXN-902 (Freight) are DOWN line -> Y = 140
-    let y = 140;
-    if (train.train_no === "22415") {
-      y = 80;
-    }
-    
-    // Add micro-offset to prevent overlapping if they share similar longitude
+    let y = train.train_no === "22415" ? 80 : 140;
     let xOffset = 0;
     if (train.train_no === "BOXN-902" && trains.some(t => t.train_no === "12002" && Math.abs(t.longitude - train.longitude) < 0.02)) {
       xOffset = 18;
     }
 
     return { x: x + xOffset, y };
+  };
+
+  const fetchDisruptionDetails = async (disp) => {
+    setSelectedTrain(null);
+    try {
+      const res = await fetch(`/api/v1/cascade/disruption-details?disruption_id=${disp.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setSelectedDisruption({ ...disp, ...data });
+      }
+    } catch (err) {
+      console.error(err);
+      setSelectedDisruption(disp);
+    }
   };
 
   const drawTrackSegment = (fromCode, toCode, yCoord, isUpLine) => {
@@ -73,7 +188,6 @@ export default function TelemetryMap({ trains, disruptions }) {
     
     return (
       <g key={`${fromCode}-${toCode}-${yCoord}`}>
-        {/* Glow backdrop line */}
         <line 
           x1={fromStation.x} 
           y1={yCoord} 
@@ -81,7 +195,6 @@ export default function TelemetryMap({ trains, disruptions }) {
           y2={yCoord} 
           className={`track-glow ${trackColorClass} ${disruptionClass}`}
         />
-        {/* Solid core line */}
         <line 
           x1={fromStation.x} 
           y1={yCoord} 
@@ -94,72 +207,72 @@ export default function TelemetryMap({ trains, disruptions }) {
   };
 
   return (
-    <div className="glass-card" style={{ gridColumn: 'span 8', minHeight: '380px', display: 'flex', flexDirection: 'column' }}>
-      <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+    <div className="glass-card" style={{ gridColumn: 'span 8', minHeight: '520px', display: 'flex', flexDirection: 'column', padding: '24px' }}>
+      {/* Header Info */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
         <div>
-          <h3 style={{ fontSize: '1.1rem', fontWeight: 700, letterSpacing: '0.5px' }}>Sector North Live Telemetry Corridor</h3>
-          <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Delhi - Ghaziabad - Aligarh Corridor Segment</p>
+          <h3 style={{ fontSize: '1.2rem', fontWeight: 800, letterSpacing: '0.5px' }}>Sector North Live Telemetry Corridor</h3>
+          <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Interactive Indian Railways Kavach Interlocking Desk</p>
         </div>
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-accent)' }}>
-            <span className="led-indicator active" style={{ width: '8px', height: '8px' }}></span> KAVACH TELEMETRY ACTIVE
+            <span className="led-indicator active" style={{ width: '8px', height: '8px' }}></span> KAVACH DESK SYNCED
           </span>
         </div>
       </div>
 
-      <div className="map-container" style={{ position: 'relative', overflowX: 'auto', background: 'var(--bg-terminal)', borderRadius: '10px', padding: '15px', border: '1px solid var(--border-color)', flexGrow: 1 }}>
-        <svg viewBox="0 0 900 220" width="100%" height="200px" style={{ minWidth: '700px' }}>
+      {/* SVG Railway Track Map */}
+      <div className="map-container" style={{ position: 'relative', background: 'var(--bg-terminal)', borderRadius: '10px', padding: '15px', border: '1px solid var(--border-color)', marginBottom: '20px' }}>
+        <svg viewBox="0 0 900 220" width="100%" height="190px" style={{ minWidth: '700px' }}>
           <defs>
             <filter id="svg-neon-glow" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="5" result="blur" />
+              <feGaussianBlur stdDeviation="4" result="blur" />
               <feMerge>
                 <feMergeNode in="blur" />
                 <feMergeNode in="SourceGraphic" />
               </feMerge>
             </filter>
-            
-            <pattern id="radar-grid" width="40" height="40" patternUnits="userSpaceOnUse">
-              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255, 255, 255, 0.012)" strokeWidth="1" />
+            <pattern id="radar-grid" width="30" height="30" patternUnits="userSpaceOnUse">
+              <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(255, 255, 255, 0.01)" strokeWidth="1" />
             </pattern>
           </defs>
 
-          {/* Grid Background */}
           <rect width="900" height="220" fill="url(#radar-grid)" />
 
           <style>{`
-            .track-glow { stroke-width: 8; stroke-linecap: round; opacity: 0.15; transition: all 0.5s; }
+            .track-glow { stroke-width: 8; stroke-linecap: round; opacity: 0.12; transition: all 0.5s; }
             .track-glow.up-line { stroke: var(--color-primary); }
             .track-glow.down-line { stroke: var(--color-secondary); }
-            .track-glow.disrupted { stroke: var(--color-warning); opacity: 0.4; animation: pulse-glow 1.5s infinite; filter: url(#svg-neon-glow); }
-            .track-glow.disrupted.critical { stroke: var(--color-danger); opacity: 0.5; animation: pulse-glow-fast 1s infinite; }
+            .track-glow.disrupted { stroke: var(--color-warning); opacity: 0.35; animation: pulse-glow 1.5s infinite; filter: url(#svg-neon-glow); }
+            .track-glow.disrupted.critical { stroke: var(--color-danger); opacity: 0.45; animation: pulse-glow-fast 1s infinite; }
             
             .track-core { stroke-width: 2.5; stroke-linecap: round; stroke-dasharray: 6 5; transition: all 0.5s; }
-            .track-core.up-line { stroke: var(--color-primary); opacity: 0.6; }
-            .track-core.down-line { stroke: var(--color-secondary); opacity: 0.6; }
-            .track-core.disrupted { stroke: var(--color-warning); opacity: 0.9; animation: blink-yellow 1.5s infinite; }
-            .track-core.disrupted.critical { stroke: var(--color-danger); opacity: 1; animation: blink-red 1s infinite; }
+            .track-core.up-line { stroke: var(--color-primary); opacity: 0.5; }
+            .track-core.down-line { stroke: var(--color-secondary); opacity: 0.5; }
+            .track-core.disrupted { stroke: var(--color-warning); opacity: 0.8; animation: blink-yellow 1.5s infinite; }
+            .track-core.disrupted.critical { stroke: var(--color-danger); opacity: 0.95; animation: blink-red 1s infinite; }
 
-            .crossover-line { stroke: rgba(255, 255, 255, 0.08); stroke-width: 1.5; stroke-dasharray: 3 3; }
+            .crossover-line { stroke: rgba(255, 255, 255, 0.06); stroke-width: 1.5; stroke-dasharray: 3 3; }
             .crossover-line.active { stroke: var(--color-primary); opacity: 0.3; }
 
-            .station-outer { fill: #080D1A; stroke: rgba(255, 255, 255, 0.15); stroke-width: 1.5; transition: all 0.3s; }
-            .station-outer.active { stroke: var(--color-primary); filter: url(#svg-neon-glow); }
+            .station-outer { fill: #030712; stroke: rgba(255, 255, 255, 0.1); stroke-width: 1.5; cursor: pointer; transition: all 0.3s; }
+            .station-outer.active { stroke: var(--color-primary); }
             .station-outer.danger { stroke: var(--color-danger); filter: url(#svg-neon-glow); }
-            .station-inner { fill: rgba(255, 255, 255, 0.2); transition: all 0.3s; }
+            .station-inner { fill: rgba(255, 255, 255, 0.15); transition: all 0.3s; }
             .station-inner.active { fill: var(--color-primary); }
             .station-inner.danger { fill: var(--color-danger); }
             
             .train-node { transition: all 0.8s cubic-bezier(0.25, 1, 0.5, 1); cursor: pointer; }
             .train-node:hover { filter: drop-shadow(0px 0px 8px var(--color-primary)); }
-            .train-label-bg { fill: rgba(5, 8, 16, 0.9); stroke-width: 1; }
+            .train-label-bg { fill: #090d16; stroke-width: 1; }
             
-            @keyframes pulse-glow { 0%, 100% { opacity: 0.2; } 50% { opacity: 0.5; } }
-            @keyframes pulse-glow-fast { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.7; } }
+            @keyframes pulse-glow { 0%, 100% { opacity: 0.15; } 50% { opacity: 0.4; } }
+            @keyframes pulse-glow-fast { 0%, 100% { opacity: 0.25; } 50% { opacity: 0.6; } }
             @keyframes blink-yellow { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
             @keyframes blink-red { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
           `}</style>
 
-          {/* Draw Station Cross-over switch tracks */}
+          {/* Draw Station Crossovers */}
           {Object.values(stations).map((s, idx) => (
             <line 
               key={`cross-${idx}`} 
@@ -171,74 +284,58 @@ export default function TelemetryMap({ trains, disruptions }) {
             />
           ))}
 
-          {/* UP Line Segments (y = 80) */}
+          {/* UP Line Segments */}
           {drawTrackSegment("NDLS", "GZB", 80, true)}
           {drawTrackSegment("GZB", "ALJN", 80, true)}
           {drawTrackSegment("ALJN", "CNB", 80, true)}
 
-          {/* DOWN Line Segments (y = 140) */}
+          {/* DOWN Line Segments */}
           {drawTrackSegment("NDLS", "GZB", 140, false)}
           {drawTrackSegment("GZB", "ALJN", 140, false)}
           {drawTrackSegment("ALJN", "CNB", 140, false)}
 
-          {/* Station Nodes */}
+          {/* Station Platform Nodes */}
           {Object.entries(stations).map(([code, station]) => {
-            const hasDisruption = disruptions.some(d => d.status === 'ACTIVE' && d.section_from === code);
-            const isActive = !hasDisruption;
+            const disp = disruptions.find(d => d.status === 'ACTIVE' && d.section_from === code);
+            const hasDisruption = !!disp;
 
-            let outerClass = "station-outer active";
-            let innerClass = "station-inner active";
-            if (hasDisruption) {
-              outerClass = "station-outer danger";
-              innerClass = "station-inner danger";
-            }
+            let outerClass = hasDisruption ? "station-outer danger" : "station-outer active";
+            let innerClass = hasDisruption ? "station-inner danger" : "station-inner active";
 
             return (
-              <g key={code}>
-                {/* Station Central Junction platform bars */}
-                <rect x={station.x - 4} y="74" width="8" height="72" rx="2" fill="rgba(255, 255, 255, 0.04)" stroke="rgba(255, 255, 255, 0.1)" strokeWidth="1" />
+              <g key={code} onClick={() => hasDisruption ? fetchDisruptionDetails(disp) : null}>
+                <rect x={station.x - 4} y="74" width="8" height="72" rx="2" fill="rgba(255, 255, 255, 0.02)" stroke="rgba(255, 255, 255, 0.05)" strokeWidth="1" />
                 
-                {/* UP Platform Junction node */}
                 <circle cx={station.x} cy="80" r="8" className={outerClass} />
                 <circle cx={station.x} cy="80" r="3.5" className={innerClass} />
 
-                {/* DOWN Platform Junction node */}
                 <circle cx={station.x} cy="140" r="8" className={outerClass} />
                 <circle cx={station.x} cy="140" r="3.5" className={innerClass} />
 
-                {/* Labels */}
-                <rect x={station.x - 50} y="176" width="100" height="28" rx="4" fill="rgba(6, 10, 18, 0.7)" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
-                <text x={station.x} y="188" textAnchor="middle" fill="var(--color-text-main)" fontSize="0.7rem" fontWeight="700" letterSpacing="0.5px">{station.name}</text>
-                <text x={station.x} y="199" textAnchor="middle" fill="var(--color-primary)" fontSize="0.6rem" fontWeight="600" letterSpacing="1px">{code}</text>
+                <rect x={station.x - 45} y="174" width="90" height="26" rx="4" fill="rgba(3, 5, 10, 0.85)" stroke="var(--border-color)" strokeWidth="1" />
+                <text x={station.x} y="186" textAnchor="middle" fill="var(--color-text-main)" fontSize="0.65rem" fontWeight="800" letterSpacing="0.5px">{station.name}</text>
+                <text x={station.x} y="197" textAnchor="middle" fill="var(--color-primary)" fontSize="0.55rem" fontWeight="600" letterSpacing="1px">{code}</text>
               </g>
             );
           })}
 
-          {/* Active Trains */}
+          {/* Active Train Nodes */}
           {trains.map((train) => {
             const pos = getTrainPosition(train);
             const isDelayed = train.current_delay > 0;
             const isFreight = train.train_no === "BOXN-902";
             
-            // Neon colors
             const trainColor = isFreight ? "var(--color-warning)" : isDelayed ? "var(--color-danger)" : "var(--color-accent)";
-            const glowShadow = isFreight ? "var(--shadow-neon-purple)" : isDelayed ? "var(--shadow-neon-red)" : "var(--shadow-neon-cyan)";
             
             return (
-              <g key={train.train_no} className="train-node" transform={`translate(${pos.x}, ${pos.y})`}>
-                <title>{`${train.train_name} (${train.train_no})\nStatus: ${train.status}\nDelay: ${train.current_delay}m`}</title>
-                
-                {/* Outer pulsing glow */}
-                <circle cx="0" cy="0" r="12" fill="transparent" stroke={trainColor} strokeWidth="1" opacity="0.3" className="pulse-ring" style={{ animationDuration: isDelayed ? '1s' : '2.5s' }} />
-                
-                {/* Main Train circular coordinate */}
-                <circle cx="0" cy="0" r="7" fill={trainColor} filter="url(#svg-neon-glow)" />
+              <g key={train.train_no} className="train-node" transform={`translate(${pos.x}, ${pos.y})`} onClick={() => { setSelectedTrain(train); setSelectedDisruption(null); }}>
+                <circle cx="0" cy="0" r="12" fill="transparent" stroke={trainColor} strokeWidth="1.2" opacity="0.3" className="pulse-ring" />
+                <circle cx="0" cy="0" r="7.5" fill={trainColor} filter="url(#svg-neon-glow)" />
                 <circle cx="0" cy="0" r="3" fill="#FFFFFF" />
 
-                {/* Train Info Badge - positioned above for UP line, below for DOWN line */}
                 <g transform={`translate(0, ${pos.y === 80 ? -24 : 24})`}>
-                  <rect x="-35" y="-10" width="70" height="15" rx="3" className="train-label-bg" fill="#0A0F1D" stroke={trainColor} strokeWidth="1" />
-                  <text x="0" y="0" textAnchor="middle" fill="var(--color-text-main)" fontSize="0.55rem" fontWeight="700" letterSpacing="0.5px">
+                  <rect x="-35" y="-10" width="70" height="15" rx="3" className="train-label-bg" fill="#030712" stroke={trainColor} strokeWidth="1" />
+                  <text x="0" y="0" textAnchor="middle" fill="var(--color-text-main)" fontSize="0.55rem" fontWeight="800" letterSpacing="0.5px">
                     {train.train_no}
                   </text>
                   {isDelayed && (
@@ -247,39 +344,170 @@ export default function TelemetryMap({ trains, disruptions }) {
                     </text>
                   )}
                 </g>
-
-                {/* Hazard marker */}
-                {isDelayed && (
-                  <g transform="translate(11, -9)">
-                    <circle cx="0" cy="0" r="5.5" fill="var(--color-danger)" stroke="#080C14" strokeWidth="1" />
-                    <text x="0" y="2" textAnchor="middle" fill="white" fontSize="0.45rem" fontWeight="900">!</text>
-                  </g>
-                )}
               </g>
             );
           })}
         </svg>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px', marginTop: '15px' }}>
-        {trains.map(t => {
-          const isDelayed = t.current_delay > 0;
-          return (
-            <div key={t.train_no} style={{ background: 'var(--bg-card)', padding: '12px 15px', borderRadius: '8px', border: `1px solid ${isDelayed ? 'rgba(255, 49, 49, 0.15)' : 'var(--border-color)'}`, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: t.train_no === 'BOXN-902' ? 'var(--color-warning)' : 'var(--color-text-main)' }}>{t.train_name}</span>
-                <span style={{ fontSize: '0.65rem', padding: '2px 8px', borderRadius: '4px', background: t.status === 'HELD' ? 'rgba(255, 49, 49, 0.1)' : 'rgba(57, 255, 20, 0.1)', color: t.status === 'HELD' ? 'var(--color-danger)' : 'var(--color-accent)', fontWeight: 700 }}>
-                  {t.status}
-                </span>
+      {/* Grid: 3 Interactive Control Panels */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.5fr 1.3fr', gap: '15px' }}>
+        
+        {/* Panel 1: Weather & Kavach Control */}
+        <div style={{ background: 'rgba(255,255,255,0.01)', padding: '15px', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <h4 style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px' }}>
+            Sensors & Kavach
+          </h4>
+          
+          {/* Weather Slider */}
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', marginBottom: '3px' }}>
+              <span style={{ color: 'var(--color-text-muted)' }}>Visibility</span>
+              <span style={{ color: weatherState.visibility_meters < 500 ? 'var(--color-danger)' : 'var(--color-accent)', fontWeight: 700 }}>
+                {weatherState.visibility_meters}m {weatherState.active_warning !== 'NONE' && '⚠️'}
+              </span>
+            </div>
+            <input 
+              type="range" 
+              min="100" 
+              max="3000" 
+              step="100"
+              value={weatherState.visibility_meters} 
+              onChange={handleVisibilitySlider}
+              style={{ width: '100%', height: '3px', background: 'var(--border-color)', outline: 'none', appearance: 'none', cursor: 'pointer' }}
+            />
+          </div>
+
+          {/* Kavach toggles */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
+            <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Kavach Segment Links:</span>
+            {Object.keys(kavachStates).map(sec => (
+              <label key={sec} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.7rem', background: 'rgba(0,0,0,0.15)', padding: '6px 8px', borderRadius: '4px', cursor: 'pointer' }}>
+                <span style={{ fontWeight: 600 }}>{sec}</span>
+                <input 
+                  type="checkbox" 
+                  checked={kavachStates[sec]} 
+                  onChange={() => handleKavachToggle(sec)}
+                  style={{ accentColor: 'var(--color-primary)' }}
+                />
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* Panel 2: Telemetry Inspector */}
+        <div style={{ background: 'rgba(255,255,255,0.01)', padding: '15px', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column' }}>
+          <h4 style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px', marginBottom: '10px' }}>
+            Telemetry Inspector
+          </h4>
+          
+          {!selectedTrain && !selectedDisruption ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: '0.7rem', color: 'var(--color-text-dark)', fontStyle: 'italic', textAlign: 'center', padding: '10px' }}>
+              Click on a train node or warning platform to inspect telemetry.
+            </div>
+          ) : selectedTrain ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.75rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ fontWeight: 800, color: 'white' }}>{selectedTrain.train_name}</span>
+                <span style={{ color: 'var(--color-accent)', fontWeight: 700 }}>{selectedTrain.train_no}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                <span>Train No: <strong style={{ color: 'var(--color-text-main)' }}>{t.train_no}</strong></span>
-                <span>Delay: <strong style={{ color: isDelayed ? 'var(--color-danger)' : 'var(--color-accent)' }}>{t.current_delay} min</strong></span>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px', background: 'rgba(0,0,0,0.2)', padding: '6px', borderRadius: '4px', fontSize: '0.65rem' }}>
+                <div>Station: <strong style={{ color: 'white' }}>{selectedTrain.current_station}</strong></div>
+                <div>Status: <strong style={{ color: 'white' }}>{selectedTrain.status}</strong></div>
+                <div>Lat: <strong style={{ color: 'white' }}>{selectedTrain.latitude}</strong></div>
+                <div>Lon: <strong style={{ color: 'white' }}>{selectedTrain.longitude}</strong></div>
+              </div>
+
+              {/* Interactive Speed limit lock */}
+              <div style={{ marginTop: '4px' }}>
+                <label style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '3px' }}>Safety Speed Lock:</label>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  {[30, 60, 110, 130].map(sp => (
+                    <button 
+                      key={sp}
+                      onClick={() => handleSpeedLimitChange("GZB-ALJN", sp)}
+                      style={{
+                        flex: 1,
+                        background: speedLimits["GZB-ALJN"] === sp ? 'var(--color-primary)' : 'rgba(255,255,255,0.02)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '3px',
+                        color: speedLimits["GZB-ALJN"] === sp ? 'black' : 'white',
+                        fontSize: '0.6rem',
+                        fontWeight: 'bold',
+                        padding: '3px 0',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {sp}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
-          );
-        })}
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.75rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ fontWeight: 800, color: 'var(--color-danger)' }}>DISRUPTION ACTIVE</span>
+                <span style={{ color: 'white', fontFamily: 'monospace' }}>{selectedDisruption.error_code}</span>
+              </div>
+              <p style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', lineHeight: '1.3' }}>
+                {selectedDisruption.details}
+              </p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', background: 'rgba(255,49,49,0.05)', padding: '5px 8px', borderRadius: '4px', border: '1px solid rgba(255,49,49,0.1)' }}>
+                <span>Clearance: <strong>{selectedDisruption.estimated_clearance_minutes}m</strong></span>
+                <span>Passengers: <strong>{selectedDisruption.affected_passengers}</strong></span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Panel 3: Performance & Autoplay */}
+        <div style={{ background: 'rgba(255,255,255,0.01)', padding: '15px', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', justifyStyle: 'stretch', gap: '10px' }}>
+          <h4 style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px' }}>
+            System Core Metrics
+          </h4>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', fontSize: '0.7rem' }}>
+            <div style={{ background: 'rgba(0,0,0,0.15)', padding: '6px', borderRadius: '4px', textAlign: 'center' }}>
+              <div style={{ color: 'var(--color-text-muted)', fontSize: '0.55rem' }}>LINE EFFICIENCY</div>
+              <div style={{ fontWeight: 800, color: 'var(--color-accent)', fontSize: '0.9rem' }}>{metrics.efficiency_score}%</div>
+            </div>
+            <div style={{ background: 'rgba(0,0,0,0.15)', padding: '6px', borderRadius: '4px', textAlign: 'center' }}>
+              <div style={{ color: 'var(--color-text-muted)', fontSize: '0.55rem' }}>CAPACITY LOAD</div>
+              <div style={{ fontWeight: 800, color: 'var(--color-primary)', fontSize: '0.9rem' }}>{metrics.capacity_load}%</div>
+            </div>
+          </div>
+
+          {/* Autoplay controllers */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', marginTop: 'auto' }}>
+            <button 
+              className={autoplay ? "btn-secondary" : "btn-primary"} 
+              onClick={() => setAutoplay(!autoplay)}
+              style={{
+                width: '100%', 
+                padding: '6px', 
+                fontSize: '0.7rem', 
+                background: autoplay ? 'transparent' : 'linear-gradient(135deg, var(--color-primary), rgba(0, 240, 255, 0.4))',
+                borderColor: autoplay ? 'var(--color-danger)' : '',
+                color: autoplay ? 'var(--color-danger)' : 'black'
+              }}
+            >
+              {autoplay ? "PAUSE AUTOPLAY" : "START AUTOPLAY"}
+            </button>
+            {autoplay && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ flexGrow: 1, height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', overflow: 'hidden' }}>
+                  <div style={{ width: `${(autoplayCountdown / 6) * 100}%`, height: '100%', background: 'var(--color-primary)', transition: 'width 1s linear' }} />
+                </div>
+                <span style={{ fontSize: '0.55rem', color: 'var(--color-text-muted)' }}>{autoplayCountdown}s</span>
+              </div>
+            )}
+          </div>
+        </div>
+
       </div>
+
     </div>
   );
 }

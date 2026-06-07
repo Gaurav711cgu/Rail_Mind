@@ -153,86 +153,92 @@ export default function App() {
   ];
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#060810' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#030712' }}>
       {/* Header Panel */}
       <header className="app-header">
-        <div className="brand-section">
-          <div className="brand-logo">RM</div>
-          <div>
-            <h1 className="brand-title">RailMind Dispatcher Console</h1>
-            <div className="brand-tagline">Autonomous Intelligence for Indian Railways</div>
+        <div style={{ maxWidth: '1440px', margin: '0 auto', width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className="brand-section">
+            <div className="brand-logo">RM</div>
+            <div>
+              <h1 className="brand-title">RailMind Dispatcher Console</h1>
+              <div className="brand-tagline">Autonomous Intelligence for Indian Railways</div>
+            </div>
           </div>
-        </div>
 
-        {/* Tab Routing Links */}
-        <nav style={{ display: 'flex', gap: '25px', height: '100%' }}>
-          <button className={`nav-tab ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>
-            Telemetry Radar
-          </button>
-          <button className={`nav-tab ${activeTab === 'rac' ? 'active' : ''}`} onClick={() => setActiveTab('rac')}>
-            ML RAC Solver
-          </button>
-          <button className={`nav-tab ${activeTab === 'audit' ? 'active' : ''}`} onClick={() => setActiveTab('audit')}>
-            Audit Ledger
-          </button>
-          <button className={`nav-tab ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>
-            Operator Profile
-          </button>
-          <button className={`nav-tab ${activeTab === 'support' ? 'active' : ''}`} onClick={() => setActiveTab('support')}>
-            System Helpline
-          </button>
-        </nav>
+          {/* Tab Routing Links */}
+          <nav style={{ display: 'flex', gap: '25px', height: '100%' }}>
+            <button className={`nav-tab ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>
+              Telemetry Radar
+            </button>
+            <button className={`nav-tab ${activeTab === 'rac' ? 'active' : ''}`} onClick={() => setActiveTab('rac')}>
+              ML RAC Solver
+            </button>
+            <button className={`nav-tab ${activeTab === 'audit' ? 'active' : ''}`} onClick={() => setActiveTab('audit')}>
+              Audit Ledger
+            </button>
+            <button className={`nav-tab ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>
+              Operator Profile
+            </button>
+            <button className={`nav-tab ${activeTab === 'support' ? 'active' : ''}`} onClick={() => setActiveTab('support')}>
+              System Helpline
+            </button>
+          </nav>
+        </div>
       </header>
+
 
       {/* Control Toolbar */}
       {scenarioState && (
         <div className="control-toolbar">
-          {/* Active Step Indicator */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span className={`led-indicator ${scenarioState.step === 0 ? 'active' : scenarioState.step === 6 ? 'active' : 'danger'}`}></span>
-            <span style={{ fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-text-main)', letterSpacing: '0.5px' }}>
-              Step {scenarioState.step} : {scenarioState.title}
-            </span>
-            <span className="toolbar-desc" style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-              — {scenarioState.description}
-            </span>
-          </div>
-
-          {/* Stepper Timeline & Action buttons */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.01)', padding: '5px 12px', borderRadius: '30px', border: '1px solid var(--border-color)', gap: '10px' }}>
-              <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Timeline:</span>
-              <div style={{ display: 'flex', gap: '5px' }}>
-                {stepDetails.map((step, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => handleJumpToStep(idx)}
-                    title={step.title + ": " + step.desc}
-                    disabled={loading}
-                    className={`timeline-step-btn ${scenarioState.step === idx ? 'active' : idx < scenarioState.step ? 'passed' : ''}`}
-                  >
-                    {idx}
-                  </button>
-                ))}
-              </div>
+          <div style={{ maxWidth: '1440px', margin: '0 auto', width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            {/* Active Step Indicator */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <span className={`led-indicator ${scenarioState.step === 0 ? 'active' : scenarioState.step === 6 ? 'active' : 'danger'}`}></span>
+              <span style={{ fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-text-main)', letterSpacing: '0.5px' }}>
+                Step {scenarioState.step} : {scenarioState.title}
+              </span>
+              <span className="toolbar-desc" style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                — {scenarioState.description}
+              </span>
             </div>
 
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button 
-                className="btn-primary" 
-                onClick={handleNextStep} 
-                disabled={loading || scenarioState.step >= scenarioState.max_steps}
-                style={{ padding: '6px 14px', fontSize: '0.75rem', opacity: scenarioState.step >= scenarioState.max_steps ? 0.5 : 1 }}
-              >
-                {loading ? 'Advancing...' : 'Next Step'}
-              </button>
-              <button className="btn-secondary" onClick={handleReset} disabled={loading} style={{ padding: '6px 14px', fontSize: '0.75rem' }}>
-                Reset
-              </button>
+            {/* Stepper Timeline & Action buttons */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.01)', padding: '5px 12px', borderRadius: '30px', border: '1px solid var(--border-color)', gap: '10px' }}>
+                <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Timeline:</span>
+                <div style={{ display: 'flex', gap: '5px' }}>
+                  {stepDetails.map((step, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => handleJumpToStep(idx)}
+                      title={step.title + ": " + step.desc}
+                      disabled={loading}
+                      className={`timeline-step-btn ${scenarioState.step === idx ? 'active' : idx < scenarioState.step ? 'passed' : ''}`}
+                    >
+                      {idx}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button 
+                  className="btn-primary" 
+                  onClick={handleNextStep} 
+                  disabled={loading || scenarioState.step >= scenarioState.max_steps}
+                  style={{ padding: '6px 14px', fontSize: '0.75rem', opacity: scenarioState.step >= scenarioState.max_steps ? 0.5 : 1 }}
+                >
+                  {loading ? 'Advancing...' : 'Next Step'}
+                </button>
+                <button className="btn-secondary" onClick={handleReset} disabled={loading} style={{ padding: '6px 14px', fontSize: '0.75rem' }}>
+                  Reset
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
+
 
       {/* Main Content Render based on active tab */}
       <div style={{ flexGrow: 1, padding: '20px 0' }}>
@@ -240,7 +246,12 @@ export default function App() {
           <>
             {activeTab === 'dashboard' && (
               <main className="bento-grid" style={{ opacity: loading ? 0.75 : 1, transition: 'opacity 0.2s' }}>
-                <TelemetryMap trains={scenarioState.trains} disruptions={scenarioState.disruptions} />
+                <TelemetryMap 
+                  trains={scenarioState.trains} 
+                  disruptions={scenarioState.disruptions} 
+                  onNextStep={handleNextStep}
+                  scenarioStep={scenarioState.step}
+                />
                 <Recommendations 
                   recommendations={scenarioState.recommendations} 
                   onApprove={handleApproveRec} 

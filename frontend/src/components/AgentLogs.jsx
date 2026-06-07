@@ -36,7 +36,7 @@ export default function AgentLogs({ logs }) {
   };
 
   return (
-    <div className="glass-card" style={{ gridColumn: 'span 5', minHeight: '340px', display: 'flex', flexDirection: 'column' }}>
+    <div className="glass-card" style={{ gridColumn: 'span 12', minHeight: '340px', display: 'flex', flexDirection: 'column' }}>
       <div className="card-header" style={{ marginBottom: '15px' }}>
         <h3 style={{ fontSize: '1.1rem', fontWeight: 600 }}>Autonomous Decision Log Console</h3>
         <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Explainable AI Agent Execution Telemetries</p>

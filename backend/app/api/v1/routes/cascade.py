@@ -327,3 +327,111 @@ async def override_recommendation(rec_id: str, override_reason: str, db: AsyncSe
             override_reason=db_rec.override_reason,
             generated_at=db_rec.generated_at
         )
+
+
+# In-memory stores for dynamic states in scenario/demo mode
+weather_state = {
+    "visibility_meters": 2200,
+    "fog_density": 12,
+    "wind_speed": 14,
+    "temperature": 29.5,
+    "active_warning": "NONE",
+    "recommended_speed_limit": 130
+}
+
+kavach_states = {
+    "DLI-GZB": True,
+    "GZB-ALJN": True,
+    "ALJN-CNB": False
+}
+
+@router.get("/corridor-metrics")
+async def get_corridor_metrics():
+    state = scenario_engine.get_state()
+    step = state["step"]
+    
+    # Dynamics change based on scenario progression
+    if step == 0:
+        efficiency = 94.5
+        capacity = 34.0
+        avg_speed = 104.2
+        safety = 100.0
+    elif step in [1, 2]:
+        efficiency = 81.2
+        capacity = 62.0
+        avg_speed = 78.5
+        safety = 96.4
+    elif step in [3, 4, 5]:
+        efficiency = 68.4
+        capacity = 89.0
+        avg_speed = 41.2
+        safety = 91.2
+    else: # step 6 resolved
+        efficiency = 92.1
+        capacity = 38.0
+        avg_speed = 98.4
+        safety = 99.8
+
+    return {
+        "efficiency_score": efficiency,
+        "capacity_load": capacity,
+        "average_speed": avg_speed,
+        "safety_index": safety,
+        "active_kavach_zones": sum(1 for val in kavach_states.values() if val),
+        "total_kavach_zones": len(kavach_states)
+    }
+
+@router.get("/weather")
+async def get_weather():
+    return weather_state
+
+@router.post("/weather")
+async def update_weather(visibility: int, fog_density: int, speed_limit: int):
+    weather_state["visibility_meters"] = visibility
+    weather_state["fog_density"] = fog_density
+    weather_state["recommended_speed_limit"] = speed_limit
+    if visibility < 500:
+        weather_state["active_warning"] = "SEVERE_FOG_WARNING"
+    else:
+        weather_state["active_warning"] = "NONE"
+    return weather_state
+
+@router.post("/kavach-toggle")
+async def toggle_kavach(section_code: str, active: bool):
+    if section_code not in kavach_states:
+        raise HTTPException(status_code=404, detail="Section code not found")
+    kavach_states[section_code] = active
+    return {"section_code": section_code, "active": active}
+
+@router.get("/disruption-details")
+async def get_disruption_details(disruption_id: str):
+    state = scenario_engine.get_state()
+    disruption = None
+    for d in state["disruptions"]:
+        if d["id"] == disruption_id:
+            disruption = d
+            break
+            
+    if not disruption:
+        # Seeded details fallback
+        return {
+            "disruption_id": disruption_id,
+            "error_code": "0xERR_NOMINAL",
+            "estimated_clearance_minutes": 0,
+            "affected_passengers": 0,
+            "details": "No active disruptions registered in this section block."
+        }
+        
+    # Real details
+    err_code = "0xINTERLOCK_4F" if disruption["disruption_type"] == "SIGNAL_FAILURE" else "0xCASC_TIMEOUT_99"
+    clear_time = 45 if disruption["severity"] == "MEDIUM" else 90 if disruption["severity"] == "HIGH" else 15
+    passengers = 4820 if disruption["severity"] == "CRITICAL" else 140
+    
+    return {
+        "disruption_id": disruption_id,
+        "error_code": err_code,
+        "estimated_clearance_minutes": clear_time,
+        "affected_passengers": passengers,
+        "details": f"Disruption level {disruption['severity']} caused by {disruption['disruption_type']}. Signal relays show locking status fault."
+    }
+

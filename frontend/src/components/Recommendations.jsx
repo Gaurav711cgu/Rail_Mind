@@ -14,7 +14,7 @@ export default function Recommendations({ recommendations, onApprove, onOverride
   };
 
   return (
-    <div className="glass-card" style={{ gridColumn: 'span 5', minHeight: '320px', display: 'flex', flexDirection: 'column' }}>
+    <div className="glass-card" style={{ gridColumn: 'span 4', minHeight: '320px', display: 'flex', flexDirection: 'column' }}>
       <div className="card-header" style={{ marginBottom: '15px' }}>
         <h3 style={{ fontSize: '1.1rem', fontWeight: 600 }}>Autonomous Dispatch Recommendations</h3>
         <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Confidence-gated hold/proceed resolutions</p>

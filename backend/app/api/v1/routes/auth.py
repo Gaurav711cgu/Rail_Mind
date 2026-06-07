@@ -136,3 +136,20 @@ async def read_users_me(current_user: DBUser = Depends(get_current_active_user))
         created_at=current_user.created_at,
         updated_at=current_user.created_at
     )
+
+
+@router.get("/operator-performance")
+async def get_operator_performance():
+    return {
+        "handled_alerts_count": 42,
+        "variance_score": 98.4,
+        "average_reaction_time_seconds": 12.8,
+        "safety_compliance_rate": 100.0,
+        "authority_status": "L3_SUPERVISOR_ACTIVE",
+        "handled_overrides_count": 8,
+        "active_duty_hours": 3.5,
+        "system_cohesion_index": 95.8,
+        "kavach_override_count": 1,
+        "last_tamper_check": datetime.utcnow().isoformat()
+    }
+

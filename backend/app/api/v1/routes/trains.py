@@ -167,3 +167,23 @@ async def get_train_status(train_no: str, db: AsyncSession = Depends(get_db)):
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Train {train_no} not found"
         )
+
+
+# In-memory store for active speed locks
+speed_locks = {
+    "DLI-GZB": 110,
+    "GZB-ALJN": 130,
+    "ALJN-CNB": 130
+}
+
+@router.get("/speed-lock")
+async def get_speed_locks():
+    return speed_locks
+
+@router.post("/speed-lock")
+async def update_speed_lock(section_code: str, speed_limit: int):
+    if section_code not in speed_locks:
+        raise HTTPException(status_code=404, detail="Section code not found")
+    speed_locks[section_code] = speed_limit
+    return {"section_code": section_code, "speed_limit": speed_limit}
+
