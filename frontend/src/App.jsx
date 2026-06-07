@@ -20,7 +20,7 @@ export default function App() {
         setScenarioState(data);
       }
       
-      const resAudit = await fetch('/api/v1/audit');
+      const resAudit = await fetch('/api/v1/audit/');
       if (resAudit.ok) {
         const data = await resAudit.json();
         setAuditLogs(data);
@@ -47,7 +47,7 @@ export default function App() {
         setScenarioState(data);
         
         // Refresh audit logs
-        const resAudit = await fetch('/api/v1/audit');
+        const resAudit = await fetch('/api/v1/audit/');
         if (resAudit.ok) {
           const auditData = await resAudit.json();
           setAuditLogs(auditData);
@@ -91,7 +91,7 @@ export default function App() {
       }
       setScenarioState(data);
       
-      const resAudit = await fetch('/api/v1/audit');
+      const resAudit = await fetch('/api/v1/audit/');
       if (resAudit.ok) {
         const auditData = await resAudit.json();
         setAuditLogs(auditData);
