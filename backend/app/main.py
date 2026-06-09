@@ -77,6 +77,7 @@ app.add_middleware(
 
 # Mount Routes
 app.include_router(health.router, tags=["Health Checks"])
+app.include_router(health.router, prefix=settings.API_V1_STR, tags=["Health Checks"])
 app.include_router(auth.router, prefix=settings.API_V1_STR + "/auth", tags=["Authentication"])
 app.include_router(trains.router, prefix=settings.API_V1_STR + "/trains", tags=["Train Tracking"])
 app.include_router(disruptions.router, prefix=settings.API_V1_STR + "/disruptions", tags=["Disruptions Registry"])

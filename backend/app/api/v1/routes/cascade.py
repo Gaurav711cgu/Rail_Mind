@@ -11,6 +11,8 @@ from app.db.database import get_db, DBDisruption, DBRecommendation, DBAuditEntry
 from app.core.scenario_engine import scenario_engine
 from app.models.disruption import CascadeEvent, CascadeReport
 from app.models.recommendation import DispatchRec
+from app.services.live_rail_data import live_rail_data
+from app.api.v1.routes.auth import require_roles
 
 router = APIRouter()
 
@@ -91,13 +93,13 @@ async def sync_scenario_step_to_db(db: AsyncSession, state: dict):
 
 @router.get("/scenario")
 async def get_scenario_state():
-    return scenario_engine.get_state()
+    return await live_rail_data.hydrate_scenario_state(scenario_engine.get_state())
 
 
 @router.post("/scenario/next")
 async def next_scenario_step(db: AsyncSession = Depends(get_db)):
     step = scenario_engine.next_step()
-    state = scenario_engine.get_state()
+    state = await live_rail_data.hydrate_scenario_state(scenario_engine.get_state())
     if settings.SCENARIO_MODE:
         await sync_scenario_step_to_db(db, state)
     return state
@@ -105,7 +107,7 @@ async def next_scenario_step(db: AsyncSession = Depends(get_db)):
 
 @router.post("/scenario/reset")
 async def reset_scenario(db: AsyncSession = Depends(get_db)):
-    state = scenario_engine.reset()
+    state = await live_rail_data.hydrate_scenario_state(scenario_engine.reset())
     if settings.SCENARIO_MODE:
         # Clear dynamic tables to restart clean
         await db.execute(delete(DBDisruption))
@@ -185,7 +187,11 @@ async def simulate_cascade(disruption_id: str, db: AsyncSession = Depends(get_db
 
 
 @router.post("/recommendations/{rec_id}/approve", response_model=DispatchRec)
-async def approve_recommendation(rec_id: str, db: AsyncSession = Depends(get_db)):
+async def approve_recommendation(
+    rec_id: str,
+    db: AsyncSession = Depends(get_db),
+    _controller=Depends(require_roles("CONTROLLER", "ADMIN")),
+):
     if settings.SCENARIO_MODE:
         # Update inside the scenario_engine memory representation
         state = scenario_engine.get_state()
@@ -257,7 +263,12 @@ async def approve_recommendation(rec_id: str, db: AsyncSession = Depends(get_db)
 
 
 @router.post("/recommendations/{rec_id}/override", response_model=DispatchRec)
-async def override_recommendation(rec_id: str, override_reason: str, db: AsyncSession = Depends(get_db)):
+async def override_recommendation(
+    rec_id: str,
+    override_reason: str,
+    db: AsyncSession = Depends(get_db),
+    _controller=Depends(require_roles("CONTROLLER", "ADMIN")),
+):
     if settings.SCENARIO_MODE:
         state = scenario_engine.get_state()
         found = False
@@ -434,4 +445,3 @@ async def get_disruption_details(disruption_id: str):
         "affected_passengers": passengers,
         "details": f"Disruption level {disruption['severity']} caused by {disruption['disruption_type']}. Signal relays show locking status fault."
     }
-

@@ -7,6 +7,7 @@ export default function TelemetryMap({ trains, disruptions, onNextStep, scenario
   const [autoplay, setAutoplay] = useState(false);
   const [autoplayCountdown, setAutoplayCountdown] = useState(6); // 6s countdown
   const [viewMode, setViewMode] = useState('schematic'); // 'schematic' or 'geo'
+  const [selectedZone, setSelectedZone] = useState('NORTH'); // 'NORTH', 'WEST', 'SOUTH', 'ALL'
   const [kavachStates, setKavachStates] = useState({
     "DLI-GZB": true,
     "GZB-ALJN": true,
@@ -143,6 +144,164 @@ export default function TelemetryMap({ trains, disruptions, onNextStep, scenario
   const leafletInstance = useRef(null);
   const markersRef = useRef({});
 
+  // Helper to generate mock trains for Western and Southern zones based on step
+  const getTrainsForZone = () => {
+    if (selectedZone === 'NORTH') {
+      return trains;
+    }
+    
+    const step = scenarioStep;
+    
+    if (selectedZone === 'WEST') {
+      return [
+        {
+          train_no: "12009",
+          train_name: "MMCT-ADI Shatabdi Express",
+          current_station: step <= 1 ? "MMCT" : step <= 4 ? "ST" : "BRC",
+          current_delay: step === 3 ? 15 : 0,
+          status: step === 1 ? "HELD" : "RUNNING",
+          latitude: 18.971 + (step / 6) * (23.027 - 18.971),
+          longitude: 72.820 + (step / 6) * (72.601 - 72.820)
+        },
+        {
+          train_no: "20901",
+          train_name: "Mumbai-Gandhinagar Vande Bharat",
+          current_station: step <= 2 ? "BRC" : "ADI",
+          current_delay: 0,
+          status: "RUNNING",
+          latitude: 22.312 + (step / 6) * (23.027 - 22.312),
+          longitude: 73.181 + (step / 6) * (72.601 - 73.181)
+        },
+        {
+          train_no: "CONCOR-701",
+          train_name: "Container Cargo Freight",
+          current_station: "ST",
+          current_delay: step >= 4 ? 30 : 5,
+          status: step >= 4 ? "HELD_AT_LOOP" : "RUNNING",
+          latitude: 21.205,
+          longitude: 72.841
+        }
+      ];
+    }
+    
+    if (selectedZone === 'SOUTH') {
+      return [
+        {
+          train_no: "12008",
+          train_name: "SBC-MAS Shatabdi Express",
+          current_station: step <= 2 ? "SBC" : step <= 4 ? "BWT" : "JTJ",
+          current_delay: step >= 3 ? 20 : 0,
+          status: step === 2 ? "HELD" : "RUNNING",
+          latitude: 12.978 + (step / 6) * (13.082 - 12.978),
+          longitude: 77.572 + (step / 6) * (80.275 - 77.572)
+        },
+        {
+          train_no: "20608",
+          train_name: "SBC-MAS Vande Bharat",
+          current_station: step <= 1 ? "JTJ" : "MAS",
+          current_delay: 0,
+          status: "RUNNING",
+          latitude: 12.571 + (step / 6) * (13.082 - 12.571),
+          longitude: 78.580 + (step / 6) * (80.275 - 78.580)
+        },
+        {
+          train_no: "BOXN-505",
+          train_name: "Steel Ore Cargo",
+          current_station: "BWT",
+          current_delay: step >= 3 ? 25 : 10,
+          status: step >= 3 ? "HELD_AT_LOOP" : "RUNNING",
+          latitude: 12.969,
+          longitude: 78.204
+        }
+      ];
+    }
+
+    if (selectedZone === 'ALL') {
+      const north = trains;
+      const west = [
+        {
+          train_no: "12009",
+          train_name: "MMCT-ADI Shatabdi Express",
+          current_station: step <= 1 ? "MMCT" : step <= 4 ? "ST" : "BRC",
+          current_delay: step === 3 ? 15 : 0,
+          status: step === 1 ? "HELD" : "RUNNING",
+          latitude: 18.971 + (step / 6) * (23.027 - 18.971),
+          longitude: 72.820 + (step / 6) * (72.601 - 72.820)
+        },
+        {
+          train_no: "20901",
+          train_name: "Mumbai-Gandhinagar Vande Bharat",
+          current_station: step <= 2 ? "BRC" : "ADI",
+          current_delay: 0,
+          status: "RUNNING",
+          latitude: 22.312 + (step / 6) * (23.027 - 22.312),
+          longitude: 73.181 + (step / 6) * (72.601 - 73.181)
+        },
+        {
+          train_no: "CONCOR-701",
+          train_name: "Container Cargo Freight",
+          current_station: "ST",
+          current_delay: step >= 4 ? 30 : 5,
+          status: step >= 4 ? "HELD_AT_LOOP" : "RUNNING",
+          latitude: 21.205,
+          longitude: 72.841
+        }
+      ];
+      const south = [
+        {
+          train_no: "12008",
+          train_name: "SBC-MAS Shatabdi Express",
+          current_station: step <= 2 ? "SBC" : step <= 4 ? "BWT" : "JTJ",
+          current_delay: step >= 3 ? 20 : 0,
+          status: step === 2 ? "HELD" : "RUNNING",
+          latitude: 12.978 + (step / 6) * (13.082 - 12.978),
+          longitude: 77.572 + (step / 6) * (80.275 - 77.572)
+        },
+        {
+          train_no: "20608",
+          train_name: "SBC-MAS Vande Bharat",
+          current_station: step <= 1 ? "JTJ" : "MAS",
+          current_delay: 0,
+          status: "RUNNING",
+          latitude: 12.571 + (step / 6) * (13.082 - 12.571),
+          longitude: 78.580 + (step / 6) * (80.275 - 78.580)
+        },
+        {
+          train_no: "BOXN-505",
+          train_name: "Steel Ore Cargo",
+          current_station: "BWT",
+          current_delay: step >= 3 ? 25 : 10,
+          status: step >= 3 ? "HELD_AT_LOOP" : "RUNNING",
+          latitude: 12.969,
+          longitude: 78.204
+        }
+      ];
+      return [...north, ...west, ...south];
+    }
+    
+    return trains;
+  };
+
+  const getStationsForZone = () => {
+    if (selectedZone === 'WEST') {
+      return {
+        "MMCT": { name: "Mumbai Central", x: 100, y_up: 70, y_down: 135 },
+        "ST": { name: "Surat", x: 280, y_up: 70, y_down: 135 },
+        "BRC": { name: "Vadodara Jn", x: 550, y_up: 70, y_down: 135 },
+        "ADI": { name: "Ahmedabad Jn", x: 800, y_up: 70, y_down: 135 }
+      };
+    }
+    if (selectedZone === 'SOUTH') {
+      return {
+        "SBC": { name: "KSR Bengaluru", x: 100, y_up: 70, y_down: 135 },
+        "BWT": { name: "Bangarapet", x: 280, y_up: 70, y_down: 135 },
+        "JTJ": { name: "Jolarpettai", x: 550, y_up: 70, y_down: 135 },
+        "MAS": { name: "Chennai Central", x: 800, y_up: 70, y_down: 135 }
+      };
+    }
+    return stations;
+  };
+
   // Leaflet map initialization
   useEffect(() => {
     if (viewMode === 'geo' && mapRef.current && !leafletInstance.current && window.L) {
@@ -161,31 +320,50 @@ export default function TelemetryMap({ trains, disruptions, onNextStep, scenario
 
       L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-      const stationCoords = [
+      // Station coordinates
+      const northCoords = [
         [28.643, 77.222], // NDLS
         [28.672, 77.436], // GZB
         [27.892, 78.078], // ALJN
         [26.448, 80.350]  // CNB
       ];
+      const westCoords = [
+        [18.971, 72.820], // MMCT
+        [21.205, 72.841], // ST
+        [22.312, 73.181], // BRC
+        [23.027, 72.601]  // ADI
+      ];
+      const southCoords = [
+        [12.978, 77.572], // SBC
+        [12.969, 78.204], // BWT
+        [12.571, 78.580], // JTJ
+        [13.082, 80.275]  // MAS
+      ];
 
-      // UP Track (Cyan)
-      L.polyline(stationCoords, {
-        color: '#00F0FF',
-        weight: 3,
-        opacity: 0.6,
-        dashArray: '5, 8'
-      }).addTo(map);
+      // Draw all tracks
+      L.polyline(northCoords, { color: '#00F0FF', weight: 3, opacity: 0.6, dashArray: '5, 8' }).addTo(map);
+      L.polyline(northCoords.map(c => [c[0] - 0.02, c[1] - 0.02]), { color: '#A855F7', weight: 3, opacity: 0.6, dashArray: '5, 8' }).addTo(map);
 
-      // DOWN Track (Purple)
-      L.polyline(stationCoords.map(c => [c[0] - 0.02, c[1] - 0.02]), {
-        color: '#A855F7',
-        weight: 3,
-        opacity: 0.6,
-        dashArray: '5, 8'
-      }).addTo(map);
+      L.polyline(westCoords, { color: '#00F0FF', weight: 3, opacity: 0.6, dashArray: '5, 8' }).addTo(map);
+      L.polyline(westCoords.map(c => [c[0] - 0.02, c[1] - 0.02]), { color: '#A855F7', weight: 3, opacity: 0.6, dashArray: '5, 8' }).addTo(map);
 
-      // Station Pins
-      Object.entries(stationsGeo).forEach(([code, station]) => {
+      L.polyline(southCoords, { color: '#00F0FF', weight: 3, opacity: 0.6, dashArray: '5, 8' }).addTo(map);
+      L.polyline(southCoords.map(c => [c[0] - 0.02, c[1] - 0.02]), { color: '#A855F7', weight: 3, opacity: 0.6, dashArray: '5, 8' }).addTo(map);
+
+      // Station Pins combined
+      const allStationsGeo = {
+        ...stationsGeo,
+        "MMCT": { name: "Mumbai Central", lat: 18.971, lng: 72.820 },
+        "ST": { name: "Surat", lat: 21.205, lng: 72.841 },
+        "BRC": { name: "Vadodara Jn", lat: 22.312, lng: 73.181 },
+        "ADI": { name: "Ahmedabad Jn", lat: 23.027, lng: 72.601 },
+        "SBC": { name: "KSR Bengaluru", lat: 12.978, lng: 77.572 },
+        "BWT": { name: "Bangarapet", lat: 12.969, lng: 78.204 },
+        "JTJ": { name: "Jolarpettai", lat: 12.571, lng: 78.580 },
+        "MAS": { name: "Chennai Central", lat: 13.082, lng: 80.275 }
+      };
+
+      Object.entries(allStationsGeo).forEach(([code, station]) => {
         const outerCircle = L.circleMarker([station.lat, station.lng], {
           radius: 7,
           color: '#ffffff',
@@ -213,29 +391,47 @@ export default function TelemetryMap({ trains, disruptions, onNextStep, scenario
     };
   }, [viewMode]);
 
+  // Pan and zoom map view dynamically based on selected zone
+  useEffect(() => {
+    if (leafletInstance.current && window.L) {
+      const map = leafletInstance.current;
+      if (selectedZone === 'NORTH') {
+        map.setView([27.5, 78.8], 7);
+      } else if (selectedZone === 'WEST') {
+        map.setView([21.0, 73.0], 7);
+      } else if (selectedZone === 'SOUTH') {
+        map.setView([12.8, 79.0], 8);
+      } else if (selectedZone === 'ALL') {
+        map.setView([21.5, 78.0], 5);
+      }
+    }
+  }, [selectedZone, viewMode]);
+
   // Update train markers on live geographic map
   useEffect(() => {
     if (viewMode === 'geo' && leafletInstance.current && window.L) {
       const L = window.L;
       const map = leafletInstance.current;
+      const activeTrains = getTrainsForZone();
 
-      trains.forEach(train => {
+      activeTrains.forEach(train => {
         const lat = train.latitude;
         const lng = train.longitude;
-        const isFreight = train.train_no === 'BOXN-902';
+        const isFreight = train.train_no === 'BOXN-902' || train.train_no === 'BOXN-505' || train.train_no === 'CONCOR-701';
         const isDelayed = train.current_delay > 0;
         const trainColor = isFreight ? 'var(--color-warning)' : isDelayed ? 'var(--color-danger)' : 'var(--color-accent)';
 
-        // Offset DOWN trains slightly so they align with the DOWN polyline
-        const latOffset = train.train_no === '22415' ? 0 : -0.02;
-        const lngOffset = train.train_no === '22415' ? 0 : -0.02;
+        // Offset DOWN trains slightly
+        const isUpTrain = train.train_no === '22415' || train.train_no === '20901' || train.train_no === '20608';
+        const latOffset = isUpTrain ? 0 : -0.02;
+        const lngOffset = isUpTrain ? 0 : -0.02;
 
         const tooltipContent = `
           <div style="font-family: monospace; font-size: 0.7rem; line-height: 1.3;">
             <strong style="color:#ffffff">${train.train_no}</strong><br/>
             <span style="color:${trainColor}">${train.train_name}</span><br/>
             Status: <strong>${train.status}</strong><br/>
-            Speed: <strong>${train.train_no === '22415' ? '130' : isFreight ? '65' : '110'} km/h</strong>
+            Speed: <strong>${isUpTrain ? '130' : isFreight ? '65' : '110'} km/h</strong>
             ${isDelayed ? `<br/><span style="color:var(--color-danger)">Delay: +${train.current_delay}m</span>` : ''}
           </div>
         `;
@@ -271,13 +467,13 @@ export default function TelemetryMap({ trains, disruptions, onNextStep, scenario
 
       // Cleanup removed trains
       Object.keys(markersRef.current).forEach(trainNo => {
-        if (!trains.some(t => t.train_no === trainNo)) {
+        if (!activeTrains.some(t => t.train_no === trainNo)) {
           markersRef.current[trainNo].remove();
           delete markersRef.current[trainNo];
         }
       });
     }
-  }, [trains, viewMode]);
+  }, [trains, viewMode, selectedZone]);
 
   const isSectionDisrupted = (fromCode, toCode) => {
     return disruptions.some(d => 
@@ -295,19 +491,35 @@ export default function TelemetryMap({ trains, disruptions, onNextStep, scenario
     return '';
   };
 
-  const getTrainPosition = (train) => {
+  const getTrainPosition = (train, currentStations) => {
     const lon = train.longitude;
     let x = 450;
     
-    if (lon <= 77.222) x = 100;
-    else if (lon <= 77.436) x = 100 + ((lon - 77.222) / (77.436 - 77.222)) * 180;
-    else if (lon <= 78.078) x = 280 + ((lon - 77.436) / (78.078 - 77.436)) * 270;
-    else if (lon <= 80.350) x = 550 + ((lon - 78.078) / (80.350 - 78.078)) * 250;
-    else x = 800;
+    if (selectedZone === 'WEST') {
+      if (lon >= 72.820) x = 100;
+      else if (lon >= 72.841) x = 100 + ((72.820 - lon) / (72.820 - 72.841)) * 180;
+      else if (lon >= 73.181) x = 280 + ((72.841 - lon) / (72.841 - 73.181)) * 270;
+      else if (lon >= 72.601) x = 550 + ((73.181 - lon) / (73.181 - 72.601)) * 250;
+      else x = 800;
+    } else if (selectedZone === 'SOUTH') {
+      if (lon <= 77.572) x = 100;
+      else if (lon <= 78.204) x = 100 + ((lon - 77.572) / (78.204 - 77.572)) * 180;
+      else if (lon <= 78.580) x = 280 + ((lon - 78.204) / (78.580 - 78.204)) * 270;
+      else if (lon <= 80.275) x = 550 + ((lon - 78.580) / (80.275 - 78.580)) * 250;
+      else x = 800;
+    } else {
+      if (lon <= 77.222) x = 100;
+      else if (lon <= 77.436) x = 100 + ((lon - 77.222) / (77.436 - 77.222)) * 180;
+      else if (lon <= 78.078) x = 280 + ((lon - 77.436) / (78.078 - 77.436)) * 270;
+      else if (lon <= 80.350) x = 550 + ((lon - 78.078) / (80.350 - 78.078)) * 250;
+      else x = 800;
+    }
     
-    let y = train.train_no === "22415" ? 70 : 135;
+    let y = (train.train_no === "22415" || train.train_no === "20901" || train.train_no === "20608") ? 70 : 135;
     let xOffset = 0;
-    if (train.train_no === "BOXN-902" && trains.some(t => t.train_no === "12002" && Math.abs(t.longitude - train.longitude) < 0.02)) {
+    const activeTrains = getTrainsForZone();
+    if ((train.train_no === "BOXN-902" || train.train_no === "BOXN-505" || train.train_no === "CONCOR-701") && 
+        activeTrains.some(t => (t.train_no === "12002" || t.train_no === "12008" || t.train_no === "12009") && Math.abs(t.longitude - train.longitude) < 0.02)) {
       xOffset = 18;
     }
 
@@ -328,9 +540,9 @@ export default function TelemetryMap({ trains, disruptions, onNextStep, scenario
     }
   };
 
-  const drawTrackSegment = (fromCode, toCode, yCoord, isUpLine) => {
-    const fromStation = stations[fromCode];
-    const toStation = stations[toCode];
+  const drawTrackSegment = (fromCode, toCode, yCoord, isUpLine, currentStations) => {
+    const fromStation = currentStations[fromCode];
+    const toStation = currentStations[toCode];
     const disruptionClass = getSegmentClass(fromCode, toCode);
     const trackColorClass = isUpLine ? 'up-line' : 'down-line';
     
@@ -359,14 +571,46 @@ export default function TelemetryMap({ trains, disruptions, onNextStep, scenario
       {/* Header Info */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
         <div>
-          <h3 style={{ fontSize: '1.2rem', fontWeight: 800, letterSpacing: '0.5px' }}>Sector North Live Telemetry Corridor</h3>
+          <h3 style={{ fontSize: '1.2rem', fontWeight: 800, letterSpacing: '0.5px' }}>
+            {selectedZone === 'ALL' ? 'All India Live Telemetry Network' : `Sector ${selectedZone.charAt(0) + selectedZone.slice(1).toLowerCase()} Live Telemetry Corridor`}
+          </h3>
           <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Interactive Indian Railways Kavach Interlocking Desk</p>
         </div>
         <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+          {/* Zone Selector dropdown */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'rgba(255,255,255,0.02)', padding: '4px 8px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+            <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', fontWeight: 'bold', textTransform: 'uppercase', marginRight: '5px' }}>Zone:</span>
+            <select 
+              value={selectedZone} 
+              onChange={(e) => {
+                const zone = e.target.value;
+                setSelectedZone(zone);
+                if (zone === 'ALL') setViewMode('geo');
+              }}
+              style={{
+                background: '#090d16',
+                border: '1px solid var(--border-color)',
+                borderRadius: '4px',
+                color: 'var(--color-text-main)',
+                fontSize: '0.65rem',
+                fontWeight: 'bold',
+                padding: '2px 6px',
+                cursor: 'pointer',
+                outline: 'none'
+              }}
+            >
+              <option value="NORTH">Northern (NR/NCR)</option>
+              <option value="WEST">Western (WR)</option>
+              <option value="SOUTH">Southern (SR/SWR)</option>
+              <option value="ALL">All India Grid</option>
+            </select>
+          </div>
+
           {/* View Mode Toggle */}
           <div className="toggle-group" style={{ display: 'flex', background: 'rgba(255,255,255,0.03)', padding: '2px', borderRadius: '6px', border: '1px solid var(--border-color)', marginRight: '10px' }}>
             <button 
               onClick={() => setViewMode('schematic')} 
+              disabled={selectedZone === 'ALL'}
               style={{
                 padding: '4px 10px',
                 fontSize: '0.65rem',
@@ -376,7 +620,8 @@ export default function TelemetryMap({ trains, disruptions, onNextStep, scenario
                 border: 'none',
                 borderRadius: '4px',
                 cursor: 'pointer',
-                transition: 'all 0.2s'
+                transition: 'all 0.2s',
+                opacity: selectedZone === 'ALL' ? 0.5 : 1
               }}
             >
               SCHEMATIC VIEW
@@ -407,149 +652,157 @@ export default function TelemetryMap({ trains, disruptions, onNextStep, scenario
 
       {/* SVG Railway Track Map or Geographic Map */}
       {viewMode === 'schematic' ? (
-        <div className="map-container" style={{ position: 'relative', background: 'var(--bg-terminal)', borderRadius: '10px', padding: '15px', border: '1px solid var(--border-color)', marginBottom: '20px' }}>
-          <svg viewBox="0 0 900 220" width="100%" height="190px" style={{ minWidth: '700px' }}>
-            <defs>
-              <filter id="svg-neon-glow" x="-20%" y="-20%" width="140%" height="140%">
-                <feGaussianBlur stdDeviation="4" result="blur" />
-                <feMerge>
-                  <feMergeNode in="blur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-              <pattern id="radar-grid" width="30" height="30" patternUnits="userSpaceOnUse">
-                <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(255, 255, 255, 0.01)" strokeWidth="1" />
-              </pattern>
-            </defs>
+        (() => {
+          const currentStations = getStationsForZone();
+          const activeTrains = getTrainsForZone();
+          return (
+            <div className="map-container" style={{ position: 'relative', background: 'var(--bg-terminal)', borderRadius: '10px', padding: '15px', border: '1px solid var(--border-color)', marginBottom: '20px' }}>
+              <svg viewBox="0 0 900 220" width="100%" height="190px" style={{ minWidth: '700px' }}>
+                <defs>
+                  <filter id="svg-neon-glow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feGaussianBlur stdDeviation="4" result="blur" />
+                    <feMerge>
+                      <feMergeNode in="blur" />
+                      <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                  </filter>
+                  <pattern id="radar-grid" width="30" height="30" patternUnits="userSpaceOnUse">
+                    <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(255, 255, 255, 0.01)" strokeWidth="1" />
+                  </pattern>
+                </defs>
 
-            <rect width="900" height="220" fill="url(#radar-grid)" />
+                <rect width="900" height="220" fill="url(#radar-grid)" />
 
-            <style>{`
-              .track-glow { stroke-width: 8; stroke-linecap: round; opacity: 0.12; transition: all 0.5s; }
-              .track-glow.up-line { stroke: var(--color-primary); }
-              .track-glow.down-line { stroke: var(--color-secondary); }
-              .track-glow.disrupted { stroke: var(--color-warning); opacity: 0.35; animation: pulse-glow 1.5s infinite; filter: url(#svg-neon-glow); }
-              .track-glow.disrupted.critical { stroke: var(--color-danger); opacity: 0.45; animation: pulse-glow-fast 1s infinite; filter: url(#svg-neon-glow); }
-              
-              .track-core { stroke-width: 2.5; stroke-linecap: round; stroke-dasharray: 6 5; transition: all 0.5s; }
-              .track-core.up-line { stroke: var(--color-primary); opacity: 0.5; }
-              .track-core.down-line { stroke: var(--color-secondary); opacity: 0.5; }
-              .track-core.disrupted { stroke: var(--color-warning); opacity: 0.8; animation: blink-yellow 1.5s infinite; }
-              .track-core.disrupted.critical { stroke: var(--color-danger); opacity: 0.95; animation: blink-red 1s infinite; }
-
-              .crossover-line { stroke: rgba(255, 255, 255, 0.06); stroke-width: 1.5; stroke-dasharray: 3 3; }
-              .crossover-line.active { stroke: var(--color-primary); opacity: 0.3; }
-
-              .station-outer { fill: #030712; stroke: rgba(255, 255, 255, 0.1); stroke-width: 1.5; cursor: pointer; transition: all 0.3s; }
-              .station-outer.active { stroke: var(--color-primary); }
-              .station-outer.danger { stroke: var(--color-danger); filter: url(#svg-neon-glow); }
-              .station-inner { fill: rgba(255, 255, 255, 0.15); transition: all 0.3s; }
-              .station-inner.active { fill: var(--color-primary); }
-              .station-inner.danger { fill: var(--color-danger); }
-              
-              .train-node { transition: all 0.8s cubic-bezier(0.25, 1, 0.5, 1); cursor: pointer; }
-              .train-node:hover { filter: drop-shadow(0px 0px 8px var(--color-primary)); }
-              .train-label-bg { fill: #090d16; stroke-width: 1; }
-              
-              @keyframes pulse-glow { 0%, 100% { opacity: 0.15; } 50% { opacity: 0.4; } }
-              @keyframes pulse-glow-fast { 0%, 100% { opacity: 0.25; } 50% { opacity: 0.6; } }
-              @keyframes blink-yellow { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
-              @keyframes blink-red { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
-            `}</style>
-
-            {/* Draw Station Crossovers */}
-            {Object.values(stations).map((s, idx) => (
-              <line 
-                key={`cross-${idx}`} 
-                x1={s.x} 
-                y1={s.y_up} 
-                x2={s.x} 
-                y2={s.y_down} 
-                className={`crossover-line ${disruptions.some(d => d.status === 'ACTIVE' && d.section_from === Object.keys(stations)[idx]) ? 'active' : ''}`}
-              />
-            ))}
-
-            {/* UP Line Segments */}
-            {drawTrackSegment("NDLS", "GZB", 70, true)}
-            {drawTrackSegment("GZB", "ALJN", 70, true)}
-            {drawTrackSegment("ALJN", "CNB", 70, true)}
-
-            {/* DOWN Line Segments */}
-            {drawTrackSegment("NDLS", "GZB", 135, false)}
-            {drawTrackSegment("GZB", "ALJN", 135, false)}
-            {drawTrackSegment("ALJN", "CNB", 135, false)}
-
-            {/* Station Platform Nodes */}
-            {Object.entries(stations).map(([code, station]) => {
-              const disp = disruptions.find(d => d.status === 'ACTIVE' && d.section_from === code);
-              const hasDisruption = !!disp;
-
-              let outerClass = hasDisruption ? "station-outer danger" : "station-outer active";
-              let innerClass = hasDisruption ? "station-inner danger" : "station-inner active";
-
-              return (
-                <g key={code} onClick={() => hasDisruption ? fetchDisruptionDetails(disp) : null}>
-                  <rect x={station.x - 4} y={station.y_up - 6} width="8" height={station.y_down - station.y_up + 12} rx="2" fill="rgba(255, 255, 255, 0.02)" stroke="rgba(255, 255, 255, 0.05)" strokeWidth="1" />
+                <style>{`
+                  .track-glow { stroke-width: 8; stroke-linecap: round; opacity: 0.12; transition: all 0.5s; }
+                  .track-glow.up-line { stroke: var(--color-primary); }
+                  .track-glow.down-line { stroke: var(--color-secondary); }
+                  .track-glow.disrupted { stroke: var(--color-warning); opacity: 0.35; animation: pulse-glow 1.5s infinite; filter: url(#svg-neon-glow); }
+                  .track-glow.disrupted.critical { stroke: var(--color-danger); opacity: 0.45; animation: pulse-glow-fast 1s infinite; filter: url(#svg-neon-glow); }
                   
-                  <circle cx={station.x} cy={station.y_up} r="8" className={outerClass} />
-                  <circle cx={station.x} cy={station.y_up} r="3.5" className={innerClass} />
+                  .track-core { stroke-width: 2.5; stroke-linecap: round; stroke-dasharray: 6 5; transition: all 0.5s; }
+                  .track-core.up-line { stroke: var(--color-primary); opacity: 0.5; }
+                  .track-core.down-line { stroke: var(--color-secondary); opacity: 0.5; }
+                  .track-core.disrupted { stroke: var(--color-warning); opacity: 0.8; animation: blink-yellow 1.5s infinite; }
+                  .track-core.disrupted.critical { stroke: var(--color-danger); opacity: 0.95; animation: blink-red 1s infinite; }
 
-                  <circle cx={station.x} cy={station.y_down} r="8" className={outerClass} />
-                  <circle cx={station.x} cy={station.y_down} r="3.5" className={innerClass} />
+                  .crossover-line { stroke: rgba(255, 255, 255, 0.06); stroke-width: 1.5; stroke-dasharray: 3 3; }
+                  .crossover-line.active { stroke: var(--color-primary); opacity: 0.3; }
 
-                  <rect x={station.x - 45} y="180" width="90" height="26" rx="4" fill="rgba(3, 5, 10, 0.85)" stroke="var(--border-color)" strokeWidth="1" />
-                  <text x={station.x} y="192" textAnchor="middle" fill="var(--color-text-main)" fontSize="0.65rem" fontWeight="800" letterSpacing="0.5px">{station.name}</text>
-                  <text x={station.x} y="203" textAnchor="middle" fill="var(--color-primary)" fontSize="0.55rem" fontWeight="600" letterSpacing="1px">{code}</text>
-                </g>
-              );
-            })}
-
-            {/* Active Train Nodes */}
-            {trains.map((train) => {
-              const pos = getTrainPosition(train);
-              const isDelayed = train.current_delay > 0;
-              const isFreight = train.train_no === "BOXN-902";
-              
-              const trainColor = isFreight ? "var(--color-warning)" : isDelayed ? "var(--color-danger)" : "var(--color-accent)";
-              
-              return (
-                <g key={train.train_no} className="train-node" transform={`translate(${pos.x}, ${pos.y})`} onClick={() => { setSelectedTrain(train); setSelectedDisruption(null); }}>
-                  {/* Double Pulsing Radar Rings using native SVG <animate> */}
-                  <circle cx="0" cy="0" r="7.5" fill="none" stroke={trainColor} strokeWidth="1.2" opacity="0.8">
-                    <animate attributeName="r" values="7.5;22" dur="2s" repeatCount="indefinite" />
-                    <animate attributeName="opacity" values="0.8;0" dur="2s" repeatCount="indefinite" />
-                  </circle>
-                  <circle cx="0" cy="0" r="7.5" fill="none" stroke={trainColor} strokeWidth="1.2" opacity="0.8">
-                    <animate attributeName="r" values="7.5;22" dur="2s" begin="1s" repeatCount="indefinite" />
-                    <animate attributeName="opacity" values="0.8;0" dur="2s" begin="1s" repeatCount="indefinite" />
-                  </circle>
-
-                  {/* Train Core Node */}
-                  <circle cx="0" cy="0" r="8" fill={trainColor} filter="url(#svg-neon-glow)" />
+                  .station-outer { fill: #030712; stroke: rgba(255, 255, 255, 0.1); stroke-width: 1.5; cursor: pointer; transition: all 0.3s; }
+                  .station-outer.active { stroke: var(--color-primary); }
+                  .station-outer.danger { stroke: var(--color-danger); filter: url(#svg-neon-glow); }
+                  .station-inner { fill: rgba(255, 255, 255, 0.15); transition: all 0.3s; }
+                  .station-inner.active { fill: var(--color-primary); }
+                  .station-inner.danger { fill: var(--color-danger); }
                   
-                  {/* Direction Chevrons (UP: ▶, DOWN: ◀) */}
-                  {pos.y === 70 ? (
-                    <path d="M-1.5,-3 L2,0 L-1.5,3" fill="none" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                  ) : (
-                    <path d="M1.5,-3 L-2,0 L1.5,3" fill="none" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                  )}
+                  .train-node { transition: all 0.8s cubic-bezier(0.25, 1, 0.5, 1); cursor: pointer; }
+                  .train-node:hover { filter: drop-shadow(0px 0px 8px var(--color-primary)); }
+                  .train-label-bg { fill: #090d16; stroke-width: 1; }
+                  
+                  @keyframes pulse-glow { 0%, 100% { opacity: 0.15; } 50% { opacity: 0.4; } }
+                  @keyframes pulse-glow-fast { 0%, 100% { opacity: 0.25; } 50% { opacity: 0.6; } }
+                  @keyframes blink-yellow { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+                  @keyframes blink-red { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+                `}</style>
 
-                  <g transform={`translate(0, ${pos.y === 70 ? -24 : 24})`}>
-                    <rect x="-35" y="-10" width="70" height="15" rx="3" className="train-label-bg" fill="#030712" stroke={trainColor} strokeWidth="1" />
-                    <text x="0" y="0.5" textAnchor="middle" fill="var(--color-text-main)" fontSize="0.55rem" fontWeight="800" letterSpacing="0.5px">
-                      {train.train_no}
-                    </text>
-                    {isDelayed && (
-                      <text x="0" y="10" textAnchor="middle" fill="var(--color-danger)" fontSize="0.45rem" fontWeight="700">
-                        +{train.current_delay}m
-                      </text>
-                    )}
-                  </g>
-                </g>
-              );
-            })}
-          </svg>
-        </div>
+                {/* Draw Station Crossovers */}
+                {Object.values(currentStations).map((s, idx) => (
+                  <line 
+                    key={`cross-${idx}`} 
+                    x1={s.x} 
+                    y1={s.y_up} 
+                    x2={s.x} 
+                    y2={s.y_down} 
+                    className={`crossover-line ${disruptions.some(d => d.status === 'ACTIVE' && d.section_from === Object.keys(currentStations)[idx]) ? 'active' : ''}`}
+                  />
+                ))}
+
+                {/* UP Line Segments */}
+                {Object.keys(currentStations).map((code, idx, arr) => {
+                  if (idx === arr.length - 1) return null;
+                  return drawTrackSegment(code, arr[idx+1], 70, true, currentStations);
+                })}
+
+                {/* DOWN Line Segments */}
+                {Object.keys(currentStations).map((code, idx, arr) => {
+                  if (idx === arr.length - 1) return null;
+                  return drawTrackSegment(code, arr[idx+1], 135, false, currentStations);
+                })}
+
+                {/* Station Platform Nodes */}
+                {Object.entries(currentStations).map(([code, station]) => {
+                  const disp = disruptions.find(d => d.status === 'ACTIVE' && d.section_from === code);
+                  const hasDisruption = !!disp;
+
+                  let outerClass = hasDisruption ? "station-outer danger" : "station-outer active";
+                  let innerClass = hasDisruption ? "station-inner danger" : "station-inner active";
+
+                  return (
+                    <g key={code} onClick={() => hasDisruption ? fetchDisruptionDetails(disp) : null}>
+                      <rect x={station.x - 4} y={station.y_up - 6} width="8" height={station.y_down - station.y_up + 12} rx="2" fill="rgba(255, 255, 255, 0.02)" stroke="rgba(255, 255, 255, 0.05)" strokeWidth="1" />
+                      
+                      <circle cx={station.x} cy={station.y_up} r="8" className={outerClass} />
+                      <circle cx={station.x} cy={station.y_up} r="3.5" className={innerClass} />
+
+                      <circle cx={station.x} cy={station.y_down} r="8" className={outerClass} />
+                      <circle cx={station.x} cy={station.y_down} r="3.5" className={innerClass} />
+
+                      <rect x={station.x - 45} y="180" width="90" height="26" rx="4" fill="rgba(3, 5, 10, 0.85)" stroke="var(--border-color)" strokeWidth="1" />
+                      <text x={station.x} y="192" textAnchor="middle" fill="var(--color-text-main)" fontSize="0.65rem" fontWeight="800" letterSpacing="0.5px">{station.name}</text>
+                      <text x={station.x} y="203" textAnchor="middle" fill="var(--color-primary)" fontSize="0.55rem" fontWeight="600" letterSpacing="1px">{code}</text>
+                    </g>
+                  );
+                })}
+
+                {/* Active Train Nodes */}
+                {activeTrains.map((train) => {
+                  const pos = getTrainPosition(train, currentStations);
+                  const isDelayed = train.current_delay > 0;
+                  const isFreight = train.train_no === "BOXN-902" || train.train_no === "BOXN-505" || train.train_no === "CONCOR-701";
+                  
+                  const trainColor = isFreight ? "var(--color-warning)" : isDelayed ? "var(--color-danger)" : "var(--color-accent)";
+                  
+                  return (
+                    <g key={train.train_no} className="train-node" transform={`translate(${pos.x}, ${pos.y})`} onClick={() => { setSelectedTrain(train); setSelectedDisruption(null); }}>
+                      {/* Double Pulsing Radar Rings using native SVG <animate> */}
+                      <circle cx="0" cy="0" r="7.5" fill="none" stroke={trainColor} strokeWidth="1.2" opacity="0.8">
+                        <animate attributeName="r" values="7.5;22" dur="2s" repeatCount="indefinite" />
+                        <animate attributeName="opacity" values="0.8;0" dur="2s" repeatCount="indefinite" />
+                      </circle>
+                      <circle cx="0" cy="0" r="7.5" fill="none" stroke={trainColor} strokeWidth="1.2" opacity="0.8">
+                        <animate attributeName="r" values="7.5;22" dur="2s" begin="1s" repeatCount="indefinite" />
+                        <animate attributeName="opacity" values="0.8;0" dur="2s" begin="1s" repeatCount="indefinite" />
+                      </circle>
+
+                      {/* Train Core Node */}
+                      <circle cx="0" cy="0" r="8" fill={trainColor} filter="url(#svg-neon-glow)" />
+                      
+                      {/* Direction Chevrons (UP: ▶, DOWN: ◀) */}
+                      {pos.y === 70 ? (
+                        <path d="M-1.5,-3 L2,0 L-1.5,3" fill="none" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                      ) : (
+                        <path d="M1.5,-3 L-2,0 L1.5,3" fill="none" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                      )}
+
+                      <g transform={`translate(0, ${pos.y === 70 ? -24 : 24})`}>
+                        <rect x="-35" y="-10" width="70" height="15" rx="3" className="train-label-bg" fill="#030712" stroke={trainColor} strokeWidth="1" />
+                        <text x="0" y="0.5" textAnchor="middle" fill="var(--color-text-main)" fontSize="0.55rem" fontWeight="800" letterSpacing="0.5px">
+                          {train.train_no}
+                        </text>
+                        {isDelayed && (
+                          <text x="0" y="10" textAnchor="middle" fill="var(--color-danger)" fontSize="0.45rem" fontWeight="700">
+                            +{train.current_delay}m
+                          </text>
+                        )}
+                      </g>
+                    </g>
+                  );
+                })}
+              </svg>
+            </div>
+          );
+        })()
       ) : (
         <div className="map-container" style={{ position: 'relative', background: '#030712', borderRadius: '10px', height: '190px', border: '1px solid var(--border-color)', marginBottom: '20px', overflow: 'hidden' }}>
           <div ref={mapRef} style={{ width: '100%', height: '100%' }} />

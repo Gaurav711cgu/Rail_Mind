@@ -63,6 +63,24 @@ async def get_current_active_user(current_user: DBUser = Depends(get_current_use
     return current_user
 
 
+def require_roles(*allowed_roles: str):
+    if not settings.ENFORCE_RBAC:
+        async def bypass_role_check():
+            return None
+
+        return bypass_role_check
+
+    async def role_check(current_user: DBUser = Depends(get_current_active_user)) -> DBUser:
+        if current_user.role not in allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Role '{current_user.role}' is not allowed for this action",
+            )
+        return current_user
+
+    return role_check
+
+
 @router.post("/register", response_model=User)
 async def register_user(user_in: UserLogin, email: str = "default@railmind.gov.in", role: str = "PASSENGER", zone: Optional[str] = "NR", db: AsyncSession = Depends(get_db)):
     # Check if user already exists
@@ -152,4 +170,3 @@ async def get_operator_performance():
         "kavach_override_count": 1,
         "last_tamper_check": datetime.utcnow().isoformat()
     }
-

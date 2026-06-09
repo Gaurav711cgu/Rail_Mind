@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     # Security
     SECRET_KEY: str = "SUPER_SECRET_SECURITY_HASH_KEY_RAILMIND_2026_GRAND_FINALS"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days for hackathon development
+    ENFORCE_RBAC: bool = False
     
     # Server / Hosts
     ALLOWED_HOSTS: List[str] = ["*"]
@@ -22,6 +23,13 @@ class Settings(BaseSettings):
     
     # Railway Settings
     USD_INR_RATE: float = 83.5
+    LIVE_DATA_PROVIDER: str = "rapidapi-irctc"
+    LIVE_TRAIN_WATCHLIST: str = "19038,12936,12002,22415"
+    REAL_DATA_REQUIRED: bool = False
+    RAPIDAPI_IRCTC_BASE_URL: str = "https://irctc1.p.rapidapi.com"
+    RAPIDAPI_IRCTC_HOST: str = "irctc1.p.rapidapi.com"
+    RAPIDAPI_IRCTC_KEY: str = ""
+    RAPIDAPI_IRCTC_TIMEOUT_SECONDS: float = 10.0
     
     # Hackathon Presentation Mode
     SCENARIO_MODE: bool = True  # Activates the high-fidelity mock engine

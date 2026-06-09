@@ -8,6 +8,7 @@ from app.config import settings
 from app.db.database import get_db, DBDisruption
 from app.core.scenario_engine import scenario_engine
 from app.models.disruption import Disruption
+from app.api.v1.routes.auth import require_roles
 
 router = APIRouter()
 
@@ -109,7 +110,11 @@ async def get_disruption(disruption_id: str, db: AsyncSession = Depends(get_db))
 
 
 @router.post("", response_model=Disruption)
-async def create_disruption(disruption: Disruption, db: AsyncSession = Depends(get_db)):
+async def create_disruption(
+    disruption: Disruption,
+    db: AsyncSession = Depends(get_db),
+    _controller=Depends(require_roles("CONTROLLER", "ADMIN")),
+):
     db_disruption = DBDisruption(
         id=disruption.id or f"disp-{int(datetime.utcnow().timestamp())}",
         train_no=disruption.train_no,
