@@ -7,10 +7,8 @@ Verifies:
 - The payload contains ``agents`` and ``trains`` keys.
 """
 
-import asyncio
 import pytest
 from starlette.testclient import TestClient
-from starlette.websockets import WebSocketDisconnect
 
 from app.main import app
 

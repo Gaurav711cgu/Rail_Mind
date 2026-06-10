@@ -33,7 +33,9 @@ async def guarded_session():
     @event.listens_for(test_engine.sync_engine, "before_cursor_execute")
     def _guard(conn, cursor, statement, parameters, context, executemany):
         normalised = statement.upper()
-        if ("UPDATE" in normalised or "DELETE" in normalised) and "AUDIT_LOG" in normalised:
+        if (
+            "UPDATE" in normalised or "DELETE" in normalised
+        ) and "AUDIT_LOG" in normalised:
             raise PermissionError(
                 "Audit log is append-only: UPDATE/DELETE operations are forbidden."
             )
@@ -42,7 +44,9 @@ async def guarded_session():
         await conn.run_sync(Base.metadata.create_all)
 
     session_factory = async_sessionmaker(
-        bind=test_engine, class_=AsyncSession, expire_on_commit=False,
+        bind=test_engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
     )
 
     async with session_factory() as session:
@@ -67,9 +71,7 @@ async def test_insert_audit_log_succeeds(guarded_session):
     guarded_session.add(entry)
     await guarded_session.commit()
 
-    result = await guarded_session.execute(
-        text("SELECT COUNT(*) FROM audit_log")
-    )
+    result = await guarded_session.execute(text("SELECT COUNT(*) FROM audit_log"))
     assert result.scalar() == 1
 
 
@@ -114,7 +116,5 @@ async def test_delete_audit_log_raises(guarded_session):
     await guarded_session.commit()
 
     with pytest.raises(PermissionError, match="append-only"):
-        await guarded_session.execute(
-            text("DELETE FROM audit_log WHERE id = 1")
-        )
+        await guarded_session.execute(text("DELETE FROM audit_log WHERE id = 1"))
         await guarded_session.commit()

@@ -13,19 +13,23 @@ import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
+import tempfile
+
 from app.main import app
 from app.db.database import Base, get_db
 from app.config import settings
 
-TEST_DB_PATH = Path("/private/tmp/railmind_test.db")
+TEST_DB_PATH = Path(tempfile.gettempdir()) / "railmind_test.db"
 TEST_DATABASE_URL = f"sqlite+aiosqlite:///{TEST_DB_PATH}"
 
 # Force test DB settings before anything imports them
 settings.DATABASE_URL = TEST_DATABASE_URL
-settings.REDIS_URL = "redis://localhost:6379/0"    # falls back to in-memory if not running
+settings.REDIS_URL = (
+    "redis://localhost:6379/0"  # falls back to in-memory if not running
+)
 settings.SCENARIO_MODE = True
 settings.ENFORCE_RBAC = True
-settings.ANTHROPIC_API_KEY = ""                    # LLM disabled in tests
+settings.ANTHROPIC_API_KEY = ""  # LLM disabled in tests
 
 TEST_ENGINE = create_async_engine(
     TEST_DATABASE_URL,
@@ -86,6 +90,7 @@ async def client(db_session):
 # --------------------------------------------------------------------------- #
 #  Shared test data factories                                                  #
 # --------------------------------------------------------------------------- #
+
 
 def make_train(
     train_no: str = "12002",

@@ -1,6 +1,7 @@
 import pytest
 from httpx import AsyncClient
 
+
 @pytest.mark.asyncio
 async def test_health_endpoints(client: AsyncClient):
     response = await client.get("/api/v1/health")
@@ -28,12 +29,13 @@ async def test_health_endpoints(client: AsyncClient):
     assert system_data["components"]["database"] == "connected"
     assert "test_coverage" in system_data
 
+
 @pytest.mark.asyncio
 async def test_auth_flow(client: AsyncClient):
     # Register a test user
     reg_response = await client.post(
         "/api/v1/auth/register",
-        json={"username": "test_controller", "password": "securepassword123"}
+        json={"username": "test_controller", "password": "securepassword123"},
     )
     assert reg_response.status_code == 200
     reg_data = reg_response.json()
@@ -42,7 +44,7 @@ async def test_auth_flow(client: AsyncClient):
     # Login
     login_response = await client.post(
         "/api/v1/auth/login",
-        json={"username": "test_controller", "password": "securepassword123"}
+        json={"username": "test_controller", "password": "securepassword123"},
     )
     assert login_response.status_code == 200
     login_data = login_response.json()
@@ -52,13 +54,13 @@ async def test_auth_flow(client: AsyncClient):
 
     # Refresh token
     refresh_response = await client.post(
-        "/api/v1/auth/refresh",
-        json={"refresh_token": login_data["refresh_token"]}
+        "/api/v1/auth/refresh", json={"refresh_token": login_data["refresh_token"]}
     )
     assert refresh_response.status_code == 200
     refresh_data = refresh_response.json()
     assert "access_token" in refresh_data
     assert "refresh_token" in refresh_data
+
 
 @pytest.mark.asyncio
 async def test_train_endpoints(client: AsyncClient):
@@ -74,6 +76,7 @@ async def test_train_endpoints(client: AsyncClient):
     data_12002 = response_12002.json()
     assert data_12002["train_no"] == "12002"
     assert len(data_12002["route"]) > 0
+
 
 @pytest.mark.asyncio
 async def test_recommendations_and_rerouting(client: AsyncClient):
@@ -92,7 +95,7 @@ async def test_recommendations_and_rerouting(client: AsyncClient):
     # Suggest rerouting path
     response_reroute = await client.post(
         "/api/v1/rerouting/suggest",
-        json={"from_station": "NDLS", "to_station": "ALJN", "train_no": "12002"}
+        json={"from_station": "NDLS", "to_station": "ALJN", "train_no": "12002"},
     )
     assert response_reroute.status_code == 200
     reroute_data = response_reroute.json()
