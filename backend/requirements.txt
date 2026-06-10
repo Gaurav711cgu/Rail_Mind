@@ -34,6 +34,8 @@ scikit-learn>=1.4.0
 numpy>=1.26.0
 pandas>=2.2.0
 joblib>=1.4.0
+shap>=0.45.0
+
 
 # Graph engine (cascade BFS)
 networkx>=3.3
