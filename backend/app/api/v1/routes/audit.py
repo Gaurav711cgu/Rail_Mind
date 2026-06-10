@@ -12,6 +12,7 @@ from app.models.audit import AuditLogEntry, AuditVerification
 
 router = APIRouter()
 
+
 # Helper to verify a single record hash self-consistency
 def calculate_content_hash(entry: DBAuditEntry) -> str:
     # Deterministic payload based on content fields
@@ -24,7 +25,7 @@ async def list_audit_logs(db: AsyncSession = Depends(get_db)):
     # Order by ID asc to read chronological chain
     result = await db.execute(select(DBAuditEntry).order_by(DBAuditEntry.id.asc()))
     db_entries = result.scalars().all()
-    
+
     if not db_entries and settings.SCENARIO_MODE:
         # Fallback to current memory logs if database has not been advanced/synced yet
         state = scenario_engine.get_state()
@@ -41,12 +42,12 @@ async def list_audit_logs(db: AsyncSession = Depends(get_db)):
                     confidence=a["confidence"],
                     timestamp=datetime.utcnow(),
                     prev_hash=prev_h,
-                    current_hash=a["hash"]
+                    current_hash=a["hash"],
                 )
             )
             prev_h = a["hash"]
         return result_entries
-        
+
     return [
         AuditLogEntry(
             id=str(e.id),
@@ -57,7 +58,7 @@ async def list_audit_logs(db: AsyncSession = Depends(get_db)):
             confidence=e.confidence,
             timestamp=e.timestamp,
             prev_hash=e.prev_hash,
-            current_hash=e.current_hash
+            current_hash=e.current_hash,
         )
         for e in db_entries
     ]
@@ -67,7 +68,7 @@ async def list_audit_logs(db: AsyncSession = Depends(get_db)):
 async def verify_audit_chain(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(DBAuditEntry).order_by(DBAuditEntry.id.asc()))
     db_entries = result.scalars().all()
-    
+
     # If no entries, it's verified (empty chain)
     if not db_entries:
         return AuditVerification(
@@ -79,34 +80,36 @@ async def verify_audit_chain(db: AsyncSession = Depends(get_db)):
             links_valid=True,
             signatures_valid=True,
             timestamps_valid=True,
-            payloads_valid=True
+            payloads_valid=True,
         )
-        
+
     corrupted = []
     genesis_valid = True
     links_valid = True
     timestamps_valid = True
-    
+
     # 1. Verify genesis block prev_hash
-    genesis_expected = "0000000000000000000000000000000000000000000000000000000000000000"
+    genesis_expected = (
+        "0000000000000000000000000000000000000000000000000000000000000000"
+    )
     if db_entries[0].prev_hash != genesis_expected:
         corrupted.append(str(db_entries[0].id))
         genesis_valid = False
-        
+
     # 2. Verify all link structures and timestamps
     for i in range(1, len(db_entries)):
         current = db_entries[i]
-        previous = db_entries[i-1]
-        
+        previous = db_entries[i - 1]
+
         if current.prev_hash != previous.current_hash:
             corrupted.append(str(current.id))
             links_valid = False
-            
+
         if current.timestamp < previous.timestamp:
             timestamps_valid = False
-            
+
     chain_valid = len(corrupted) == 0
-    
+
     return AuditVerification(
         chain_valid=chain_valid,
         last_verified=datetime.utcnow(),
@@ -116,7 +119,7 @@ async def verify_audit_chain(db: AsyncSession = Depends(get_db)):
         links_valid=links_valid,
         signatures_valid=True,
         timestamps_valid=timestamps_valid,
-        payloads_valid=True
+        payloads_valid=True,
     )
 
 
@@ -125,12 +128,12 @@ async def get_audit_statistics(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(DBAuditEntry))
     db_entries = result.scalars().all()
     count = len(db_entries) if db_entries else 0
-    
+
     # If in scenario mode, count can be fetched from memory
     if count == 0 and settings.SCENARIO_MODE:
         state = scenario_engine.get_state()
         count = len(state["audit_entries"])
-        
+
     return {
         "total_blocks_sealed": count,
         "average_seal_time_seconds": 0.85,
@@ -142,7 +145,6 @@ async def get_audit_statistics(db: AsyncSession = Depends(get_db)):
             "ConflictDetector": max(1, int(count * 0.2)),
             "CascadePredictor": max(1, int(count * 0.2)),
             "DispatchAgent": max(1, int(count * 0.2)),
-            "NotificationAgent": max(1, int(count * 0.1))
-        }
+            "NotificationAgent": max(1, int(count * 0.1)),
+        },
     }
-

@@ -30,13 +30,13 @@ class ScenarioEngine:
             "disruptions": step_data["disruptions"],
             "recommendations": step_data["recommendations"],
             "logs": step_data["logs"],
-            "audit_entries": step_data["audit_entries"]
+            "audit_entries": step_data["audit_entries"],
         }
 
     def _init_scenario_steps(self):
         # We will create pre-defined high-fidelity operational states for the demo
         self.steps = {}
-        
+
         # Step 0: Nominal State
         self.steps[0] = {
             "title": "Nominal Operation — Sector North",
@@ -49,7 +49,7 @@ class ScenarioEngine:
                     "current_delay": 0,
                     "status": "BOARDING",
                     "latitude": 28.643,
-                    "longitude": 77.222
+                    "longitude": 77.222,
                 },
                 {
                     "train_no": "22415",
@@ -58,7 +58,7 @@ class ScenarioEngine:
                     "current_delay": 0,
                     "status": "RUNNING",
                     "latitude": 27.892,
-                    "longitude": 78.078
+                    "longitude": 78.078,
                 },
                 {
                     "train_no": "BOXN-902",
@@ -67,17 +67,17 @@ class ScenarioEngine:
                     "current_delay": 5,
                     "status": "RUNNING",
                     "latitude": 28.672,
-                    "longitude": 77.436
-                }
+                    "longitude": 77.436,
+                },
             ],
             "disruptions": [],
             "recommendations": [],
             "logs": [
                 "[MonitorAgent] Ingestion check completed. 3 active trains tracked in Sector North.",
                 "[ConflictDetector] No route conflicts detected. Capacity utilization: 34%.",
-                "[AuditAgent] Nominal state snapshot verified. Hash chain matches signature."
+                "[AuditAgent] Nominal state snapshot verified. Hash chain matches signature.",
             ],
-            "audit_entries": []
+            "audit_entries": [],
         }
 
         # Step 1: Disruption Detected (Signal Failure)
@@ -92,7 +92,7 @@ class ScenarioEngine:
                     "current_delay": 25,
                     "status": "HELD",
                     "latitude": 28.643,
-                    "longitude": 77.222
+                    "longitude": 77.222,
                 },
                 {
                     "train_no": "22415",
@@ -101,7 +101,7 @@ class ScenarioEngine:
                     "current_delay": 0,
                     "status": "RUNNING",
                     "latitude": 27.892,
-                    "longitude": 78.078
+                    "longitude": 78.078,
                 },
                 {
                     "train_no": "BOXN-902",
@@ -110,8 +110,8 @@ class ScenarioEngine:
                     "current_delay": 5,
                     "status": "RUNNING",
                     "latitude": 28.672,
-                    "longitude": 77.436
-                }
+                    "longitude": 77.436,
+                },
             ],
             "disruptions": [
                 {
@@ -122,7 +122,7 @@ class ScenarioEngine:
                     "disruption_type": "SIGNAL_FAILURE",
                     "severity": "MEDIUM",
                     "cascade_depth": 0,
-                    "status": "ACTIVE"
+                    "status": "ACTIVE",
                 }
             ],
             "recommendations": [],
@@ -130,7 +130,8 @@ class ScenarioEngine:
                 "[MonitorAgent] ANOMALY: Train 12002 departure delay exceeded 20m variance thresholds.",
                 "[MonitorAgent] Source verified: Interlocking status code 0x4F (Red Alert).",
                 "[ConflictDetector] Creating section disruption alert for route NDLS -> GZB.",
-                "[AuditAgent] Logged disruption disp-001. Current Hash: " + self._hash("disp-001-step1")
+                "[AuditAgent] Logged disruption disp-001. Current Hash: "
+                + self._hash("disp-001-step1"),
             ],
             "audit_entries": [
                 {
@@ -139,9 +140,9 @@ class ScenarioEngine:
                     "target": "12002",
                     "reasoning": "Train 12002 held at platform 3 due to exit interlocking failure. Delay: 25 min.",
                     "confidence": 1.0,
-                    "hash": self._hash("disp-001-step1")
+                    "hash": self._hash("disp-001-step1"),
                 }
-            ]
+            ],
         }
 
         # Step 2: Route Conflict Detection
@@ -156,7 +157,7 @@ class ScenarioEngine:
                     "current_delay": 35,
                     "status": "HELD",
                     "latitude": 28.643,
-                    "longitude": 77.222
+                    "longitude": 77.222,
                 },
                 {
                     "train_no": "22415",
@@ -165,7 +166,7 @@ class ScenarioEngine:
                     "current_delay": 0,
                     "status": "RUNNING",
                     "latitude": 27.892,
-                    "longitude": 78.078
+                    "longitude": 78.078,
                 },
                 {
                     "train_no": "BOXN-902",
@@ -174,8 +175,8 @@ class ScenarioEngine:
                     "current_delay": 10,
                     "status": "APPROACHING_CONFLICT",
                     "latitude": 28.672,
-                    "longitude": 77.436
-                }
+                    "longitude": 77.436,
+                },
             ],
             "disruptions": [
                 {
@@ -186,14 +187,15 @@ class ScenarioEngine:
                     "disruption_type": "SIGNAL_FAILURE",
                     "severity": "HIGH",
                     "cascade_depth": 1,
-                    "status": "ACTIVE"
+                    "status": "ACTIVE",
                 }
             ],
             "recommendations": [],
             "logs": [
                 "[ConflictDetector] Downstream path conflict calculated on GZB-ALJN section between 12002 and BOXN-902.",
                 "[ConflictDetector] Overlap window: 19:40 - 20:15. P(conflict) = 0.94.",
-                "[AuditAgent] Logged route conflict event. Current Hash: " + self._hash("conflict-step2")
+                "[AuditAgent] Logged route conflict event. Current Hash: "
+                + self._hash("conflict-step2"),
             ],
             "audit_entries": [
                 {
@@ -202,9 +204,9 @@ class ScenarioEngine:
                     "target": "GZB-ALJN Section",
                     "reasoning": "BOXN-902 occupancy conflicts with rescheduled 12002 path. Safety separation rules violated.",
                     "confidence": 0.94,
-                    "hash": self._hash("conflict-step2")
+                    "hash": self._hash("conflict-step2"),
                 }
-            ]
+            ],
         }
 
         # Step 3: Cascade Delay Prediction
@@ -219,7 +221,7 @@ class ScenarioEngine:
                     "current_delay": 40,
                     "status": "HELD",
                     "latitude": 28.643,
-                    "longitude": 77.222
+                    "longitude": 77.222,
                 },
                 {
                     "train_no": "22415",
@@ -228,7 +230,7 @@ class ScenarioEngine:
                     "current_delay": 15,
                     "status": "DELAYED",
                     "latitude": 27.892,
-                    "longitude": 78.078
+                    "longitude": 78.078,
                 },
                 {
                     "train_no": "BOXN-902",
@@ -237,8 +239,8 @@ class ScenarioEngine:
                     "current_delay": 10,
                     "status": "APPROACHING_CONFLICT",
                     "latitude": 28.672,
-                    "longitude": 77.436
-                }
+                    "longitude": 77.436,
+                },
             ],
             "disruptions": [
                 {
@@ -249,7 +251,7 @@ class ScenarioEngine:
                     "disruption_type": "DELAY_CASCADE",
                     "severity": "CRITICAL",
                     "cascade_depth": 3,
-                    "status": "ACTIVE"
+                    "status": "ACTIVE",
                 }
             ],
             "recommendations": [],
@@ -257,7 +259,8 @@ class ScenarioEngine:
                 "[CascadePredictor] Simulating delay transfer function across timetable nodes.",
                 "[CascadePredictor] Predicted delay addition: 22415 (+15m), 12301 Rajdhani (+20m), 12560 Shramik (+45m).",
                 "[CascadePredictor] Passenger volume analysis: estimated 4,820 passengers impacted by cumulative delays.",
-                "[AuditAgent] Logged cascade model output. Current Hash: " + self._hash("cascade-step3")
+                "[AuditAgent] Logged cascade model output. Current Hash: "
+                + self._hash("cascade-step3"),
             ],
             "audit_entries": [
                 {
@@ -266,9 +269,9 @@ class ScenarioEngine:
                     "target": "Sector North Timetable",
                     "reasoning": "Delay propagates through 4 downstream services. Cumulative delay: 180 min.",
                     "confidence": 0.91,
-                    "hash": self._hash("cascade-step3")
+                    "hash": self._hash("cascade-step3"),
                 }
-            ]
+            ],
         }
 
         # Step 4: Dispatchhold recommendation & Escalation (Tier 2)
@@ -283,7 +286,7 @@ class ScenarioEngine:
                     "current_delay": 40,
                     "status": "PROCEEDING",
                     "latitude": 28.643,
-                    "longitude": 77.222
+                    "longitude": 77.222,
                 },
                 {
                     "train_no": "22415",
@@ -292,7 +295,7 @@ class ScenarioEngine:
                     "current_delay": 15,
                     "status": "DELAYED",
                     "latitude": 27.892,
-                    "longitude": 78.078
+                    "longitude": 78.078,
                 },
                 {
                     "train_no": "BOXN-902",
@@ -301,8 +304,8 @@ class ScenarioEngine:
                     "current_delay": 10,
                     "status": "HELD_AT_LOOP",
                     "latitude": 28.672,
-                    "longitude": 77.436
-                }
+                    "longitude": 77.436,
+                },
             ],
             "disruptions": [
                 {
@@ -313,7 +316,7 @@ class ScenarioEngine:
                     "disruption_type": "DELAY_CASCADE",
                     "severity": "CRITICAL",
                     "cascade_depth": 3,
-                    "status": "ACTIVE"
+                    "status": "ACTIVE",
                 }
             ],
             "recommendations": [
@@ -326,14 +329,15 @@ class ScenarioEngine:
                     "reasoning": "Hold Coal Freight (BOXN-902) to clear track block for high-priority Shatabdi 12002. Reduces net cascade delay by 120 minutes. Escalated due to manual check rule on freight priorities.",
                     "confidence": 0.78,
                     "tier": 2,
-                    "is_approved": False
+                    "is_approved": False,
                 }
             ],
             "logs": [
                 "[DispatchAgent] Invoking Claude Sonnet hold-proceed resolution model.",
                 "[DispatchAgent] Optimal hold target identified: BOXN-902 at GZB loop line.",
                 "[DispatchAgent] Confidence score 0.78 < threshold 0.85. Triggering manual Tier-2 Escalation Alert.",
-                "[AuditAgent] Logged dispatch recommendation rec-001. Current Hash: " + self._hash("dispatch-step4")
+                "[AuditAgent] Logged dispatch recommendation rec-001. Current Hash: "
+                + self._hash("dispatch-step4"),
             ],
             "audit_entries": [
                 {
@@ -342,9 +346,9 @@ class ScenarioEngine:
                     "target": "rec-001",
                     "reasoning": "Escalated HOLD recommendation issued for BOXN-902. Waiting for human controller approval.",
                     "confidence": 0.78,
-                    "hash": self._hash("dispatch-step4")
+                    "hash": self._hash("dispatch-step4"),
                 }
-            ]
+            ],
         }
 
         # Step 5: Passenger Rerouting & Advisories
@@ -359,7 +363,7 @@ class ScenarioEngine:
                     "current_delay": 40,
                     "status": "RUNNING",
                     "latitude": 28.672,
-                    "longitude": 77.436
+                    "longitude": 77.436,
                 },
                 {
                     "train_no": "22415",
@@ -368,7 +372,7 @@ class ScenarioEngine:
                     "current_delay": 15,
                     "status": "DELAYED",
                     "latitude": 27.892,
-                    "longitude": 78.078
+                    "longitude": 78.078,
                 },
                 {
                     "train_no": "BOXN-902",
@@ -377,8 +381,8 @@ class ScenarioEngine:
                     "current_delay": 32,
                     "status": "HELD_AT_LOOP",
                     "latitude": 27.892,
-                    "longitude": 78.078
-                }
+                    "longitude": 78.078,
+                },
             ],
             "disruptions": [
                 {
@@ -389,7 +393,7 @@ class ScenarioEngine:
                     "disruption_type": "DELAY_CASCADE",
                     "severity": "CRITICAL",
                     "cascade_depth": 3,
-                    "status": "ACTIVE"
+                    "status": "ACTIVE",
                 }
             ],
             "recommendations": [
@@ -402,7 +406,7 @@ class ScenarioEngine:
                     "reasoning": "Hold Coal Freight (BOXN-902) to clear track block for high-priority Shatabdi 12002. Reduces net cascade delay by 120 minutes. Escalated due to manual check rule on freight priorities.",
                     "confidence": 0.78,
                     "tier": 2,
-                    "is_approved": False
+                    "is_approved": False,
                 }
             ],
             "logs": [
@@ -410,7 +414,8 @@ class ScenarioEngine:
                 "[NotificationAgent] Calling RAC Predictor model to calculate confirmation chances for Vande Bharat 22415.",
                 "[NotificationAgent] RAC Predictor returned confirmation score: 88.4%.",
                 "[NotificationAgent] Advisory published. Disseminated to passenger panels.",
-                "[AuditAgent] Logged rerouting advisories. Current Hash: " + self._hash("advisory-step5")
+                "[AuditAgent] Logged rerouting advisories. Current Hash: "
+                + self._hash("advisory-step5"),
             ],
             "audit_entries": [
                 {
@@ -419,9 +424,9 @@ class ScenarioEngine:
                     "target": "NDLS Corridor Passengers",
                     "reasoning": "Rerouted passengers to Vande Bharat 22415 with 88% RAC confirmation probability.",
                     "confidence": 0.90,
-                    "hash": self._hash("advisory-step5")
+                    "hash": self._hash("advisory-step5"),
                 }
-            ]
+            ],
         }
 
         # Step 6: Resolved (Manual approval)
@@ -436,7 +441,7 @@ class ScenarioEngine:
                     "current_delay": 5,
                     "status": "RUNNING",
                     "latitude": 27.892,
-                    "longitude": 78.078
+                    "longitude": 78.078,
                 },
                 {
                     "train_no": "22415",
@@ -445,7 +450,7 @@ class ScenarioEngine:
                     "current_delay": 0,
                     "status": "RUNNING",
                     "latitude": 25.448,
-                    "longitude": 78.568
+                    "longitude": 78.568,
                 },
                 {
                     "train_no": "BOXN-902",
@@ -454,8 +459,8 @@ class ScenarioEngine:
                     "current_delay": 32,
                     "status": "DEPARTING_LOOP",
                     "latitude": 27.892,
-                    "longitude": 78.078
-                }
+                    "longitude": 78.078,
+                },
             ],
             "disruptions": [
                 {
@@ -466,7 +471,7 @@ class ScenarioEngine:
                     "disruption_type": "DELAY_CASCADE",
                     "severity": "LOW",
                     "cascade_depth": 0,
-                    "status": "RESOLVED"
+                    "status": "RESOLVED",
                 }
             ],
             "recommendations": [
@@ -479,7 +484,7 @@ class ScenarioEngine:
                     "reasoning": "Hold Coal Freight (BOXN-902) to clear track block for high-priority Shatabdi 12002. Reduces net cascade delay by 120 minutes. Escalated due to manual check rule on freight priorities.",
                     "confidence": 0.78,
                     "tier": 2,
-                    "is_approved": True
+                    "is_approved": True,
                 }
             ],
             "logs": [
@@ -487,7 +492,7 @@ class ScenarioEngine:
                 "[MonitorAgent] Verification: Shatabdi 12002 past GZB junction block. Speeds recovering.",
                 "[ConflictDetector] No active section conflicts in corridor.",
                 "[AuditAgent] Logged manual override/approval event. Audit chain successfully sealed.",
-                "[AuditAgent] Final verification: chain validated successfully. 6/6 blocks verified."
+                "[AuditAgent] Final verification: chain validated successfully. 6/6 blocks verified.",
             ],
             "audit_entries": [
                 {
@@ -496,9 +501,9 @@ class ScenarioEngine:
                     "target": "rec-001",
                     "reasoning": "Approved hold for BOXN-902. Normalizing passenger traffic priority.",
                     "confidence": 1.0,
-                    "hash": self._hash("resolved-step6")
+                    "hash": self._hash("resolved-step6"),
                 }
-            ]
+            ],
         }
 
     def _hash(self, text: str) -> str:

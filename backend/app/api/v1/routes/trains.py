@@ -39,6 +39,7 @@ speed_locks = {
 def drop_empty_params(params: Dict[str, Optional[str | int]]) -> Dict[str, str | int]:
     return {key: value for key, value in params.items() if value not in (None, "")}
 
+
 # Helper to generate mock route details for the scenario trains
 def get_mock_route_for_train(train_no: str, delay: int) -> List[TrainRouteNode]:
     # Time formats as HH:MM
@@ -51,24 +52,24 @@ def get_mock_route_for_train(train_no: str, delay: int) -> List[TrainRouteNode]:
                 scheduled_departure="06:00",
                 actual_departure=f"06:{delay:02d}" if delay < 60 else "07:00",
                 delay_departure=delay,
-                status="ARRIVED" if delay > 0 else "SCHEDULED"
+                status="ARRIVED" if delay > 0 else "SCHEDULED",
             ),
             TrainRouteNode(
                 station_code="MTJ",
                 station_name="Mathura Jn",
                 scheduled_arrival="07:20",
                 scheduled_departure="07:22",
-                actual_arrival=f"07:{20+delay:02d}" if (20+delay) < 60 else "08:10",
+                actual_arrival=f"07:{20 + delay:02d}" if (20 + delay) < 60 else "08:10",
                 delay_arrival=delay,
-                status="SCHEDULED"
+                status="SCHEDULED",
             ),
             TrainRouteNode(
                 station_code="AGC",
                 station_name="Agra Cantt",
                 scheduled_arrival="08:10",
                 scheduled_departure="08:15",
-                status="SCHEDULED"
-            )
+                status="SCHEDULED",
+            ),
         ]
     elif train_no == "22415":
         # NDLS-BSB Vande Bharat
@@ -78,23 +79,23 @@ def get_mock_route_for_train(train_no: str, delay: int) -> List[TrainRouteNode]:
                 station_name="New Delhi",
                 scheduled_departure="15:00",
                 actual_departure="15:00",
-                status="DEPARTED"
+                status="DEPARTED",
             ),
             TrainRouteNode(
                 station_code="ALJN",
                 station_name="Aligarh",
                 scheduled_arrival="16:20",
                 scheduled_departure="16:22",
-                actual_arrival=f"16:{20+delay:02d}",
+                actual_arrival=f"16:{20 + delay:02d}",
                 delay_arrival=delay,
-                status="ARRIVED" if delay > 0 else "SCHEDULED"
+                status="ARRIVED" if delay > 0 else "SCHEDULED",
             ),
             TrainRouteNode(
                 station_code="CNB",
                 station_name="Kanpur Central",
                 scheduled_arrival="18:30",
-                status="SCHEDULED"
-            )
+                status="SCHEDULED",
+            ),
         ]
     elif train_no == "BOXN-902":
         # Coal Freight
@@ -105,7 +106,7 @@ def get_mock_route_for_train(train_no: str, delay: int) -> List[TrainRouteNode]:
                 scheduled_departure="14:00",
                 actual_departure="14:05",
                 delay_departure=5,
-                status="DEPARTED"
+                status="DEPARTED",
             ),
             TrainRouteNode(
                 station_code="ALJN",
@@ -113,8 +114,8 @@ def get_mock_route_for_train(train_no: str, delay: int) -> List[TrainRouteNode]:
                 scheduled_arrival="16:00",
                 actual_arrival=f"16:{delay:02d}",
                 delay_arrival=delay,
-                status="ARRIVED" if delay > 10 else "SCHEDULED"
-            )
+                status="ARRIVED" if delay > 10 else "SCHEDULED",
+            ),
         ]
     return []
 
@@ -148,7 +149,7 @@ async def list_trains(db: AsyncSession = Depends(get_db)):
                     delay_minutes=t["current_delay"],
                     data_source="cache" if settings.SCENARIO_MODE else "ntes",
                     data_quality=1.0,
-                    recorded_at=datetime.now(timezone.utc)
+                    recorded_at=datetime.now(timezone.utc),
                 )
             )
         return result
@@ -163,7 +164,7 @@ async def list_trains(db: AsyncSession = Depends(get_db)):
                 delay_minutes=0,
                 data_source="db",
                 data_quality=1.0,
-                recorded_at=datetime.now(timezone.utc)
+                recorded_at=datetime.now(timezone.utc),
             )
         ]
 
@@ -186,11 +187,13 @@ async def trains_between(
 ):
     return await rapidapi_irctc.get(
         "/api/v3/trainBetweenStations",
-        drop_empty_params({
-            "fromStationCode": from_station.upper(),
-            "toStationCode": to_station.upper(),
-            "dateOfJourney": date,
-        }),
+        drop_empty_params(
+            {
+                "fromStationCode": from_station.upper(),
+                "toStationCode": to_station.upper(),
+                "dateOfJourney": date,
+            }
+        ),
     )
 
 
@@ -221,22 +224,28 @@ async def rapidapi_search_train(query: str = Query(..., min_length=2)):
 async def rapidapi_trains_between_stations(
     from_station_code: str = Query(..., min_length=2, max_length=10),
     to_station_code: str = Query(..., min_length=2, max_length=10),
-    date_of_journey: Optional[str] = Query(None, description="Optional provider date parameter, usually YYYY-MM-DD"),
+    date_of_journey: Optional[str] = Query(
+        None, description="Optional provider date parameter, usually YYYY-MM-DD"
+    ),
 ):
     return await rapidapi_irctc.get(
         "/api/v3/trainBetweenStations",
-        drop_empty_params({
-            "fromStationCode": from_station_code.upper(),
-            "toStationCode": to_station_code.upper(),
-            "dateOfJourney": date_of_journey,
-        }),
+        drop_empty_params(
+            {
+                "fromStationCode": from_station_code.upper(),
+                "toStationCode": to_station_code.upper(),
+                "dateOfJourney": date_of_journey,
+            }
+        ),
     )
 
 
 @router.get("/rapidapi/live-status")
 async def rapidapi_live_train_status(
     train_no: str = Query(..., min_length=4, max_length=6),
-    start_day: int = Query(0, ge=0, le=4, description="0=today, 1=yesterday, up to 4 for longer routes"),
+    start_day: int = Query(
+        0, ge=0, le=4, description="0=today, 1=yesterday, up to 4 for longer routes"
+    ),
 ):
     return await rapidapi_irctc.get(
         "/api/v1/liveTrainStatus",
@@ -245,12 +254,16 @@ async def rapidapi_live_train_status(
 
 
 @router.get("/rapidapi/train-schedule")
-async def rapidapi_train_schedule(train_no: str = Query(..., min_length=4, max_length=6)):
+async def rapidapi_train_schedule(
+    train_no: str = Query(..., min_length=4, max_length=6),
+):
     return await rapidapi_irctc.get("/api/v1/getTrainSchedule", {"trainNo": train_no})
 
 
 @router.get("/rapidapi/pnr-status")
-async def rapidapi_pnr_status(pnr_number: str = Query(..., min_length=10, max_length=10)):
+async def rapidapi_pnr_status(
+    pnr_number: str = Query(..., min_length=10, max_length=10),
+):
     return await rapidapi_irctc.get("/api/v3/getPNRStatus", {"pnrNumber": pnr_number})
 
 
@@ -261,18 +274,22 @@ async def rapidapi_seat_availability(
     to_station_code: str = Query(..., min_length=2, max_length=10),
     class_type: str = Query(..., min_length=2, max_length=4),
     quota: str = Query("GN", min_length=2, max_length=4),
-    date: Optional[str] = Query(None, description="Optional provider journey date parameter"),
+    date: Optional[str] = Query(
+        None, description="Optional provider journey date parameter"
+    ),
 ):
     return await rapidapi_irctc.get(
         "/api/v1/checkSeatAvailability",
-        drop_empty_params({
-            "trainNo": train_no,
-            "fromStationCode": from_station_code.upper(),
-            "toStationCode": to_station_code.upper(),
-            "classType": class_type.upper(),
-            "quota": quota.upper(),
-            "date": date,
-        }),
+        drop_empty_params(
+            {
+                "trainNo": train_no,
+                "fromStationCode": from_station_code.upper(),
+                "toStationCode": to_station_code.upper(),
+                "classType": class_type.upper(),
+                "quota": quota.upper(),
+                "date": date,
+            }
+        ),
     )
 
 
@@ -283,23 +300,29 @@ async def rapidapi_seat_availability_v2(
     to_station_code: str = Query(..., min_length=2, max_length=10),
     class_type: str = Query(..., min_length=2, max_length=4),
     quota: str = Query("GN", min_length=2, max_length=4),
-    date: Optional[str] = Query(None, description="Optional provider journey date parameter"),
+    date: Optional[str] = Query(
+        None, description="Optional provider journey date parameter"
+    ),
 ):
     return await rapidapi_irctc.get(
         "/api/v2/checkSeatAvailability",
-        drop_empty_params({
-            "trainNo": train_no,
-            "fromStationCode": from_station_code.upper(),
-            "toStationCode": to_station_code.upper(),
-            "classType": class_type.upper(),
-            "quota": quota.upper(),
-            "date": date,
-        }),
+        drop_empty_params(
+            {
+                "trainNo": train_no,
+                "fromStationCode": from_station_code.upper(),
+                "toStationCode": to_station_code.upper(),
+                "classType": class_type.upper(),
+                "quota": quota.upper(),
+                "date": date,
+            }
+        ),
     )
 
 
 @router.get("/rapidapi/train-classes")
-async def rapidapi_train_classes(train_no: str = Query(..., min_length=4, max_length=6)):
+async def rapidapi_train_classes(
+    train_no: str = Query(..., min_length=4, max_length=6),
+):
     return await rapidapi_irctc.get("/api/v1/getTrainClasses", {"trainNo": train_no})
 
 
@@ -320,8 +343,12 @@ async def rapidapi_fare(
 
 
 @router.get("/rapidapi/trains-by-station")
-async def rapidapi_trains_by_station(station_code: str = Query(..., min_length=2, max_length=10)):
-    return await rapidapi_irctc.get("/api/v3/getTrainsByStation", {"stationCode": station_code.upper()})
+async def rapidapi_trains_by_station(
+    station_code: str = Query(..., min_length=2, max_length=10),
+):
+    return await rapidapi_irctc.get(
+        "/api/v3/getTrainsByStation", {"stationCode": station_code.upper()}
+    )
 
 
 @router.get("/rapidapi/live-station")
@@ -331,10 +358,12 @@ async def rapidapi_live_station(
 ):
     return await rapidapi_irctc.get(
         "/api/v3/getLiveStation",
-        drop_empty_params({
-            "stationCode": station_code.upper() if station_code else None,
-            "hours": hours,
-        }),
+        drop_empty_params(
+            {
+                "stationCode": station_code.upper() if station_code else None,
+                "hours": hours,
+            }
+        ),
     )
 
 
@@ -367,7 +396,9 @@ async def get_train_status(train_no: str, db: AsyncSession = Depends(get_db)):
     if settings.RAPIDAPI_IRCTC_KEY:
         try:
             live_train = await live_rail_data.live_train_snapshot(train_no)
-            route_nodes = get_mock_route_for_train(train_no, live_train["current_delay"])
+            route_nodes = get_mock_route_for_train(
+                train_no, live_train["current_delay"]
+            )
             return TrainStatus(
                 train_no=live_train["train_no"],
                 train_name=live_train["train_name"],
@@ -386,22 +417,22 @@ async def get_train_status(train_no: str, db: AsyncSession = Depends(get_db)):
             if t["train_no"] == train_no:
                 train_data = t
                 break
-        
+
         if not train_data:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Train {train_no} not found in current operational context"
+                detail=f"Train {train_no} not found in current operational context",
             )
-            
+
         route_nodes = get_mock_route_for_train(train_no, train_data["current_delay"])
-        
+
         return TrainStatus(
             train_no=train_data["train_no"],
             train_name=train_data["train_name"],
             current_station=train_data["current_station"],
             current_delay=train_data["current_delay"],
             last_updated=datetime.now(timezone.utc),
-            route=route_nodes
+            route=route_nodes,
         )
     else:
         # Query from DB/cache. Fallback to base mock.
@@ -409,13 +440,16 @@ async def get_train_status(train_no: str, db: AsyncSession = Depends(get_db)):
             route_nodes = get_mock_route_for_train(train_no, 0)
             return TrainStatus(
                 train_no=train_no,
-                train_name="Shatabdi Express" if train_no == "12002" else "Vande Bharat" if train_no == "22415" else "Coal Freight",
+                train_name="Shatabdi Express"
+                if train_no == "12002"
+                else "Vande Bharat"
+                if train_no == "22415"
+                else "Coal Freight",
                 current_station="NDLS",
                 current_delay=0,
                 last_updated=datetime.now(timezone.utc),
-                route=route_nodes
+                route=route_nodes,
             )
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Train {train_no} not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Train {train_no} not found"
         )

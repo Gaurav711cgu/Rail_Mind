@@ -7,7 +7,7 @@ class AuditLogEntry(BaseModel):
     id: Optional[str] = None
     agent_name: str
     action_type: str  # 'MONITOR', 'CONFLICT_DETECTED', 'RECOMMENDATION_ISSUED', 'AUTO_ACTION', 'ESCALATION'
-    target: str       # Train no or station/section ID
+    target: str  # Train no or station/section ID
     reasoning: str
     confidence: float
     timestamp: datetime = Field(default_factory=datetime.utcnow)
@@ -25,4 +25,3 @@ class AuditVerification(BaseModel):
     signatures_valid: Optional[bool] = True
     timestamps_valid: Optional[bool] = True
     payloads_valid: Optional[bool] = True
-

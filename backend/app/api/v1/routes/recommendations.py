@@ -19,12 +19,14 @@ _mock_recommendations = [
         confidence=0.78,
         tier=2,
         is_approved=False,
-        generated_at=datetime.now(timezone.utc)
+        generated_at=datetime.now(timezone.utc),
     )
 ]
 
+
 class OverridePayload(BaseModel):
     reason: str
+
 
 @router.get("/active", response_model=List[DispatchRec])
 async def get_active_recommendations():
@@ -33,12 +35,14 @@ async def get_active_recommendations():
     """
     return [rec for rec in _mock_recommendations if not rec.is_approved]
 
+
 @router.get("", response_model=List[DispatchRec])
 async def list_recommendations():
     """
     List all dispatch recommendations.
     """
     return _mock_recommendations
+
 
 @router.post("/{id}/approve", response_model=DispatchRec)
 async def approve_recommendation(id: str):
@@ -52,8 +56,9 @@ async def approve_recommendation(id: str):
             return rec
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
-        detail=f"Recommendation with ID {id} not found."
+        detail=f"Recommendation with ID {id} not found.",
     )
+
 
 @router.post("/{id}/override", response_model=DispatchRec)
 async def override_recommendation(id: str, payload: OverridePayload):
@@ -68,5 +73,5 @@ async def override_recommendation(id: str, payload: OverridePayload):
             return rec
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
-        detail=f"Recommendation with ID {id} not found."
+        detail=f"Recommendation with ID {id} not found.",
     )

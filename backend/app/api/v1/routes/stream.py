@@ -24,6 +24,7 @@ router = APIRouter()
 #  SSE generators (unchanged — kept for backward compatibility)                #
 # --------------------------------------------------------------------------- #
 
+
 async def _agent_event_generator() -> AsyncGenerator[str, None]:
     """
     Yields SSE-formatted agent health snapshots every 5 seconds.
@@ -90,6 +91,7 @@ async def stream_positions():
 # --------------------------------------------------------------------------- #
 #  WebSocket endpoint — combined agent health + train positions                #
 # --------------------------------------------------------------------------- #
+
 
 @router.websocket("/ws")
 async def websocket_stream(ws: WebSocket):

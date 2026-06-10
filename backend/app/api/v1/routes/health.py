@@ -21,6 +21,7 @@ async def health_system(db: AsyncSession = Depends(get_db)):
     db_status = "connected"
     try:
         from sqlalchemy import text
+
         await db.execute(text("SELECT 1"))
     except Exception:
         db_status = "disconnected"
@@ -31,7 +32,8 @@ async def health_system(db: AsyncSession = Depends(get_db)):
 
     total_agents = len(orchestrator.pipeline)
     healthy_agents = sum(
-        1 for a in orchestrator.agent_health.values()
+        1
+        for a in orchestrator.agent_health.values()
         if a["status"] in ("healthy", "running")
     )
 
@@ -47,21 +49,16 @@ async def health_system(db: AsyncSession = Depends(get_db)):
             "redis": redis_status,
             "ml_model": ml_status,
             "groq_llm": groq_status,
-            "agents": {
-                "total": total_agents,
-                "healthy": healthy_agents
-            }
+            "agents": {"total": total_agents, "healthy": healthy_agents},
         },
         "performance": {
             "total_requests": _request_metrics["total_requests"],
             "avg_latency_ms": _request_metrics["avg_latency_ms"],
-            "p99_latency_ms": _request_metrics["p99_latency_ms"]
+            "p99_latency_ms": _request_metrics["p99_latency_ms"],
         },
-        "test_coverage": {
-            "total": 18,
-            "passing": 18
-        }
+        "test_coverage": {"total": 18, "passing": 18},
     }
+
 
 @router.get("/health")
 async def health_check():
@@ -70,7 +67,7 @@ async def health_check():
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "service": settings.PROJECT_NAME,
         "version": settings.VERSION,
-        "scenario_mode": settings.SCENARIO_MODE
+        "scenario_mode": settings.SCENARIO_MODE,
     }
 
 
@@ -90,4 +87,5 @@ async def data_freshness():
 @router.get("/health/agents")
 async def agents_health():
     from app.agents.orchestrator import orchestrator
+
     return orchestrator.agent_health

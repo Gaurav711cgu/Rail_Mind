@@ -8,12 +8,14 @@ from app.agents.dispatch_agent import DispatchAgent
 from app.agents.notification_agent import NotificationAgent
 from app.agents.audit_agent import AuditAgent
 
+
 class AgentOrchestrator:
     """
     Coordinates state routing between specialized agents.
     Simulates a LangGraph state machine, feeding agent updates back into the shared context
     and logging actions for transparency.
     """
+
     def __init__(self):
         self._monitor_task: Optional[asyncio.Task] = None
         self._running = False
@@ -24,14 +26,14 @@ class AgentOrchestrator:
             CascadePredictor(),
             DispatchAgent(),
             NotificationAgent(),
-            AuditAgent()
+            AuditAgent(),
         ]
         self.agent_health = {
             agent.agent_name: {
                 "last_run": None,
                 "last_confidence": 1.0,
                 "status": "healthy",
-                "last_error": None
+                "last_error": None,
             }
             for agent in self.pipeline
         }
@@ -48,78 +50,93 @@ class AgentOrchestrator:
         state.setdefault("recommendations", [])
         state.setdefault("audit_chain", [])
         state.setdefault("escalated", False)
-        
-        state["logs"].append(f"[Orchestrator] Starting multi-agent pipeline at {initial_state.get('timestamp', 'nominal-time')}")
-        
+
+        state["logs"].append(
+            f"[Orchestrator] Starting multi-agent pipeline at {initial_state.get('timestamp', 'nominal-time')}"
+        )
+
         for agent in self.pipeline:
             # Skip downstream execution if pipeline is halted for manual controller intervention
-            if state["escalated"] and agent.agent_name not in ["NotificationAgent", "AuditAgent"]:
-                state["logs"].append(f"[Orchestrator] Bypassing {agent.agent_name} - manual controller escalation active.")
+            if state["escalated"] and agent.agent_name not in [
+                "NotificationAgent",
+                "AuditAgent",
+            ]:
+                state["logs"].append(
+                    f"[Orchestrator] Bypassing {agent.agent_name} - manual controller escalation active."
+                )
                 continue
-                
+
             try:
                 self.agent_health[agent.agent_name]["status"] = "running"
                 updates, confidence, reasoning = await agent.process(state)
-                
+
                 # Apply updates to shared context state
                 for key, val in updates.items():
                     state[key] = val
-                    
+
                 # Append log entry from agent execution
                 log_msg = f"[{agent.agent_name}] Action completed. Confidence: {confidence:.2f}. Reasoning: {reasoning}"
                 state["logs"].append(log_msg)
-                
+
                 # Update health info
-                self.agent_health[agent.agent_name].update({
-                    "last_run": datetime.utcnow().isoformat(),
-                    "last_confidence": confidence,
-                    "status": "healthy",
-                    "last_error": None
-                })
-                
+                self.agent_health[agent.agent_name].update(
+                    {
+                        "last_run": datetime.utcnow().isoformat(),
+                        "last_confidence": confidence,
+                        "status": "healthy",
+                        "last_error": None,
+                    }
+                )
+
                 # Check confidence threshold for escalation
                 if confidence < 0.85 and agent.agent_name == "DispatchAgent":
                     state["escalated"] = True
-                    state["logs"].append("[Orchestrator] Halted auto-execution. Escaled to local dispatcher controller.")
-                    
+                    state["logs"].append(
+                        "[Orchestrator] Halted auto-execution. Escaled to local dispatcher controller."
+                    )
+
             except Exception as e:
                 err_msg = f"[Orchestrator] Error executing {agent.agent_name}: {str(e)}"
                 state["logs"].append(err_msg)
                 print(err_msg)
-                self.agent_health[agent.agent_name].update({
-                    "last_run": datetime.utcnow().isoformat(),
-                    "status": "degraded",
-                    "last_error": str(e)
-                })
-                
-        state["logs"].append("[Orchestrator] Multi-agent execution cycle completed successfully.")
+                self.agent_health[agent.agent_name].update(
+                    {
+                        "last_run": datetime.utcnow().isoformat(),
+                        "status": "degraded",
+                        "last_error": str(e),
+                    }
+                )
+
+        state["logs"].append(
+            "[Orchestrator] Multi-agent execution cycle completed successfully."
+        )
         return state
 
     async def _run_monitor_loop(self) -> None:
         from app.core.scenario_engine import scenario_engine
         from app.services.live_rail_data import live_rail_data
-        
+
         # Give DB seed a few seconds on startup before running monitor loop
         await asyncio.sleep(5)
-        
+
         while self._running:
             try:
                 trains = await live_rail_data.live_watchlist_snapshot(
                     scenario_engine.get_state().get("trains", [])
                 )
-                
+
                 initial_state = {
                     "timestamp": datetime.utcnow().isoformat(),
                     "trains": trains,
                     "disruptions": [],
-                    "recommendations": []
+                    "recommendations": [],
                 }
-                
+
                 await self.run_pipeline(initial_state)
-                
+
             except Exception as e:
                 print(f"[Orchestrator] Monitor loop error: {e}")
-                
+
             await asyncio.sleep(60)
 
     async def start(self) -> None:
@@ -139,6 +156,7 @@ class AgentOrchestrator:
                 pass
             self._monitor_task = None
         print("[Orchestrator] Background monitoring loop stopped.")
+
 
 # Singleton instance
 orchestrator = AgentOrchestrator()

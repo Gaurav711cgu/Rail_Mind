@@ -4,6 +4,7 @@ from app.ml.rac_predictor import rac_predictor
 
 router = APIRouter()
 
+
 @router.post("/predict", response_model=RACPrediction)
 async def predict_rac(query: RACQuery):
     try:
@@ -17,13 +18,14 @@ async def predict_rac(query: RACQuery):
             confidence_interval=prediction_result["confidence_interval"],
             key_factors=factors,
             model_version=prediction_result["model_version"],
-            disclaimer=prediction_result["disclaimer"]
+            disclaimer=prediction_result["disclaimer"],
         )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Prediction engine error: {str(e)}"
+            detail=f"Prediction engine error: {str(e)}",
         )
+
 
 @router.get("/model-health")
 async def get_model_health():
@@ -31,7 +33,12 @@ async def get_model_health():
         "status": "loaded" if rac_predictor._loaded else "fallback_mode",
         "model_version": "XGBoost-v1.2" if rac_predictor._loaded else "Heuristic-v1.0",
         "has_explainer": rac_predictor._explainer is not None,
-        "features_expected": ["days_to_journey", "current_waitlist_position", "current_rac_count", "quota"]
+        "features_expected": [
+            "days_to_journey",
+            "current_waitlist_position",
+            "current_rac_count",
+            "quota",
+        ],
     }
 
 
@@ -39,6 +46,7 @@ async def get_model_health():
 async def get_historical_trends(train_no: str):
     # Mock confirmation trends over the last 6 months for a given train
     import random
+
     random.seed(train_no)
     months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
     base_rate = 0.82 if train_no == "22415" else 0.71 if train_no == "12002" else 0.55
@@ -49,8 +57,11 @@ async def get_historical_trends(train_no: str):
         trends.append({"month": m, "rate": round(base_rate + variance, 3)})
     return trends
 
+
 @router.get("/alternative-suggestions")
-async def get_alternative_suggestions(train_no: str, from_station: str, to_station: str):
+async def get_alternative_suggestions(
+    train_no: str, from_station: str, to_station: str
+):
     # Provides alternative train routes and their odds
     if train_no == "12002":
         return [
@@ -61,7 +72,7 @@ async def get_alternative_suggestions(train_no: str, from_station: str, to_stati
                 "duration": "1h 20m",
                 "confirmation_probability": 0.88,
                 "delay_minutes": 0,
-                "status": "RUNNING"
+                "status": "RUNNING",
             },
             {
                 "train_no": "12301",
@@ -70,8 +81,8 @@ async def get_alternative_suggestions(train_no: str, from_station: str, to_stati
                 "duration": "1h 15m",
                 "confirmation_probability": 0.94,
                 "delay_minutes": 15,
-                "status": "DELAYED"
-            }
+                "status": "DELAYED",
+            },
         ]
     else:
         return [
@@ -82,7 +93,7 @@ async def get_alternative_suggestions(train_no: str, from_station: str, to_stati
                 "duration": "1h 22m",
                 "confirmation_probability": 0.76,
                 "delay_minutes": 40,
-                "status": "HELD"
+                "status": "HELD",
             },
             {
                 "train_no": "12301",
@@ -91,20 +102,36 @@ async def get_alternative_suggestions(train_no: str, from_station: str, to_stati
                 "duration": "1h 15m",
                 "confirmation_probability": 0.94,
                 "delay_minutes": 15,
-                "status": "DELAYED"
-            }
+                "status": "DELAYED",
+            },
         ]
+
 
 @router.get("/quota-heatmap")
 async def get_quota_heatmap(train_no: str, waitlist_pos: int):
     # Returns a comparison of odds across quotas
     base_odds = 0.85 if train_no == "22415" else 0.70
     decay = waitlist_pos * 0.02
-    
-    return [
-        {"quota": "GN (General)", "probability": max(0.05, round(base_odds - decay, 3)), "description": "Standard booking bucket"},
-        {"quota": "TQ (Tatkal)", "probability": max(0.02, round(base_odds * 0.6 - decay, 3)), "description": "Last minute allocation"},
-        {"quota": "LD (Ladies)", "probability": max(0.1, round(base_odds * 1.1 - decay, 3)), "description": "Reserved ladies allocation"},
-        {"quota": "DF (Defense)", "probability": max(0.2, round(base_odds * 1.25 - decay, 3)), "description": "Military personnel quota"}
-    ]
 
+    return [
+        {
+            "quota": "GN (General)",
+            "probability": max(0.05, round(base_odds - decay, 3)),
+            "description": "Standard booking bucket",
+        },
+        {
+            "quota": "TQ (Tatkal)",
+            "probability": max(0.02, round(base_odds * 0.6 - decay, 3)),
+            "description": "Last minute allocation",
+        },
+        {
+            "quota": "LD (Ladies)",
+            "probability": max(0.1, round(base_odds * 1.1 - decay, 3)),
+            "description": "Reserved ladies allocation",
+        },
+        {
+            "quota": "DF (Defense)",
+            "probability": max(0.2, round(base_odds * 1.25 - decay, 3)),
+            "description": "Military personnel quota",
+        },
+    ]

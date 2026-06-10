@@ -2,12 +2,13 @@ import uuid
 from typing import Dict, Any, Tuple
 from abc import ABC, abstractmethod
 
+
 class BaseAgent(ABC):
     """
     Abstract base class for all autonomous agents in the RailMind ecosystem.
     Provides standard logging, timing, and interface contract structures.
     """
-    
+
     def __init__(self, agent_name: str):
         self.agent_name = agent_name
 
@@ -23,6 +24,6 @@ class BaseAgent(ABC):
 
     def log(self, message: str):
         print(f"[{self.agent_name}] {message}")
-        
+
     def _generate_uuid(self) -> str:
         return str(uuid.uuid4())

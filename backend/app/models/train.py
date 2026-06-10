@@ -39,13 +39,13 @@ class TrainPosition(BaseModel):
 class TrainRouteNode(BaseModel):
     station_code: str
     station_name: str
-    scheduled_arrival: Optional[str] = None      # HH:MM
-    scheduled_departure: Optional[str] = None    # HH:MM
-    actual_arrival: Optional[str] = None         # HH:MM
-    actual_departure: Optional[str] = None       # HH:MM
+    scheduled_arrival: Optional[str] = None  # HH:MM
+    scheduled_departure: Optional[str] = None  # HH:MM
+    actual_arrival: Optional[str] = None  # HH:MM
+    actual_departure: Optional[str] = None  # HH:MM
     delay_arrival: int = 0
     delay_departure: int = 0
-    status: str = "SCHEDULED"                     # 'SCHEDULED', 'ARRIVED', 'DEPARTED', 'SKIPPED'
+    status: str = "SCHEDULED"  # 'SCHEDULED', 'ARRIVED', 'DEPARTED', 'SKIPPED'
 
 
 class TrainStatus(BaseModel):

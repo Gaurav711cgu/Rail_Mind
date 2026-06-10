@@ -5,8 +5,10 @@ from sqlalchemy.orm import declarative_base, Mapped, mapped_column
 from sqlalchemy import String, Integer, Float, Boolean, DateTime, Text, event
 from app.config import settings
 
+
 def utc_now_naive():
     return datetime.now(timezone.utc).replace(tzinfo=None)
+
 
 # Base class for ORM models
 Base = declarative_base()
@@ -18,7 +20,7 @@ AsyncSessionLocal = async_sessionmaker(
     class_=AsyncSession,
     expire_on_commit=False,
     autocommit=False,
-    autoflush=False
+    autoflush=False,
 )
 
 
@@ -35,14 +37,19 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 # ORM Model Definitions
 
+
 class DBUser(Base):
     __tablename__ = "users"
-    
+
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    username: Mapped[str] = mapped_column(String(100), unique=True, index=True, nullable=False)
+    username: Mapped[str] = mapped_column(
+        String(100), unique=True, index=True, nullable=False
+    )
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
-    role: Mapped[str] = mapped_column(String(50), default="PASSENGER")  # PASSENGER, CONTROLLER, ADMIN
+    role: Mapped[str] = mapped_column(
+        String(50), default="PASSENGER"
+    )  # PASSENGER, CONTROLLER, ADMIN
     zone: Mapped[str] = mapped_column(String(10), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now_naive)
@@ -50,7 +57,7 @@ class DBUser(Base):
 
 class DBStation(Base):
     __tablename__ = "stations"
-    
+
     code: Mapped[str] = mapped_column(String(10), primary_key=True, index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     zone: Mapped[str] = mapped_column(String(10), nullable=False)
@@ -63,7 +70,7 @@ class DBStation(Base):
 
 class DBSection(Base):
     __tablename__ = "sections"
-    
+
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     from_station: Mapped[str] = mapped_column(String(10), nullable=False)
     to_station: Mapped[str] = mapped_column(String(10), nullable=False)
@@ -75,7 +82,7 @@ class DBSection(Base):
 
 class DBDisruption(Base):
     __tablename__ = "disruptions"
-    
+
     id: Mapped[str] = mapped_column(String(50), primary_key=True, index=True)
     train_no: Mapped[str] = mapped_column(String(10), nullable=False)
     section_from: Mapped[str] = mapped_column(String(10), nullable=False)
@@ -83,19 +90,25 @@ class DBDisruption(Base):
     disruption_type: Mapped[str] = mapped_column(String(50), default="DELAY_CASCADE")
     severity: Mapped[str] = mapped_column(String(20), default="MEDIUM")
     cascade_depth: Mapped[int] = mapped_column(Integer, default=0)
-    trains_affected_json: Mapped[str] = mapped_column(Text, default="[]")  # Serialized list
+    trains_affected_json: Mapped[str] = mapped_column(
+        Text, default="[]"
+    )  # Serialized list
     passengers_affected: Mapped[int] = mapped_column(Integer, default=0)
-    status: Mapped[str] = mapped_column(String(20), default="ACTIVE")  # ACTIVE, RESOLVED, ESCALATED
+    status: Mapped[str] = mapped_column(
+        String(20), default="ACTIVE"
+    )  # ACTIVE, RESOLVED, ESCALATED
     detected_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now_naive)
     resolved_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
 
 
 class DBRecommendation(Base):
     __tablename__ = "recommendations"
-    
+
     id: Mapped[str] = mapped_column(String(50), primary_key=True, index=True)
     disruption_id: Mapped[str] = mapped_column(String(50), nullable=False)
-    type: Mapped[str] = mapped_column(String(20), default="HOLD")  # HOLD, PROCEED, ESCALATE
+    type: Mapped[str] = mapped_column(
+        String(20), default="HOLD"
+    )  # HOLD, PROCEED, ESCALATE
     target_train: Mapped[str] = mapped_column(String(10), nullable=False)
     target_section: Mapped[str] = mapped_column(String(100), nullable=False)
     reasoning: Mapped[str] = mapped_column(Text, nullable=False)
@@ -108,7 +121,7 @@ class DBRecommendation(Base):
 
 class DBAuditEntry(Base):
     __tablename__ = "audit_log"
-    
+
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     agent_name: Mapped[str] = mapped_column(String(100), nullable=False)
     action_type: Mapped[str] = mapped_column(String(100), nullable=False)
