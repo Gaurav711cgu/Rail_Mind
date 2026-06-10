@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     #  PostgreSQL (Supabase)                                               #
     #  Format: postgresql+asyncpg://USER:PASS@HOST:PORT/DB                #
     # ------------------------------------------------------------------ #
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:password@localhost:5432/railmind"
+    DATABASE_URL: str = "sqlite+aiosqlite:///./railmind_local.db"
     # SQLite fallback used ONLY in test environments — never set in prod
     TEST_DATABASE_URL: str = "sqlite+aiosqlite:///./test_railmind.db"
 
