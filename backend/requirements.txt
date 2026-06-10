@@ -1,14 +1,50 @@
+# Web framework
 fastapi>=0.111.0
-uvicorn>=0.30.0
+uvicorn[standard]>=0.30.0
+
+# Pydantic / settings
 pydantic>=2.7.0
 pydantic-settings>=2.3.0
+email-validator>=2.0.0
+
+# Database — PostgreSQL (asyncpg) + SQLAlchemy ORM
 sqlalchemy>=2.0.30
-aiosqlite>=0.20.0
-networkx>=3.3
+asyncpg>=0.29.0
+alembic>=1.13.0
+
+# Redis Streams (event bus + cache)
+redis[asyncio]>=5.0.0
+
+# HTTP client (live train data polling)
 httpx>=0.27.0
+
+# Auth
 python-jose[cryptography]>=3.3.0
 bcrypt>=4.0.0
 python-multipart>=0.0.9
+
+# Agent orchestration — LangGraph
+langgraph>=0.2.0
+langchain-core>=0.2.0
+anthropic>=0.28.0
+
+# ML — XGBoost RAC predictor
+xgboost>=2.0.3
+scikit-learn>=1.4.0
+numpy>=1.26.0
+pandas>=2.2.0
+joblib>=1.4.0
+
+# Graph engine (cascade BFS)
+networkx>=3.3
+
+# Typing extras
 typing-extensions>=4.11.0
-email-validator>=2.0.0
-greenlet
+greenlet>=3.0.0
+
+# Dev / test (only needed in requirements-dev.txt but included for HF Spaces simplicity)
+pytest>=8.2.0
+pytest-asyncio>=0.23.0
+pytest-cov>=5.0.0
+httpx>=0.27.0        # also used in tests
+aiosqlite>=0.20.0    # test DB fallback

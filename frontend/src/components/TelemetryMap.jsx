@@ -1,961 +1,958 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 
-export default function TelemetryMap({ trains, disruptions, onNextStep, scenarioStep }) {
-  // States for interactive features
+/* ─────────────────────────────────────────────────────────────────
+   STATION COORDINATE REGISTRY
+   Add any station code here to get automatic lat/lng on the map
+───────────────────────────────────────────────────────────────── */
+const STATION_COORDS = {
+  NDLS: { name: 'New Delhi',       lat: 28.6430, lng: 77.2220 },
+  GZB:  { name: 'Ghaziabad',       lat: 28.6720, lng: 77.4360 },
+  ALJN: { name: 'Aligarh',         lat: 27.8920, lng: 78.0780 },
+  CNB:  { name: 'Kanpur Central',  lat: 26.4480, lng: 80.3500 },
+  MMCT: { name: 'Mumbai Central',  lat: 18.9710, lng: 72.8200 },
+  ST:   { name: 'Surat',           lat: 21.2050, lng: 72.8410 },
+  BRC:  { name: 'Vadodara Jn',     lat: 22.3120, lng: 73.1810 },
+  ADI:  { name: 'Ahmedabad Jn',    lat: 23.0270, lng: 72.6010 },
+  SBC:  { name: 'KSR Bengaluru',   lat: 12.9780, lng: 77.5720 },
+  BWT:  { name: 'Bangarapet',      lat: 12.9690, lng: 78.2040 },
+  JTJ:  { name: 'Jolarpettai',     lat: 12.5710, lng: 78.5800 },
+  MAS:  { name: 'Chennai Central', lat: 13.0820, lng: 80.2750 },
+  HWH:  { name: 'Howrah Jn',       lat: 22.5848, lng: 88.3426 },
+  PNBE: { name: 'Patna Jn',        lat: 25.5987, lng: 85.1337 },
+  MGS:  { name: 'Mughal Sarai',    lat: 25.2800, lng: 83.1200 },
+  ALD:  { name: 'Prayagraj Jn',    lat: 25.4358, lng: 81.8463 },
+  LKO:  { name: 'Lucknow NR',      lat: 26.8467, lng: 80.9462 },
+  BSB:  { name: 'Varanasi',        lat: 25.3176, lng: 82.9739 },
+  JP:   { name: 'Jaipur',          lat: 26.9124, lng: 75.7873 },
+  AGC:  { name: 'Agra Cantt',      lat: 27.1601, lng: 78.0180 },
+  MTJ:  { name: 'Mathura Jn',      lat: 27.4924, lng: 77.6737 },
+  BPL:  { name: 'Bhopal Jn',       lat: 23.2694, lng: 77.4027 },
+  NGP:  { name: 'Nagpur',          lat: 21.1502, lng: 79.0882 },
+  SC:   { name: 'Secunderabad',    lat: 17.4399, lng: 78.4983 },
+  HYB:  { name: 'Hyderabad',       lat: 17.3850, lng: 78.4867 },
+};
+
+const ZONE_CONFIG = {
+  NORTH: {
+    label: 'Northern (NR/NCR)',
+    center: [27.5, 78.8],
+    zoom: 7,
+    color: '#00F0FF',
+    stations: ['NDLS', 'GZB', 'ALJN', 'CNB'],
+  },
+  WEST: {
+    label: 'Western (WR)',
+    center: [21.0, 73.0],
+    zoom: 7,
+    color: '#A855F7',
+    stations: ['MMCT', 'ST', 'BRC', 'ADI'],
+  },
+  SOUTH: {
+    label: 'Southern (SR/SWR)',
+    center: [12.8, 79.0],
+    zoom: 8,
+    color: '#10B981',
+    stations: ['SBC', 'BWT', 'JTJ', 'MAS'],
+  },
+  ALL: {
+    label: 'All India Grid',
+    center: [21.5, 78.0],
+    zoom: 5,
+    color: '#F59E0B',
+    stations: Object.keys(STATION_COORDS),
+  },
+};
+
+/* station code → coords (with small random scatter if unknown) */
+function coordsFor(code) {
+  return STATION_COORDS[code] || null;
+}
+
+/* colour by delay */
+function trainColor(delay, isFreight) {
+  if (isFreight) return '#F59E0B';
+  if (delay >= 30) return '#EF4444';
+  if (delay >= 10) return '#F97316';
+  return '#00F0FF';
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   MAIN COMPONENT
+───────────────────────────────────────────────────────────────── */
+export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNextStep, scenarioStep }) {
+  /* ── view state ── */
+  const [viewMode, setViewMode]           = useState('geo');        // 'geo' | 'schematic'
+  const [selectedZone, setSelectedZone]   = useState('NORTH');
   const [selectedTrain, setSelectedTrain] = useState(null);
-  const [selectedDisruption, setSelectedDisruption] = useState(null);
-  const [autoplay, setAutoplay] = useState(false);
-  const [autoplayCountdown, setAutoplayCountdown] = useState(6); // 6s countdown
-  const [viewMode, setViewMode] = useState('schematic'); // 'schematic' or 'geo'
-  const [selectedZone, setSelectedZone] = useState('NORTH'); // 'NORTH', 'WEST', 'SOUTH', 'ALL'
+
+  /* ── live route search ── */
+  const [fromCode, setFromCode]           = useState('NDLS');
+  const [toCode,   setToCode]             = useState('CNB');
+  const [fromInput, setFromInput]         = useState('NDLS');
+  const [toInput,   setToInput]           = useState('CNB');
+  const [routeTrains, setRouteTrains]     = useState([]);
+  const [routeLoading, setRouteLoading]   = useState(false);
+  const [routeError, setRouteError]       = useState(null);
+  const [searchMode, setSearchMode]       = useState(false);       // true = showing route search results
+  const [stationBoard, setStationBoard]   = useState(null);        // live station board data
+  const [stationLoading, setStationLoading] = useState(false);
+
+  /* ── live train status panel ── */
+  const [liveStatus, setLiveStatus]       = useState(null);
+  const [liveLoading, setLiveLoading]     = useState(false);
+
+  /* ── map refs ── */
+  const mapRef           = useRef(null);
+  const leafletRef        = useRef(null);
+  const markersRef        = useRef({});
+  const routeLineRef      = useRef(null);
+  const stationMarkersRef = useRef({});
+
+  /* ── scenario state ── */
+  const [metrics, setMetrics] = useState({
+    efficiency_score: 94.5, capacity_load: 34.0,
+    average_speed: 104.2,   safety_index: 100.0,
+  });
   const [kavachStates, setKavachStates] = useState({
-    "DLI-GZB": true,
-    "GZB-ALJN": true,
-    "ALJN-CNB": false
+    'DLI-GZB': true, 'GZB-ALJN': true, 'ALJN-CNB': false,
   });
   const [weatherState, setWeatherState] = useState({
-    visibility_meters: 2200,
-    fog_density: 12,
-    wind_speed: 14,
-    temperature: 29.5,
-    active_warning: "NONE",
-    recommended_speed_limit: 130
+    visibility_meters: 2200, fog_density: 12,
+    wind_speed: 14, temperature: 29.5,
+    active_warning: 'NONE', recommended_speed_limit: 130,
   });
   const [speedLimits, setSpeedLimits] = useState({
-    "DLI-GZB": 110,
-    "GZB-ALJN": 130,
-    "ALJN-CNB": 130
+    'DLI-GZB': 110, 'GZB-ALJN': 130, 'ALJN-CNB': 130,
   });
-  const [metrics, setMetrics] = useState({
-    efficiency_score: 94.5,
-    capacity_load: 34.0,
-    average_speed: 104.2,
-    safety_index: 100.0
-  });
-
+  const [autoplay, setAutoplay]           = useState(false);
+  const [autoplayCountdown, setAutoplayCD] = useState(6);
   const timerRef = useRef(null);
 
-  // Sync selected train data when scenario step updates
+  /* ────────────────────────────────────────────
+     Fetch corridor metrics
+  ──────────────────────────────────────────── */
   useEffect(() => {
-    if (selectedTrain) {
-      const updated = trains.find(t => t.train_no === selectedTrain.train_no);
-      if (updated) setSelectedTrain(updated);
-    }
-  }, [trains]);
-
-  // Fetch metrics dynamically based on scenario step
-  useEffect(() => {
-    const fetchMetrics = async () => {
-      try {
-        const res = await fetch('/api/v1/cascade/corridor-metrics');
-        if (res.ok) {
-          const data = await res.json();
-          setMetrics(data);
-        }
-      } catch (err) {
-        console.error("Failed to fetch corridor metrics", err);
-      }
-    };
-    fetchMetrics();
+    fetch('/api/v1/cascade/corridor-metrics')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => d && setMetrics(d))
+      .catch(() => {});
   }, [scenarioStep]);
 
-  // Autoplay handler
+  /* ────────────────────────────────────────────
+     Autoplay
+  ──────────────────────────────────────────── */
   useEffect(() => {
     if (autoplay) {
       timerRef.current = setInterval(() => {
-        setAutoplayCountdown((prev) => {
-          if (prev <= 1) {
-            onNextStep();
-            return 6;
-          }
-          return prev - 1;
+        setAutoplayCD(p => {
+          if (p <= 1) { onNextStep(); return 6; }
+          return p - 1;
         });
       }, 1000);
-    } else {
-      clearInterval(timerRef.current);
-    }
+    } else clearInterval(timerRef.current);
     return () => clearInterval(timerRef.current);
   }, [autoplay, onNextStep]);
 
-  // Reset countdown if step changes manually
-  useEffect(() => {
-    setAutoplayCountdown(6);
-  }, [scenarioStep]);
+  useEffect(() => { setAutoplayCD(6); }, [scenarioStep]);
 
-  // Handle Kavach toggles via backend
-  const handleKavachToggle = async (sectionCode) => {
-    const nextVal = !kavachStates[sectionCode];
-    setKavachStates(prev => ({ ...prev, [sectionCode]: nextVal }));
-    try {
-      await fetch(`/api/v1/cascade/kavach-toggle?section_code=${sectionCode}&active=${nextVal}`, { method: 'POST' });
-    } catch (err) {
-      console.error(err);
-    }
+  /* ────────────────────────────────────────────
+     Kavach & Speed
+  ──────────────────────────────────────────── */
+  const handleKavachToggle = async (sec) => {
+    const next = !kavachStates[sec];
+    setKavachStates(p => ({ ...p, [sec]: next }));
+    try { await fetch(`/api/v1/cascade/kavach-toggle?section_code=${sec}&active=${next}`, { method: 'POST' }); } catch {}
   };
-
-  // Handle speed limit overrides
-  const handleSpeedLimitChange = async (sectionCode, newLimit) => {
-    setSpeedLimits(prev => ({ ...prev, [sectionCode]: newLimit }));
-    try {
-      await fetch(`/api/v1/trains/speed-lock?section_code=${sectionCode}&speed_limit=${newLimit}`, { method: 'POST' });
-    } catch (err) {
-      console.error(err);
-    }
+  const handleSpeedLimitChange = async (sec, limit) => {
+    setSpeedLimits(p => ({ ...p, [sec]: limit }));
+    try { await fetch(`/api/v1/trains/speed-lock?section_code=${sec}&speed_limit=${limit}`, { method: 'POST' }); } catch {}
   };
-
-  // Fog visibility simulation slider
   const handleVisibilitySlider = async (e) => {
-    const visibility = parseInt(e.target.value);
-    const density = Math.round((1 - (visibility / 3000)) * 100);
-    const speedLimit = visibility < 500 ? 30 : visibility < 1000 ? 60 : 130;
-    
-    const nextWeather = {
-      ...weatherState,
-      visibility_meters: visibility,
-      fog_density: density,
-      recommended_speed_limit: speedLimit,
-      active_warning: visibility < 500 ? "SEVERE_FOG_WARNING" : "NONE"
-    };
-    setWeatherState(nextWeather);
+    const v = parseInt(e.target.value);
+    const d = Math.round((1 - v / 3000) * 100);
+    const s = v < 500 ? 30 : v < 1000 ? 60 : 130;
+    const next = { ...weatherState, visibility_meters: v, fog_density: d, recommended_speed_limit: s, active_warning: v < 500 ? 'SEVERE_FOG_WARNING' : 'NONE' };
+    setWeatherState(next);
+    try { await fetch(`/api/v1/cascade/weather?visibility=${v}&fog_density=${d}&speed_limit=${s}`, { method: 'POST' }); } catch {}
+  };
 
+  /* ────────────────────────────────────────────
+     LIVE ROUTE SEARCH  →  trainBetweenStations
+  ──────────────────────────────────────────── */
+  const searchRoute = useCallback(async () => {
+    if (!fromCode || !toCode) return;
+    setRouteLoading(true);
+    setRouteError(null);
+    setRouteTrains([]);
+    setSearchMode(true);
     try {
-      await fetch(`/api/v1/cascade/weather?visibility=${visibility}&fog_density=${density}&speed_limit=${speedLimit}`, { method: 'POST' });
+      const today = new Date();
+      const dateStr = `${today.getDate().toString().padStart(2,'0')}-${(today.getMonth()+1).toString().padStart(2,'0')}-${today.getFullYear()}`;
+      const res = await fetch(
+        `/api/v1/trains/rapidapi/trains-between-stations?from_station_code=${fromCode}&to_station_code=${toCode}&date_of_journey=${dateStr}`
+      );
+      if (!res.ok) throw new Error(`API ${res.status}`);
+      const json = await res.json();
+      /* irctc1 provider returns data.data[] or data[] */
+      const list = json?.data?.data || json?.data || [];
+      setRouteTrains(Array.isArray(list) ? list : []);
     } catch (err) {
-      console.error(err);
+      setRouteError(err.message || 'Failed to fetch route trains');
+    } finally {
+      setRouteLoading(false);
     }
-  };
+  }, [fromCode, toCode]);
 
-  // Station coordinate projection
-  const stations = {
-    "NDLS": { name: "New Delhi", x: 100, y_up: 70, y_down: 135 },
-    "GZB": { name: "Ghaziabad", x: 280, y_up: 70, y_down: 135 },
-    "ALJN": { name: "Aligarh", x: 550, y_up: 70, y_down: 135 },
-    "CNB": { name: "Kanpur Central", x: 800, y_up: 70, y_down: 135 }
-  };
-
-  const stationsGeo = {
-    "NDLS": { name: "New Delhi", lat: 28.643, lng: 77.222 },
-    "GZB": { name: "Ghaziabad", lat: 28.672, lng: 77.436 },
-    "ALJN": { name: "Aligarh", lat: 27.892, lng: 78.078 },
-    "CNB": { name: "Kanpur Central", lat: 26.448, lng: 80.350 }
-  };
-
-  const mapRef = useRef(null);
-  const leafletInstance = useRef(null);
-  const markersRef = useRef({});
-
-  // Helper to generate mock trains for Western and Southern zones based on step
-  const getTrainsForZone = () => {
-    if (selectedZone === 'NORTH') {
-      return trains;
+  /* ────────────────────────────────────────────
+     LIVE STATION BOARD  →  getLiveStation
+  ──────────────────────────────────────────── */
+  const fetchStationBoard = useCallback(async (code) => {
+    setStationLoading(true);
+    setStationBoard(null);
+    try {
+      const res = await fetch(`/api/v1/trains/rapidapi/live-station?station_code=${code}&hours=2`);
+      if (!res.ok) throw new Error(`API ${res.status}`);
+      const json = await res.json();
+      const list = json?.data?.data || json?.data || [];
+      setStationBoard({ code, trains: Array.isArray(list) ? list : [] });
+    } catch {
+      setStationBoard({ code, trains: [], error: true });
+    } finally {
+      setStationLoading(false);
     }
-    
-    const step = scenarioStep;
-    
-    if (selectedZone === 'WEST') {
-      return [
-        {
-          train_no: "12009",
-          train_name: "MMCT-ADI Shatabdi Express",
-          current_station: step <= 1 ? "MMCT" : step <= 4 ? "ST" : "BRC",
-          current_delay: step === 3 ? 15 : 0,
-          status: step === 1 ? "HELD" : "RUNNING",
-          latitude: 18.971 + (step / 6) * (23.027 - 18.971),
-          longitude: 72.820 + (step / 6) * (72.601 - 72.820)
-        },
-        {
-          train_no: "20901",
-          train_name: "Mumbai-Gandhinagar Vande Bharat",
-          current_station: step <= 2 ? "BRC" : "ADI",
-          current_delay: 0,
-          status: "RUNNING",
-          latitude: 22.312 + (step / 6) * (23.027 - 22.312),
-          longitude: 73.181 + (step / 6) * (72.601 - 73.181)
-        },
-        {
-          train_no: "CONCOR-701",
-          train_name: "Container Cargo Freight",
-          current_station: "ST",
-          current_delay: step >= 4 ? 30 : 5,
-          status: step >= 4 ? "HELD_AT_LOOP" : "RUNNING",
-          latitude: 21.205,
-          longitude: 72.841
-        }
-      ];
-    }
-    
-    if (selectedZone === 'SOUTH') {
-      return [
-        {
-          train_no: "12008",
-          train_name: "SBC-MAS Shatabdi Express",
-          current_station: step <= 2 ? "SBC" : step <= 4 ? "BWT" : "JTJ",
-          current_delay: step >= 3 ? 20 : 0,
-          status: step === 2 ? "HELD" : "RUNNING",
-          latitude: 12.978 + (step / 6) * (13.082 - 12.978),
-          longitude: 77.572 + (step / 6) * (80.275 - 77.572)
-        },
-        {
-          train_no: "20608",
-          train_name: "SBC-MAS Vande Bharat",
-          current_station: step <= 1 ? "JTJ" : "MAS",
-          current_delay: 0,
-          status: "RUNNING",
-          latitude: 12.571 + (step / 6) * (13.082 - 12.571),
-          longitude: 78.580 + (step / 6) * (80.275 - 78.580)
-        },
-        {
-          train_no: "BOXN-505",
-          train_name: "Steel Ore Cargo",
-          current_station: "BWT",
-          current_delay: step >= 3 ? 25 : 10,
-          status: step >= 3 ? "HELD_AT_LOOP" : "RUNNING",
-          latitude: 12.969,
-          longitude: 78.204
-        }
-      ];
-    }
+  }, []);
 
-    if (selectedZone === 'ALL') {
-      const north = trains;
-      const west = [
-        {
-          train_no: "12009",
-          train_name: "MMCT-ADI Shatabdi Express",
-          current_station: step <= 1 ? "MMCT" : step <= 4 ? "ST" : "BRC",
-          current_delay: step === 3 ? 15 : 0,
-          status: step === 1 ? "HELD" : "RUNNING",
-          latitude: 18.971 + (step / 6) * (23.027 - 18.971),
-          longitude: 72.820 + (step / 6) * (72.601 - 72.820)
-        },
-        {
-          train_no: "20901",
-          train_name: "Mumbai-Gandhinagar Vande Bharat",
-          current_station: step <= 2 ? "BRC" : "ADI",
-          current_delay: 0,
-          status: "RUNNING",
-          latitude: 22.312 + (step / 6) * (23.027 - 22.312),
-          longitude: 73.181 + (step / 6) * (72.601 - 73.181)
-        },
-        {
-          train_no: "CONCOR-701",
-          train_name: "Container Cargo Freight",
-          current_station: "ST",
-          current_delay: step >= 4 ? 30 : 5,
-          status: step >= 4 ? "HELD_AT_LOOP" : "RUNNING",
-          latitude: 21.205,
-          longitude: 72.841
-        }
-      ];
-      const south = [
-        {
-          train_no: "12008",
-          train_name: "SBC-MAS Shatabdi Express",
-          current_station: step <= 2 ? "SBC" : step <= 4 ? "BWT" : "JTJ",
-          current_delay: step >= 3 ? 20 : 0,
-          status: step === 2 ? "HELD" : "RUNNING",
-          latitude: 12.978 + (step / 6) * (13.082 - 12.978),
-          longitude: 77.572 + (step / 6) * (80.275 - 77.572)
-        },
-        {
-          train_no: "20608",
-          train_name: "SBC-MAS Vande Bharat",
-          current_station: step <= 1 ? "JTJ" : "MAS",
-          current_delay: 0,
-          status: "RUNNING",
-          latitude: 12.571 + (step / 6) * (13.082 - 12.571),
-          longitude: 78.580 + (step / 6) * (80.275 - 78.580)
-        },
-        {
-          train_no: "BOXN-505",
-          train_name: "Steel Ore Cargo",
-          current_station: "BWT",
-          current_delay: step >= 3 ? 25 : 10,
-          status: step >= 3 ? "HELD_AT_LOOP" : "RUNNING",
-          latitude: 12.969,
-          longitude: 78.204
-        }
-      ];
-      return [...north, ...west, ...south];
+  /* ────────────────────────────────────────────
+     LIVE TRAIN STATUS FETCH
+  ──────────────────────────────────────────── */
+  const fetchLiveStatus = useCallback(async (trainNo) => {
+    setLiveLoading(true);
+    setLiveStatus(null);
+    try {
+      const res = await fetch(`/api/v1/trains/rapidapi/live-status?train_no=${trainNo}&start_day=0`);
+      if (!res.ok) throw new Error(`API ${res.status}`);
+      const json = await res.json();
+      setLiveStatus({ trainNo, data: json?.data || json });
+    } catch {
+      setLiveStatus({ trainNo, data: null, error: true });
+    } finally {
+      setLiveLoading(false);
     }
-    
-    return trains;
-  };
+  }, []);
 
-  const getStationsForZone = () => {
-    if (selectedZone === 'WEST') {
-      return {
-        "MMCT": { name: "Mumbai Central", x: 100, y_up: 70, y_down: 135 },
-        "ST": { name: "Surat", x: 280, y_up: 70, y_down: 135 },
-        "BRC": { name: "Vadodara Jn", x: 550, y_up: 70, y_down: 135 },
-        "ADI": { name: "Ahmedabad Jn", x: 800, y_up: 70, y_down: 135 }
-      };
-    }
-    if (selectedZone === 'SOUTH') {
-      return {
-        "SBC": { name: "KSR Bengaluru", x: 100, y_up: 70, y_down: 135 },
-        "BWT": { name: "Bangarapet", x: 280, y_up: 70, y_down: 135 },
-        "JTJ": { name: "Jolarpettai", x: 550, y_up: 70, y_down: 135 },
-        "MAS": { name: "Chennai Central", x: 800, y_up: 70, y_down: 135 }
-      };
-    }
-    return stations;
-  };
-
-  // Leaflet map initialization
-  useEffect(() => {
-    if (viewMode === 'geo' && mapRef.current && !leafletInstance.current && window.L) {
-      const L = window.L;
-      
-      const map = L.map(mapRef.current, {
-        center: [27.5, 78.8],
-        zoom: 7,
-        zoomControl: false,
-        attributionControl: false
+  /* ────────────────────────────────────────────
+     DETERMINE ACTIVE TRAINS for the map
+  ──────────────────────────────────────────── */
+  const activeTrains = (() => {
+    if (searchMode && routeTrains.length) {
+      /* Map IRCTC response fields → our internal shape */
+      return routeTrains.slice(0, 20).map(t => {
+        const no   = t.train_no || t.trainNo || '';
+        const name = t.train_name || t.trainName || `Train ${no}`;
+        const from = (t.from_stn_code || t.source_stn_code || fromCode || '').toUpperCase();
+        const delay = parseInt(t.delay || t.delayed_by || t.lateBy || 0) || 0;
+        const coords = coordsFor(from);
+        return {
+          train_no:        no,
+          train_name:      name,
+          current_station: from,
+          current_delay:   delay,
+          status:          t.running_status || t.status || 'SCHEDULED',
+          latitude:        coords?.lat || 0,
+          longitude:       coords?.lng || 0,
+          arrival_time:    t.arrival_time || t.arrivalTime || '--',
+          departure_time:  t.departure_time || t.departureTime || '--',
+          duration:        t.duration || '--',
+          classes:         t.class_type || t.classes || '',
+        };
       });
+    }
+    /* Scenario trains enriched with coords */
+    const zone = ZONE_CONFIG[selectedZone];
+    return scenarioTrains
+      .filter(t => {
+        if (selectedZone === 'ALL') return true;
+        const c = coordsFor(t.current_station);
+        if (!c) return true;
+        return zone.stations.includes(t.current_station) ||
+          zone.stations.some(s => Math.abs(STATION_COORDS[s]?.lat - c.lat) < 3 &&
+                                   Math.abs(STATION_COORDS[s]?.lng - c.lng) < 3);
+      });
+  })();
 
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        maxZoom: 18
+  /* ────────────────────────────────────────────
+     MAP INITIALIZATION
+  ──────────────────────────────────────────── */
+  useEffect(() => {
+    if (viewMode !== 'geo') return;
+    if (!mapRef.current || !window.L) return;
+    if (leafletRef.current) return;   // already init
+
+    const L = window.L;
+    const map = L.map(mapRef.current, {
+      center: [22.0, 78.0],
+      zoom: 5,
+      zoomControl: false,
+      attributionControl: false,
+    });
+
+    // Dark CartoDB tiles
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      maxZoom: 18,
+    }).addTo(map);
+
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+    // Draw all zone track lines
+    Object.values(ZONE_CONFIG).forEach(zone => {
+      if (zone.stations.length < 2) return;
+      const pts = zone.stations
+        .map(c => STATION_COORDS[c])
+        .filter(Boolean)
+        .map(s => [s.lat, s.lng]);
+      if (pts.length >= 2) {
+        L.polyline(pts, { color: zone.color, weight: 2.5, opacity: 0.5, dashArray: '6 8' }).addTo(map);
+      }
+    });
+
+    // Station markers (permanent label, clickable for station board)
+    Object.entries(STATION_COORDS).forEach(([code, s]) => {
+      const m = L.circleMarker([s.lat, s.lng], {
+        radius: 5, color: '#ffffff', weight: 1.2,
+        fillColor: '#030712', fillOpacity: 1,
       }).addTo(map);
 
-      L.control.zoom({ position: 'bottomright' }).addTo(map);
+      m.bindTooltip(
+        `<div style="font-family:monospace;font-size:0.65rem;"><strong style="color:#00F0FF">${s.name}</strong><br/><span style="color:#aaa">${code}</span></div>`,
+        { permanent: false, direction: 'top', className: 'custom-map-tooltip' }
+      );
 
-      // Station coordinates
-      const northCoords = [
-        [28.643, 77.222], // NDLS
-        [28.672, 77.436], // GZB
-        [27.892, 78.078], // ALJN
-        [26.448, 80.350]  // CNB
-      ];
-      const westCoords = [
-        [18.971, 72.820], // MMCT
-        [21.205, 72.841], // ST
-        [22.312, 73.181], // BRC
-        [23.027, 72.601]  // ADI
-      ];
-      const southCoords = [
-        [12.978, 77.572], // SBC
-        [12.969, 78.204], // BWT
-        [12.571, 78.580], // JTJ
-        [13.082, 80.275]  // MAS
-      ];
+      // Click → fetch live station board
+      m.on('click', () => fetchStationBoard(code));
+      stationMarkersRef.current[code] = m;
+    });
 
-      // Draw all tracks
-      L.polyline(northCoords, { color: '#00F0FF', weight: 3, opacity: 0.6, dashArray: '5, 8' }).addTo(map);
-      L.polyline(northCoords.map(c => [c[0] - 0.02, c[1] - 0.02]), { color: '#A855F7', weight: 3, opacity: 0.6, dashArray: '5, 8' }).addTo(map);
-
-      L.polyline(westCoords, { color: '#00F0FF', weight: 3, opacity: 0.6, dashArray: '5, 8' }).addTo(map);
-      L.polyline(westCoords.map(c => [c[0] - 0.02, c[1] - 0.02]), { color: '#A855F7', weight: 3, opacity: 0.6, dashArray: '5, 8' }).addTo(map);
-
-      L.polyline(southCoords, { color: '#00F0FF', weight: 3, opacity: 0.6, dashArray: '5, 8' }).addTo(map);
-      L.polyline(southCoords.map(c => [c[0] - 0.02, c[1] - 0.02]), { color: '#A855F7', weight: 3, opacity: 0.6, dashArray: '5, 8' }).addTo(map);
-
-      // Station Pins combined
-      const allStationsGeo = {
-        ...stationsGeo,
-        "MMCT": { name: "Mumbai Central", lat: 18.971, lng: 72.820 },
-        "ST": { name: "Surat", lat: 21.205, lng: 72.841 },
-        "BRC": { name: "Vadodara Jn", lat: 22.312, lng: 73.181 },
-        "ADI": { name: "Ahmedabad Jn", lat: 23.027, lng: 72.601 },
-        "SBC": { name: "KSR Bengaluru", lat: 12.978, lng: 77.572 },
-        "BWT": { name: "Bangarapet", lat: 12.969, lng: 78.204 },
-        "JTJ": { name: "Jolarpettai", lat: 12.571, lng: 78.580 },
-        "MAS": { name: "Chennai Central", lat: 13.082, lng: 80.275 }
-      };
-
-      Object.entries(allStationsGeo).forEach(([code, station]) => {
-        const outerCircle = L.circleMarker([station.lat, station.lng], {
-          radius: 7,
-          color: '#ffffff',
-          weight: 1.5,
-          fillColor: '#030712',
-          fillOpacity: 1
-        }).addTo(map);
-
-        outerCircle.bindTooltip(`<strong style="color: var(--color-primary)">${station.name} (${code})</strong>`, {
-          permanent: false,
-          direction: 'top',
-          className: 'custom-map-tooltip'
-        });
-      });
-
-      leafletInstance.current = map;
-    }
+    leafletRef.current = map;
 
     return () => {
-      if (leafletInstance.current) {
-        leafletInstance.current.remove();
-        leafletInstance.current = null;
-        markersRef.current = {};
-      }
+      leafletRef.current?.remove();
+      leafletRef.current = null;
+      markersRef.current = {};
+      stationMarkersRef.current = {};
     };
-  }, [viewMode]);
+  }, [viewMode]);   // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Pan and zoom map view dynamically based on selected zone
+  /* ── Zone pan/zoom ── */
   useEffect(() => {
-    if (leafletInstance.current && window.L) {
-      const map = leafletInstance.current;
-      if (selectedZone === 'NORTH') {
-        map.setView([27.5, 78.8], 7);
-      } else if (selectedZone === 'WEST') {
-        map.setView([21.0, 73.0], 7);
-      } else if (selectedZone === 'SOUTH') {
-        map.setView([12.8, 79.0], 8);
-      } else if (selectedZone === 'ALL') {
-        map.setView([21.5, 78.0], 5);
+    const map = leafletRef.current;
+    if (!map) return;
+    const cfg = ZONE_CONFIG[selectedZone];
+    map.flyTo(cfg.center, cfg.zoom, { duration: 1 });
+  }, [selectedZone]);
+
+  /* ── Train markers update ── */
+  useEffect(() => {
+    const map = leafletRef.current;
+    if (!map || !window.L) return;
+    const L = window.L;
+
+    const seen = new Set();
+
+    activeTrains.forEach(train => {
+      const lat = train.latitude;
+      const lng = train.longitude;
+      if (!lat && !lng) return;   // skip if no coords
+
+      const delay     = train.current_delay || 0;
+      const isFreight = /BOXN|CONCOR|GOODS|FRT/i.test(train.train_no);
+      const color     = trainColor(delay, isFreight);
+      const label     = `
+        <div style="font-family:monospace;font-size:0.68rem;line-height:1.4;">
+          <strong style="color:#fff">${train.train_no}</strong><br/>
+          <span style="color:${color}">${train.train_name}</span><br/>
+          <span style="color:#aaa">@ ${train.current_station}</span>
+          ${delay ? `<br/><span style="color:#EF4444">+${delay}m delay</span>` : ''}
+          ${train.arrival_time && train.arrival_time !== '--' ? `<br/>Arr: ${train.arrival_time}` : ''}
+        </div>`;
+
+      seen.add(train.train_no);
+
+      if (markersRef.current[train.train_no]) {
+        const m = markersRef.current[train.train_no];
+        m.setLatLng([lat, lng]);
+        m.setStyle({ fillColor: color, color });
+        m.getTooltip()?.setContent(label);
+      } else {
+        const m = L.circleMarker([lat, lng], {
+          radius: 9, fillColor: color, color, weight: 1.5, fillOpacity: 1,
+        }).addTo(map);
+        m.bindTooltip(label, { permanent: true, direction: 'top', offset: [0, -10], className: 'custom-map-tooltip' });
+        m.on('click', () => { setSelectedTrain(train); fetchLiveStatus(train.train_no); });
+        markersRef.current[train.train_no] = m;
+      }
+    });
+
+    /* Remove stale markers */
+    Object.keys(markersRef.current).forEach(no => {
+      if (!seen.has(no)) {
+        markersRef.current[no].remove();
+        delete markersRef.current[no];
+      }
+    });
+  }, [activeTrains, viewMode]);   // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* ── Draw route line on map when search returns results ── */
+  useEffect(() => {
+    const map = leafletRef.current;
+    if (!map || !window.L) return;
+    const L = window.L;
+
+    if (routeLineRef.current) { routeLineRef.current.remove(); routeLineRef.current = null; }
+
+    if (searchMode) {
+      const a = STATION_COORDS[fromCode];
+      const b = STATION_COORDS[toCode];
+      if (a && b) {
+        routeLineRef.current = L.polyline([[a.lat, a.lng], [b.lat, b.lng]], {
+          color: '#FACC15', weight: 3, opacity: 0.85, dashArray: '10 6',
+        }).addTo(map);
+        map.flyToBounds([[a.lat, a.lng], [b.lat, b.lng]], { padding: [60, 60], duration: 1 });
       }
     }
-  }, [selectedZone, viewMode]);
+  }, [searchMode, fromCode, toCode, routeTrains]);
 
-  // Update train markers on live geographic map
-  useEffect(() => {
-    if (viewMode === 'geo' && leafletInstance.current && window.L) {
-      const L = window.L;
-      const map = leafletInstance.current;
-      const activeTrains = getTrainsForZone();
-
-      activeTrains.forEach(train => {
-        const lat = train.latitude;
-        const lng = train.longitude;
-        const isFreight = train.train_no === 'BOXN-902' || train.train_no === 'BOXN-505' || train.train_no === 'CONCOR-701';
-        const isDelayed = train.current_delay > 0;
-        const trainColor = isFreight ? 'var(--color-warning)' : isDelayed ? 'var(--color-danger)' : 'var(--color-accent)';
-
-        // Offset DOWN trains slightly
-        const isUpTrain = train.train_no === '22415' || train.train_no === '20901' || train.train_no === '20608';
-        const latOffset = isUpTrain ? 0 : -0.02;
-        const lngOffset = isUpTrain ? 0 : -0.02;
-
-        const tooltipContent = `
-          <div style="font-family: monospace; font-size: 0.7rem; line-height: 1.3;">
-            <strong style="color:#ffffff">${train.train_no}</strong><br/>
-            <span style="color:${trainColor}">${train.train_name}</span><br/>
-            Status: <strong>${train.status}</strong><br/>
-            Speed: <strong>${isUpTrain ? '130' : isFreight ? '65' : '110'} km/h</strong>
-            ${isDelayed ? `<br/><span style="color:var(--color-danger)">Delay: +${train.current_delay}m</span>` : ''}
-          </div>
-        `;
-
-        if (markersRef.current[train.train_no]) {
-          markersRef.current[train.train_no].setLatLng([lat + latOffset, lng + lngOffset]);
-          markersRef.current[train.train_no].setStyle({ fillColor: trainColor, color: trainColor });
-          markersRef.current[train.train_no].getTooltip().setContent(tooltipContent);
-        } else {
-          const marker = L.circleMarker([lat + latOffset, lng + lngOffset], {
-            radius: 8,
-            fillColor: trainColor,
-            color: '#ffffff',
-            weight: 1.5,
-            fillOpacity: 1
-          }).addTo(map);
-
-          marker.bindTooltip(tooltipContent, {
-            permanent: true,
-            direction: 'top',
-            offset: [0, -10],
-            className: 'custom-map-tooltip'
-          });
-
-          marker.on('click', () => {
-            setSelectedTrain(train);
-            setSelectedDisruption(null);
-          });
-
-          markersRef.current[train.train_no] = marker;
-        }
-      });
-
-      // Cleanup removed trains
-      Object.keys(markersRef.current).forEach(trainNo => {
-        if (!activeTrains.some(t => t.train_no === trainNo)) {
-          markersRef.current[trainNo].remove();
-          delete markersRef.current[trainNo];
-        }
-      });
-    }
-  }, [trains, viewMode, selectedZone]);
-
-  const isSectionDisrupted = (fromCode, toCode) => {
-    return disruptions.some(d => 
-      d.status === 'ACTIVE' && 
-      ((d.section_from === fromCode && d.section_to === toCode) ||
-       (d.section_from === fromCode && toCode === 'ALJN'))
-    );
+  /* ── Schematic: station & train position helpers ── */
+  const schStations = {
+    NDLS: { name: 'New Delhi', x: 100, y_up: 70, y_down: 135 },
+    GZB:  { name: 'Ghaziabad', x: 280, y_up: 70, y_down: 135 },
+    ALJN: { name: 'Aligarh',   x: 550, y_up: 70, y_down: 135 },
+    CNB:  { name: 'Kanpur Central', x: 800, y_up: 70, y_down: 135 },
   };
 
-  const getSegmentClass = (fromCode, toCode) => {
-    if (isSectionDisrupted(fromCode, toCode)) {
-      const activeDisp = disruptions.find(d => d.status === 'ACTIVE');
-      return activeDisp?.severity === 'CRITICAL' ? 'disrupted critical' : 'disrupted';
-    }
-    return '';
+  const getSchTrainX = (train) => {
+    const lng = train.longitude || 0;
+    if (lng <= 77.222) return 100;
+    if (lng <= 77.436) return 100 + ((lng - 77.222) / (77.436 - 77.222)) * 180;
+    if (lng <= 78.078) return 280 + ((lng - 77.436) / (78.078 - 77.436)) * 270;
+    if (lng <= 80.350) return 550 + ((lng - 78.078) / (80.350 - 78.078)) * 250;
+    return 800;
   };
 
-  const getTrainPosition = (train, currentStations) => {
-    const lon = train.longitude;
-    let x = 450;
-    
-    if (selectedZone === 'WEST') {
-      if (lon >= 72.820) x = 100;
-      else if (lon >= 72.841) x = 100 + ((72.820 - lon) / (72.820 - 72.841)) * 180;
-      else if (lon >= 73.181) x = 280 + ((72.841 - lon) / (72.841 - 73.181)) * 270;
-      else if (lon >= 72.601) x = 550 + ((73.181 - lon) / (73.181 - 72.601)) * 250;
-      else x = 800;
-    } else if (selectedZone === 'SOUTH') {
-      if (lon <= 77.572) x = 100;
-      else if (lon <= 78.204) x = 100 + ((lon - 77.572) / (78.204 - 77.572)) * 180;
-      else if (lon <= 78.580) x = 280 + ((lon - 78.204) / (78.580 - 78.204)) * 270;
-      else if (lon <= 80.275) x = 550 + ((lon - 78.580) / (80.275 - 78.580)) * 250;
-      else x = 800;
-    } else {
-      if (lon <= 77.222) x = 100;
-      else if (lon <= 77.436) x = 100 + ((lon - 77.222) / (77.436 - 77.222)) * 180;
-      else if (lon <= 78.078) x = 280 + ((lon - 77.436) / (78.078 - 77.436)) * 270;
-      else if (lon <= 80.350) x = 550 + ((lon - 78.078) / (80.350 - 78.078)) * 250;
-      else x = 800;
-    }
-    
-    let y = (train.train_no === "22415" || train.train_no === "20901" || train.train_no === "20608") ? 70 : 135;
-    let xOffset = 0;
-    const activeTrains = getTrainsForZone();
-    if ((train.train_no === "BOXN-902" || train.train_no === "BOXN-505" || train.train_no === "CONCOR-701") && 
-        activeTrains.some(t => (t.train_no === "12002" || t.train_no === "12008" || t.train_no === "12009") && Math.abs(t.longitude - train.longitude) < 0.02)) {
-      xOffset = 18;
-    }
+  const isSectionDisrupted = (a, b) =>
+    disruptions.some(d => d.status === 'ACTIVE' &&
+      (d.section_from === a && d.section_to === b || d.section_from === a));
 
-    return { x: x + xOffset, y };
-  };
-
-  const fetchDisruptionDetails = async (disp) => {
-    setSelectedTrain(null);
-    try {
-      const res = await fetch(`/api/v1/cascade/disruption-details?disruption_id=${disp.id}`);
-      if (res.ok) {
-        const data = await res.json();
-        setSelectedDisruption({ ...disp, ...data });
-      }
-    } catch (err) {
-      console.error(err);
-      setSelectedDisruption(disp);
-    }
-  };
-
-  const drawTrackSegment = (fromCode, toCode, yCoord, isUpLine, currentStations) => {
-    const fromStation = currentStations[fromCode];
-    const toStation = currentStations[toCode];
-    const disruptionClass = getSegmentClass(fromCode, toCode);
-    const trackColorClass = isUpLine ? 'up-line' : 'down-line';
-    
-    return (
-      <g key={`${fromCode}-${toCode}-${yCoord}`}>
-        <line 
-          x1={fromStation.x} 
-          y1={yCoord} 
-          x2={toStation.x} 
-          y2={yCoord} 
-          className={`track-glow ${trackColorClass} ${disruptionClass}`}
-        />
-        <line 
-          x1={fromStation.x} 
-          y1={yCoord} 
-          x2={toStation.x} 
-          y2={yCoord} 
-          className={`track-core ${trackColorClass} ${disruptionClass}`}
-        />
-      </g>
-    );
-  };
-
+  /* ════════════════════════════════════════════
+     RENDER
+  ════════════════════════════════════════════ */
   return (
-    <div className="glass-card" style={{ gridColumn: 'span 8', minHeight: '520px', display: 'flex', flexDirection: 'column', padding: '24px' }}>
-      {/* Header Info */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
-        <div>
-          <h3 style={{ fontSize: '1.2rem', fontWeight: 800, letterSpacing: '0.5px' }}>
-            {selectedZone === 'ALL' ? 'All India Live Telemetry Network' : `Sector ${selectedZone.charAt(0) + selectedZone.slice(1).toLowerCase()} Live Telemetry Corridor`}
-          </h3>
-          <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Interactive Indian Railways Kavach Interlocking Desk</p>
-        </div>
-        <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-          {/* Zone Selector dropdown */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'rgba(255,255,255,0.02)', padding: '4px 8px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
-            <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', fontWeight: 'bold', textTransform: 'uppercase', marginRight: '5px' }}>Zone:</span>
-            <select 
-              value={selectedZone} 
-              onChange={(e) => {
-                const zone = e.target.value;
-                setSelectedZone(zone);
-                if (zone === 'ALL') setViewMode('geo');
-              }}
-              style={{
-                background: '#090d16',
-                border: '1px solid var(--border-color)',
-                borderRadius: '4px',
-                color: 'var(--color-text-main)',
-                fontSize: '0.65rem',
-                fontWeight: 'bold',
-                padding: '2px 6px',
-                cursor: 'pointer',
-                outline: 'none'
-              }}
-            >
-              <option value="NORTH">Northern (NR/NCR)</option>
-              <option value="WEST">Western (WR)</option>
-              <option value="SOUTH">Southern (SR/SWR)</option>
-              <option value="ALL">All India Grid</option>
-            </select>
-          </div>
+    <div className="glass-card" style={{
+      gridColumn: 'span 8', minHeight: '560px',
+      display: 'flex', flexDirection: 'column', padding: '20px',
+    }}>
 
-          {/* View Mode Toggle */}
-          <div className="toggle-group" style={{ display: 'flex', background: 'rgba(255,255,255,0.03)', padding: '2px', borderRadius: '6px', border: '1px solid var(--border-color)', marginRight: '10px' }}>
-            <button 
-              onClick={() => setViewMode('schematic')} 
-              disabled={selectedZone === 'ALL'}
+      {/* ── Header ── */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
+        <div>
+          <h3 style={{ fontSize: '1.1rem', fontWeight: 800, letterSpacing: '0.5px', margin: 0 }}>
+            {searchMode
+              ? `Live Trains: ${fromCode} → ${toCode}`
+              : ZONE_CONFIG[selectedZone].label + ' Live Telemetry'}
+          </h3>
+          <p style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', margin: 0 }}>
+            {searchMode
+              ? `${routeTrains.length} trains found · click a marker for live status`
+              : 'Kavach Interlocking Desk · Click station for live board'}
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+          {/* Zone selector */}
+          {!searchMode && (
+            <select
+              value={selectedZone}
+              onChange={e => { setSelectedZone(e.target.value); if (e.target.value === 'ALL') setViewMode('geo'); }}
+              style={{ background: '#090d16', border: '1px solid var(--border-color)', borderRadius: '5px', color: 'var(--color-text-main)', fontSize: '0.65rem', fontWeight: 'bold', padding: '4px 8px', cursor: 'pointer', outline: 'none' }}
+            >
+              {Object.entries(ZONE_CONFIG).map(([k, v]) => (
+                <option key={k} value={k}>{v.label}</option>
+              ))}
+            </select>
+          )}
+
+          {/* View toggle */}
+          <div style={{ display: 'flex', background: 'rgba(255,255,255,0.03)', padding: '2px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+            <button
+              onClick={() => setViewMode('schematic')}
+              disabled={searchMode || selectedZone === 'ALL'}
               style={{
-                padding: '4px 10px',
-                fontSize: '0.65rem',
-                fontWeight: 'bold',
+                padding: '4px 10px', fontSize: '0.62rem', fontWeight: 'bold', border: 'none', borderRadius: '4px', cursor: 'pointer', transition: 'all 0.2s',
                 background: viewMode === 'schematic' ? 'var(--color-primary)' : 'transparent',
                 color: viewMode === 'schematic' ? 'black' : 'var(--color-text-muted)',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                opacity: selectedZone === 'ALL' ? 0.5 : 1
+                opacity: (searchMode || selectedZone === 'ALL') ? 0.4 : 1,
               }}
-            >
-              SCHEMATIC VIEW
-            </button>
-            <button 
-              onClick={() => setViewMode('geo')} 
+            >SCHEMATIC</button>
+            <button
+              onClick={() => setViewMode('geo')}
               style={{
-                padding: '4px 10px',
-                fontSize: '0.65rem',
-                fontWeight: 'bold',
+                padding: '4px 10px', fontSize: '0.62rem', fontWeight: 'bold', border: 'none', borderRadius: '4px', cursor: 'pointer', transition: 'all 0.2s',
                 background: viewMode === 'geo' ? 'var(--color-primary)' : 'transparent',
                 color: viewMode === 'geo' ? 'black' : 'var(--color-text-muted)',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                transition: 'all 0.2s'
               }}
-            >
-              GEOGRAPHIC RADAR
-            </button>
+            >GEO MAP</button>
           </div>
 
-          <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-accent)' }}>
-            <span className="led-indicator active" style={{ width: '8px', height: '8px' }}></span> KAVACH DESK SYNCED
+          {/* KAVACH indicator */}
+          <span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.68rem', fontWeight: 600, color: 'var(--color-accent)' }}>
+            <span className="led-indicator active" style={{ width: '7px', height: '7px' }} />
+            KAVACH LIVE
           </span>
         </div>
       </div>
 
-      {/* SVG Railway Track Map or Geographic Map */}
-      {viewMode === 'schematic' ? (
-        (() => {
-          const currentStations = getStationsForZone();
-          const activeTrains = getTrainsForZone();
-          return (
-            <div className="map-container" style={{ position: 'relative', background: 'var(--bg-terminal)', borderRadius: '10px', padding: '15px', border: '1px solid var(--border-color)', marginBottom: '20px' }}>
-              <svg viewBox="0 0 900 220" width="100%" height="190px" style={{ minWidth: '700px' }}>
-                <defs>
-                  <filter id="svg-neon-glow" x="-20%" y="-20%" width="140%" height="140%">
-                    <feGaussianBlur stdDeviation="4" result="blur" />
-                    <feMerge>
-                      <feMergeNode in="blur" />
-                      <feMergeNode in="SourceGraphic" />
-                    </feMerge>
-                  </filter>
-                  <pattern id="radar-grid" width="30" height="30" patternUnits="userSpaceOnUse">
-                    <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(255, 255, 255, 0.01)" strokeWidth="1" />
-                  </pattern>
-                </defs>
-
-                <rect width="900" height="220" fill="url(#radar-grid)" />
-
-                <style>{`
-                  .track-glow { stroke-width: 8; stroke-linecap: round; opacity: 0.12; transition: all 0.5s; }
-                  .track-glow.up-line { stroke: var(--color-primary); }
-                  .track-glow.down-line { stroke: var(--color-secondary); }
-                  .track-glow.disrupted { stroke: var(--color-warning); opacity: 0.35; animation: pulse-glow 1.5s infinite; filter: url(#svg-neon-glow); }
-                  .track-glow.disrupted.critical { stroke: var(--color-danger); opacity: 0.45; animation: pulse-glow-fast 1s infinite; filter: url(#svg-neon-glow); }
-                  
-                  .track-core { stroke-width: 2.5; stroke-linecap: round; stroke-dasharray: 6 5; transition: all 0.5s; }
-                  .track-core.up-line { stroke: var(--color-primary); opacity: 0.5; }
-                  .track-core.down-line { stroke: var(--color-secondary); opacity: 0.5; }
-                  .track-core.disrupted { stroke: var(--color-warning); opacity: 0.8; animation: blink-yellow 1.5s infinite; }
-                  .track-core.disrupted.critical { stroke: var(--color-danger); opacity: 0.95; animation: blink-red 1s infinite; }
-
-                  .crossover-line { stroke: rgba(255, 255, 255, 0.06); stroke-width: 1.5; stroke-dasharray: 3 3; }
-                  .crossover-line.active { stroke: var(--color-primary); opacity: 0.3; }
-
-                  .station-outer { fill: #030712; stroke: rgba(255, 255, 255, 0.1); stroke-width: 1.5; cursor: pointer; transition: all 0.3s; }
-                  .station-outer.active { stroke: var(--color-primary); }
-                  .station-outer.danger { stroke: var(--color-danger); filter: url(#svg-neon-glow); }
-                  .station-inner { fill: rgba(255, 255, 255, 0.15); transition: all 0.3s; }
-                  .station-inner.active { fill: var(--color-primary); }
-                  .station-inner.danger { fill: var(--color-danger); }
-                  
-                  .train-node { transition: all 0.8s cubic-bezier(0.25, 1, 0.5, 1); cursor: pointer; }
-                  .train-node:hover { filter: drop-shadow(0px 0px 8px var(--color-primary)); }
-                  .train-label-bg { fill: #090d16; stroke-width: 1; }
-                  
-                  @keyframes pulse-glow { 0%, 100% { opacity: 0.15; } 50% { opacity: 0.4; } }
-                  @keyframes pulse-glow-fast { 0%, 100% { opacity: 0.25; } 50% { opacity: 0.6; } }
-                  @keyframes blink-yellow { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
-                  @keyframes blink-red { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
-                `}</style>
-
-                {/* Draw Station Crossovers */}
-                {Object.values(currentStations).map((s, idx) => (
-                  <line 
-                    key={`cross-${idx}`} 
-                    x1={s.x} 
-                    y1={s.y_up} 
-                    x2={s.x} 
-                    y2={s.y_down} 
-                    className={`crossover-line ${disruptions.some(d => d.status === 'ACTIVE' && d.section_from === Object.keys(currentStations)[idx]) ? 'active' : ''}`}
-                  />
-                ))}
-
-                {/* UP Line Segments */}
-                {Object.keys(currentStations).map((code, idx, arr) => {
-                  if (idx === arr.length - 1) return null;
-                  return drawTrackSegment(code, arr[idx+1], 70, true, currentStations);
-                })}
-
-                {/* DOWN Line Segments */}
-                {Object.keys(currentStations).map((code, idx, arr) => {
-                  if (idx === arr.length - 1) return null;
-                  return drawTrackSegment(code, arr[idx+1], 135, false, currentStations);
-                })}
-
-                {/* Station Platform Nodes */}
-                {Object.entries(currentStations).map(([code, station]) => {
-                  const disp = disruptions.find(d => d.status === 'ACTIVE' && d.section_from === code);
-                  const hasDisruption = !!disp;
-
-                  let outerClass = hasDisruption ? "station-outer danger" : "station-outer active";
-                  let innerClass = hasDisruption ? "station-inner danger" : "station-inner active";
-
-                  return (
-                    <g key={code} onClick={() => hasDisruption ? fetchDisruptionDetails(disp) : null}>
-                      <rect x={station.x - 4} y={station.y_up - 6} width="8" height={station.y_down - station.y_up + 12} rx="2" fill="rgba(255, 255, 255, 0.02)" stroke="rgba(255, 255, 255, 0.05)" strokeWidth="1" />
-                      
-                      <circle cx={station.x} cy={station.y_up} r="8" className={outerClass} />
-                      <circle cx={station.x} cy={station.y_up} r="3.5" className={innerClass} />
-
-                      <circle cx={station.x} cy={station.y_down} r="8" className={outerClass} />
-                      <circle cx={station.x} cy={station.y_down} r="3.5" className={innerClass} />
-
-                      <rect x={station.x - 45} y="180" width="90" height="26" rx="4" fill="rgba(3, 5, 10, 0.85)" stroke="var(--border-color)" strokeWidth="1" />
-                      <text x={station.x} y="192" textAnchor="middle" fill="var(--color-text-main)" fontSize="0.65rem" fontWeight="800" letterSpacing="0.5px">{station.name}</text>
-                      <text x={station.x} y="203" textAnchor="middle" fill="var(--color-primary)" fontSize="0.55rem" fontWeight="600" letterSpacing="1px">{code}</text>
-                    </g>
-                  );
-                })}
-
-                {/* Active Train Nodes */}
-                {activeTrains.map((train) => {
-                  const pos = getTrainPosition(train, currentStations);
-                  const isDelayed = train.current_delay > 0;
-                  const isFreight = train.train_no === "BOXN-902" || train.train_no === "BOXN-505" || train.train_no === "CONCOR-701";
-                  
-                  const trainColor = isFreight ? "var(--color-warning)" : isDelayed ? "var(--color-danger)" : "var(--color-accent)";
-                  
-                  return (
-                    <g key={train.train_no} className="train-node" transform={`translate(${pos.x}, ${pos.y})`} onClick={() => { setSelectedTrain(train); setSelectedDisruption(null); }}>
-                      {/* Double Pulsing Radar Rings using native SVG <animate> */}
-                      <circle cx="0" cy="0" r="7.5" fill="none" stroke={trainColor} strokeWidth="1.2" opacity="0.8">
-                        <animate attributeName="r" values="7.5;22" dur="2s" repeatCount="indefinite" />
-                        <animate attributeName="opacity" values="0.8;0" dur="2s" repeatCount="indefinite" />
-                      </circle>
-                      <circle cx="0" cy="0" r="7.5" fill="none" stroke={trainColor} strokeWidth="1.2" opacity="0.8">
-                        <animate attributeName="r" values="7.5;22" dur="2s" begin="1s" repeatCount="indefinite" />
-                        <animate attributeName="opacity" values="0.8;0" dur="2s" begin="1s" repeatCount="indefinite" />
-                      </circle>
-
-                      {/* Train Core Node */}
-                      <circle cx="0" cy="0" r="8" fill={trainColor} filter="url(#svg-neon-glow)" />
-                      
-                      {/* Direction Chevrons (UP: ▶, DOWN: ◀) */}
-                      {pos.y === 70 ? (
-                        <path d="M-1.5,-3 L2,0 L-1.5,3" fill="none" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                      ) : (
-                        <path d="M1.5,-3 L-2,0 L1.5,3" fill="none" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                      )}
-
-                      <g transform={`translate(0, ${pos.y === 70 ? -24 : 24})`}>
-                        <rect x="-35" y="-10" width="70" height="15" rx="3" className="train-label-bg" fill="#030712" stroke={trainColor} strokeWidth="1" />
-                        <text x="0" y="0.5" textAnchor="middle" fill="var(--color-text-main)" fontSize="0.55rem" fontWeight="800" letterSpacing="0.5px">
-                          {train.train_no}
-                        </text>
-                        {isDelayed && (
-                          <text x="0" y="10" textAnchor="middle" fill="var(--color-danger)" fontSize="0.45rem" fontWeight="700">
-                            +{train.current_delay}m
-                          </text>
-                        )}
-                      </g>
-                    </g>
-                  );
-                })}
-              </svg>
-            </div>
-          );
-        })()
-      ) : (
-        <div className="map-container" style={{ position: 'relative', background: '#030712', borderRadius: '10px', height: '190px', border: '1px solid var(--border-color)', marginBottom: '20px', overflow: 'hidden' }}>
-          <div ref={mapRef} style={{ width: '100%', height: '100%' }} />
+      {/* ── Route Search Bar ── */}
+      <div style={{
+        background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)',
+        borderRadius: '8px', padding: '10px 14px', marginBottom: '12px',
+        display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap',
+      }}>
+        <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          🔍 Live Route
+        </span>
+        <input
+          value={fromInput}
+          onChange={e => { setFromInput(e.target.value.toUpperCase()); setFromCode(e.target.value.toUpperCase()); }}
+          placeholder="FROM (e.g. NDLS)"
+          maxLength={6}
+          style={{
+            width: '90px', background: '#0a0e1a', border: '1px solid var(--border-color)',
+            borderRadius: '4px', color: 'var(--color-primary)', fontSize: '0.75rem',
+            fontWeight: 700, padding: '5px 8px', outline: 'none', fontFamily: 'monospace',
+            textTransform: 'uppercase',
+          }}
+        />
+        <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>→</span>
+        <input
+          value={toInput}
+          onChange={e => { setToInput(e.target.value.toUpperCase()); setToCode(e.target.value.toUpperCase()); }}
+          placeholder="TO (e.g. CNB)"
+          maxLength={6}
+          style={{
+            width: '90px', background: '#0a0e1a', border: '1px solid var(--border-color)',
+            borderRadius: '4px', color: 'var(--color-accent)', fontSize: '0.75rem',
+            fontWeight: 700, padding: '5px 8px', outline: 'none', fontFamily: 'monospace',
+            textTransform: 'uppercase',
+          }}
+        />
+        <button
+          onClick={searchRoute}
+          disabled={routeLoading}
+          style={{
+            background: 'linear-gradient(135deg, var(--color-primary), var(--color-accent))',
+            border: 'none', borderRadius: '4px', color: 'black', fontWeight: 800,
+            fontSize: '0.65rem', padding: '6px 14px', cursor: 'pointer', letterSpacing: '0.5px',
+            opacity: routeLoading ? 0.6 : 1,
+          }}
+        >
+          {routeLoading ? '...' : 'SEARCH'}
+        </button>
+        {searchMode && (
+          <button
+            onClick={() => { setSearchMode(false); setRouteTrains([]); setRouteError(null); setStationBoard(null); }}
+            style={{
+              background: 'transparent', border: '1px solid var(--border-color)',
+              borderRadius: '4px', color: 'var(--color-text-muted)', fontWeight: 700,
+              fontSize: '0.65rem', padding: '5px 10px', cursor: 'pointer',
+            }}
+          >✕ Clear</button>
+        )}
+        {routeError && (
+          <span style={{ fontSize: '0.65rem', color: 'var(--color-danger)' }}>⚠ {routeError}</span>
+        )}
+        {/* Quick preset buttons */}
+        <div style={{ display: 'flex', gap: '4px', marginLeft: 'auto' }}>
+          {[
+            ['NDLS', 'CNB', 'DEL→KNP'],
+            ['NDLS', 'HWH', 'DEL→HWH'],
+            ['MMCT', 'ADI', 'BOM→ADI'],
+            ['SBC', 'MAS', 'BLR→MAS'],
+          ].map(([f, t, lbl]) => (
+            <button
+              key={lbl}
+              onClick={() => { setFromCode(f); setFromInput(f); setToCode(t); setToInput(t); }}
+              style={{
+                background: fromCode === f && toCode === t ? 'rgba(0,240,255,0.1)' : 'rgba(255,255,255,0.02)',
+                border: `1px solid ${fromCode === f && toCode === t ? 'var(--color-primary)' : 'var(--border-color)'}`,
+                borderRadius: '4px', color: fromCode === f && toCode === t ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                fontSize: '0.58rem', fontWeight: 700, padding: '3px 7px', cursor: 'pointer',
+              }}
+            >{lbl}</button>
+          ))}
         </div>
-      )}
+      </div>
 
-      {/* Grid: 3 Interactive Control Panels */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.5fr 1.3fr', gap: '15px' }}>
-        
-        {/* Panel 1: Weather & Kavach Control */}
-        <div style={{ background: 'rgba(255,255,255,0.01)', padding: '15px', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <h4 style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px' }}>
-            Sensors & Kavach
-          </h4>
-          
-          {/* Weather Slider */}
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', marginBottom: '3px' }}>
-              <span style={{ color: 'var(--color-text-muted)' }}>Visibility</span>
-              <span style={{ color: weatherState.visibility_meters < 500 ? 'var(--color-danger)' : 'var(--color-accent)', fontWeight: 700 }}>
-                {weatherState.visibility_meters}m {weatherState.active_warning !== 'NONE' && '⚠️'}
-              </span>
+      {/* ── Map Area ── */}
+      <div style={{ position: 'relative', flex: '1 1 auto', minHeight: '240px', background: '#030712', borderRadius: '10px', border: '1px solid var(--border-color)', overflow: 'hidden', marginBottom: '14px' }}>
+        {/* Leaflet geo map */}
+        <div
+          ref={mapRef}
+          style={{ width: '100%', height: '100%', display: viewMode === 'geo' ? 'block' : 'none' }}
+        />
+
+        {/* Schematic SVG */}
+        {viewMode === 'schematic' && (
+          <svg viewBox="0 0 900 220" width="100%" height="100%" style={{ display: 'block' }}>
+            <defs>
+              <filter id="neon-glow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="4" result="blur" />
+                <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+              </filter>
+              <pattern id="sch-grid" width="30" height="30" patternUnits="userSpaceOnUse">
+                <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(255,255,255,0.015)" strokeWidth="1" />
+              </pattern>
+            </defs>
+            <rect width="900" height="220" fill="url(#sch-grid)" />
+            <style>{`
+              .sch-glow { stroke-width:8; stroke-linecap:round; opacity:0.12; }
+              .sch-core { stroke-width:2.5; stroke-linecap:round; stroke-dasharray:6 5; }
+              .up   { stroke:var(--color-primary); }
+              .down { stroke:var(--color-secondary); }
+              .disrupted.sch-glow { stroke:var(--color-warning); opacity:.35; animation:pulse-glow 1.5s infinite; }
+              .disrupted.sch-core { stroke:var(--color-warning); opacity:.8; animation:blink-y 1.5s infinite; }
+              .stn-out { fill:#030712; stroke:rgba(255,255,255,.12); stroke-width:1.5; cursor:pointer; }
+              .stn-out.act { stroke:var(--color-primary); }
+              .stn-out.danger { stroke:var(--color-danger); filter:url(#neon-glow); }
+              .stn-in { fill:rgba(255,255,255,.15); }
+              .stn-in.act { fill:var(--color-primary); }
+              .stn-in.danger { fill:var(--color-danger); }
+              .train-node { transition:all .8s cubic-bezier(.25,1,.5,1); cursor:pointer; }
+              .train-node:hover { filter:drop-shadow(0 0 8px var(--color-primary)); }
+              @keyframes pulse-glow { 0%,100%{opacity:.15} 50%{opacity:.4} }
+              @keyframes blink-y    { 0%,100%{opacity:.4}  50%{opacity:1}  }
+            `}</style>
+
+            {/* Track segments */}
+            {Object.keys(schStations).map((code, idx, arr) => {
+              if (idx === arr.length - 1) return null;
+              const next = arr[idx + 1];
+              const x1 = schStations[code].x, x2 = schStations[next].x;
+              const dis = isSectionDisrupted(code, next) ? ' disrupted' : '';
+              return (
+                <g key={`seg-${code}`}>
+                  <line x1={x1} y1={70}  x2={x2} y2={70}  className={`sch-glow up${dis}`} />
+                  <line x1={x1} y1={70}  x2={x2} y2={70}  className={`sch-core up${dis} opacity-50`} />
+                  <line x1={x1} y1={135} x2={x2} y2={135} className={`sch-glow down${dis}`} />
+                  <line x1={x1} y1={135} x2={x2} y2={135} className={`sch-core down${dis} opacity-50`} />
+                </g>
+              );
+            })}
+
+            {/* Stations */}
+            {Object.entries(schStations).map(([code, s]) => {
+              const hasDis = disruptions.some(d => d.status === 'ACTIVE' && d.section_from === code);
+              return (
+                <g key={code} onClick={() => fetchStationBoard(code)} style={{ cursor: 'pointer' }}>
+                  <circle cx={s.x} cy={s.y_up}   r="8" className={`stn-out ${hasDis ? 'danger' : 'act'}`} />
+                  <circle cx={s.x} cy={s.y_up}   r="3.5" className={`stn-in ${hasDis ? 'danger' : 'act'}`} />
+                  <circle cx={s.x} cy={s.y_down} r="8" className={`stn-out ${hasDis ? 'danger' : 'act'}`} />
+                  <circle cx={s.x} cy={s.y_down} r="3.5" className={`stn-in ${hasDis ? 'danger' : 'act'}`} />
+                  <rect x={s.x - 45} y="180" width="90" height="28" rx="4" fill="rgba(3,5,10,.88)" stroke="var(--border-color)" strokeWidth="1" />
+                  <text x={s.x} y="193" textAnchor="middle" fill="var(--color-text-main)" fontSize="0.62rem" fontWeight="800">{s.name}</text>
+                  <text x={s.x} y="204" textAnchor="middle" fill="var(--color-primary)" fontSize="0.55rem" fontWeight="600" letterSpacing="1px">{code}</text>
+                </g>
+              );
+            })}
+
+            {/* Train nodes (schematic) */}
+            {activeTrains.map(train => {
+              const x = getSchTrainX(train);
+              const y = (train.train_no === '22415' || train.train_no === '12002') ? 70 : 135;
+              const isFreight = /BOXN|CONCOR/i.test(train.train_no);
+              const color = trainColor(train.current_delay || 0, isFreight);
+              return (
+                <g key={train.train_no} className="train-node" transform={`translate(${x},${y})`}
+                  onClick={() => { setSelectedTrain(train); fetchLiveStatus(train.train_no); }}>
+                  <circle cx="0" cy="0" r="7.5" fill="none" stroke={color} strokeWidth="1.2" opacity="0.8">
+                    <animate attributeName="r" values="7.5;22" dur="2s" repeatCount="indefinite" />
+                    <animate attributeName="opacity" values="0.8;0" dur="2s" repeatCount="indefinite" />
+                  </circle>
+                  <circle cx="0" cy="0" r="8" fill={color} filter="url(#neon-glow)" />
+                  <path d={y === 70 ? 'M-1.5,-3 L2,0 L-1.5,3' : 'M1.5,-3 L-2,0 L1.5,3'}
+                    fill="none" stroke="#FFF" strokeWidth="1.8" strokeLinecap="round" />
+                  <g transform={`translate(0,${y === 70 ? -24 : 24})`}>
+                    <rect x="-35" y="-10" width="70" height="15" rx="3" fill="#030712" stroke={color} strokeWidth="1" />
+                    <text x="0" y="0.5" textAnchor="middle" fill="var(--color-text-main)" fontSize="0.55rem" fontWeight="800">
+                      {train.train_no}
+                    </text>
+                    {(train.current_delay > 0) && (
+                      <text x="0" y="10" textAnchor="middle" fill="var(--color-danger)" fontSize="0.45rem" fontWeight="700">
+                        +{train.current_delay}m
+                      </text>
+                    )}
+                  </g>
+                </g>
+              );
+            })}
+          </svg>
+        )}
+
+        {/* Loading overlay */}
+        {routeLoading && (
+          <div style={{
+            position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'rgba(3,7,18,0.7)', zIndex: 500,
+          }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '1.5rem', marginBottom: '8px' }}>⚡</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--color-primary)', fontWeight: 700 }}>Fetching live trains…</div>
             </div>
-            <input 
-              type="range" 
-              min="100" 
-              max="3000" 
-              step="100"
-              value={weatherState.visibility_meters} 
-              onChange={handleVisibilitySlider}
-              style={{ width: '100%', height: '3px', background: 'var(--border-color)', outline: 'none', appearance: 'none', cursor: 'pointer' }}
-            />
           </div>
+        )}
 
-          {/* Kavach toggles */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
-            <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Kavach Segment Links:</span>
-            {Object.keys(kavachStates).map(sec => (
-              <label key={sec} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.7rem', background: 'rgba(0,0,0,0.15)', padding: '6px 8px', borderRadius: '4px', cursor: 'pointer' }}>
-                <span style={{ fontWeight: 600 }}>{sec}</span>
-                <input 
-                  type="checkbox" 
-                  checked={kavachStates[sec]} 
-                  onChange={() => handleKavachToggle(sec)}
-                  style={{ accentColor: 'var(--color-primary)' }}
-                />
-              </label>
-            ))}
+        {/* Route results count badge */}
+        {searchMode && !routeLoading && (
+          <div style={{
+            position: 'absolute', top: '10px', left: '10px', zIndex: 400,
+            background: 'rgba(0,0,0,0.8)', border: '1px solid var(--color-primary)',
+            borderRadius: '6px', padding: '6px 12px', fontSize: '0.7rem', fontWeight: 700,
+          }}>
+            <span style={{ color: 'var(--color-primary)' }}>{routeTrains.length}</span>
+            <span style={{ color: 'var(--color-text-muted)', marginLeft: '5px' }}>trains · {fromCode} → {toCode}</span>
           </div>
+        )}
+      </div>
+
+      {/* ── Three bottom panels ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1.6fr 1.3fr', gap: '12px' }}>
+
+        {/* Panel 1: Sensors & Kavach / Station Board */}
+        <div style={{ background: 'rgba(255,255,255,0.01)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {stationBoard ? (
+            <>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h4 style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.5px', margin: 0 }}>
+                  📍 {stationBoard.code} Live Board
+                </h4>
+                <button
+                  onClick={() => setStationBoard(null)}
+                  style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: '0.8rem' }}
+                >✕</button>
+              </div>
+              <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '4px' }} />
+              {stationLoading && <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', textAlign: 'center', padding: '10px' }}>Loading…</div>}
+              {stationBoard.error && <div style={{ fontSize: '0.65rem', color: 'var(--color-warning)', textAlign: 'center' }}>API unavailable — check key</div>}
+              {!stationLoading && !stationBoard.error && stationBoard.trains.length === 0 && (
+                <div style={{ fontSize: '0.65rem', color: 'var(--color-text-dark)', textAlign: 'center', padding: '10px' }}>No trains in next 2h</div>
+              )}
+              <div style={{ overflowY: 'auto', maxHeight: '130px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                {stationBoard.trains.slice(0, 8).map((t, i) => (
+                  <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.62rem', padding: '3px 5px', background: 'rgba(0,0,0,0.2)', borderRadius: '3px' }}>
+                    <span style={{ fontWeight: 700, color: 'white' }}>{t.train_no || t.trainNo}</span>
+                    <span style={{ color: 'var(--color-text-muted)' }} title={t.train_name || t.trainName}>
+                      {(t.train_name || t.trainName || '').substring(0, 14)}
+                    </span>
+                    <span style={{ color: 'var(--color-accent)', fontWeight: 700 }}>{t.expected_arrival || t.arrival || '--'}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <>
+              <h4 style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border-color)', paddingBottom: '5px', margin: 0 }}>
+                Sensors & Kavach
+              </h4>
+              {/* Visibility slider */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', marginBottom: '3px' }}>
+                  <span style={{ color: 'var(--color-text-muted)' }}>Visibility</span>
+                  <span style={{ color: weatherState.visibility_meters < 500 ? 'var(--color-danger)' : 'var(--color-accent)', fontWeight: 700 }}>
+                    {weatherState.visibility_meters}m {weatherState.active_warning !== 'NONE' && '⚠️'}
+                  </span>
+                </div>
+                <input type="range" min="100" max="3000" step="100" value={weatherState.visibility_meters} onChange={handleVisibilitySlider}
+                  style={{ width: '100%', height: '3px', background: 'var(--border-color)', outline: 'none', appearance: 'none', cursor: 'pointer' }} />
+              </div>
+              {/* Kavach toggles */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <span style={{ fontSize: '0.58rem', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Kavach Segments</span>
+                {Object.keys(kavachStates).map(sec => (
+                  <label key={sec} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.65rem', background: 'rgba(0,0,0,0.15)', padding: '4px 7px', borderRadius: '4px', cursor: 'pointer' }}>
+                    <span style={{ fontWeight: 600 }}>{sec}</span>
+                    <input type="checkbox" checked={kavachStates[sec]} onChange={() => handleKavachToggle(sec)}
+                      style={{ accentColor: 'var(--color-primary)' }} />
+                  </label>
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
         {/* Panel 2: Telemetry Inspector */}
-        <div style={{ background: 'rgba(255,255,255,0.01)', padding: '15px', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column' }}>
-          <h4 style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px', marginBottom: '10px' }}>
+        <div style={{ background: 'rgba(255,255,255,0.01)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column' }}>
+          <h4 style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border-color)', paddingBottom: '5px', marginBottom: '8px', marginTop: 0 }}>
             Telemetry Inspector
           </h4>
-          
-          {!selectedTrain && !selectedDisruption ? (
+
+          {/* Route train list (when search active) */}
+          {searchMode && !selectedTrain && (
+            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '3px', maxHeight: '180px' }}>
+              {routeLoading && <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', textAlign: 'center', padding: '20px' }}>Fetching live data…</div>}
+              {!routeLoading && routeTrains.length === 0 && !routeError && (
+                <div style={{ fontSize: '0.65rem', color: 'var(--color-text-dark)', textAlign: 'center', padding: '16px', fontStyle: 'italic' }}>
+                  Enter stations above & click SEARCH to see live trains
+                </div>
+              )}
+              {routeTrains.slice(0, 15).map((t, i) => {
+                const no   = t.train_no || t.trainNo || '';
+                const name = t.train_name || t.trainName || `Train ${no}`;
+                const dep  = t.departure_time || t.departureTime || '--';
+                const arr  = t.arrival_time || t.arrivalTime || '--';
+                const dur  = t.duration || '--';
+                return (
+                  <div
+                    key={i}
+                    onClick={() => { setSelectedTrain({ train_no: no, train_name: name }); fetchLiveStatus(no); }}
+                    style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      fontSize: '0.62rem', padding: '4px 7px', background: 'rgba(0,0,0,0.2)',
+                      borderRadius: '4px', cursor: 'pointer', border: '1px solid transparent',
+                      transition: 'border-color 0.15s',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--color-primary)'}
+                    onMouseLeave={e => e.currentTarget.style.borderColor = 'transparent'}
+                  >
+                    <span style={{ fontWeight: 700, color: 'white', minWidth: '50px' }}>{no}</span>
+                    <span style={{ color: 'var(--color-text-muted)', flex: 1, marginLeft: '6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
+                    <span style={{ color: 'var(--color-accent)', fontWeight: 700, marginLeft: '6px', whiteSpace: 'nowrap' }}>{dep}→{arr}</span>
+                    <span style={{ color: 'var(--color-text-dark)', marginLeft: '6px' }}>{dur}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* No selection placeholder */}
+          {!searchMode && !selectedTrain && (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: '0.7rem', color: 'var(--color-text-dark)', fontStyle: 'italic', textAlign: 'center', padding: '10px' }}>
               Click on a train node or warning platform to inspect telemetry.
             </div>
-          ) : selectedTrain ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.75rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ fontWeight: 800, color: 'white' }}>{selectedTrain.train_name}</span>
-                <span style={{ color: 'var(--color-accent)', fontWeight: 700 }}>{selectedTrain.train_no}</span>
-              </div>
-              
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px', background: 'rgba(0,0,0,0.2)', padding: '6px', borderRadius: '4px', fontSize: '0.65rem' }}>
-                <div>Station: <strong style={{ color: 'white' }}>{selectedTrain.current_station}</strong></div>
-                <div>Status: <strong style={{ color: 'white' }}>{selectedTrain.status}</strong></div>
-                <div>Lat: <strong style={{ color: 'white' }}>{selectedTrain.latitude}</strong></div>
-                <div>Lon: <strong style={{ color: 'white' }}>{selectedTrain.longitude}</strong></div>
-              </div>
+          )}
 
-              {/* Interactive Speed limit lock */}
-              <div style={{ marginTop: '4px' }}>
-                <label style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '3px' }}>Safety Speed Lock:</label>
-                <div style={{ display: 'flex', gap: '6px' }}>
-                  {[30, 60, 110, 130].map(sp => (
-                    <button 
-                      key={sp}
-                      onClick={() => handleSpeedLimitChange("GZB-ALJN", sp)}
-                      style={{
-                        flex: 1,
-                        background: speedLimits["GZB-ALJN"] === sp ? 'var(--color-primary)' : 'rgba(255,255,255,0.02)',
-                        border: '1px solid var(--border-color)',
-                        borderRadius: '3px',
-                        color: speedLimits["GZB-ALJN"] === sp ? 'black' : 'white',
-                        fontSize: '0.6rem',
-                        fontWeight: 'bold',
-                        padding: '3px 0',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      {sp}
-                    </button>
-                  ))}
+          {/* Selected train detail */}
+          {selectedTrain && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.7rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontWeight: 800, color: 'white' }}>{selectedTrain.train_name}</span>
+                <div style={{ display: 'flex', gap: '5px' }}>
+                  <span style={{ color: 'var(--color-accent)', fontWeight: 700, fontFamily: 'monospace' }}>{selectedTrain.train_no}</span>
+                  <button
+                    onClick={() => setSelectedTrain(null)}
+                    style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: '0.75rem' }}
+                  >✕</button>
                 </div>
               </div>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.75rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ fontWeight: 800, color: 'var(--color-danger)' }}>DISRUPTION ACTIVE</span>
-                <span style={{ color: 'white', fontFamily: 'monospace' }}>{selectedDisruption.error_code}</span>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', background: 'rgba(0,0,0,0.2)', padding: '6px', borderRadius: '4px', fontSize: '0.62rem' }}>
+                {selectedTrain.current_station && <div>Station: <strong style={{ color: 'white' }}>{selectedTrain.current_station}</strong></div>}
+                {selectedTrain.status && <div>Status: <strong style={{ color: 'white' }}>{selectedTrain.status}</strong></div>}
+                {(selectedTrain.current_delay !== undefined) && <div>Delay: <strong style={{ color: selectedTrain.current_delay > 0 ? 'var(--color-danger)' : 'var(--color-accent)' }}>{selectedTrain.current_delay > 0 ? `+${selectedTrain.current_delay}m` : 'On time'}</strong></div>}
+                {selectedTrain.latitude > 0 && <div>Lat: <strong style={{ color: 'white' }}>{selectedTrain.latitude.toFixed(3)}</strong></div>}
+                {selectedTrain.arrival_time && selectedTrain.arrival_time !== '--' && <div>Arrival: <strong style={{ color: 'white' }}>{selectedTrain.arrival_time}</strong></div>}
+                {selectedTrain.departure_time && selectedTrain.departure_time !== '--' && <div>Departure: <strong style={{ color: 'white' }}>{selectedTrain.departure_time}</strong></div>}
+                {selectedTrain.duration && selectedTrain.duration !== '--' && <div>Duration: <strong style={{ color: 'white' }}>{selectedTrain.duration}</strong></div>}
+                {selectedTrain.classes && <div>Classes: <strong style={{ color: 'white' }}>{selectedTrain.classes}</strong></div>}
               </div>
-              <p style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', lineHeight: '1.3' }}>
-                {selectedDisruption.details}
-              </p>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', background: 'rgba(255,49,49,0.05)', padding: '5px 8px', borderRadius: '4px', border: '1px solid rgba(255,49,49,0.1)' }}>
-                <span>Clearance: <strong>{selectedDisruption.estimated_clearance_minutes}m</strong></span>
-                <span>Passengers: <strong>{selectedDisruption.affected_passengers}</strong></span>
+
+              {/* Live status fetch result */}
+              {liveLoading && <div style={{ fontSize: '0.62rem', color: 'var(--color-text-muted)', textAlign: 'center' }}>Fetching live status…</div>}
+              {liveStatus && !liveLoading && (
+                <div style={{ background: 'rgba(0,240,255,0.04)', border: '1px solid rgba(0,240,255,0.12)', borderRadius: '4px', padding: '6px', fontSize: '0.62rem' }}>
+                  <div style={{ color: 'var(--color-primary)', fontWeight: 700, marginBottom: '3px' }}>⚡ Live Telemetry</div>
+                  {liveStatus.error ? (
+                    <span style={{ color: 'var(--color-warning)' }}>Live status API unavailable</span>
+                  ) : (
+                    <pre style={{ margin: 0, fontSize: '0.55rem', color: 'var(--color-text-muted)', overflowX: 'auto', maxHeight: '80px' }}>
+                      {JSON.stringify(liveStatus.data, null, 1).substring(0, 400)}
+                    </pre>
+                  )}
+                </div>
+              )}
+
+              {/* Speed lock */}
+              <div style={{ marginTop: '2px' }}>
+                <label style={{ fontSize: '0.62rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '3px' }}>Safety Speed Lock (GZB-ALJN):</label>
+                <div style={{ display: 'flex', gap: '5px' }}>
+                  {[30, 60, 110, 130].map(sp => (
+                    <button
+                      key={sp}
+                      onClick={() => handleSpeedLimitChange('GZB-ALJN', sp)}
+                      style={{
+                        flex: 1,
+                        background: speedLimits['GZB-ALJN'] === sp ? 'var(--color-primary)' : 'rgba(255,255,255,0.02)',
+                        border: '1px solid var(--border-color)', borderRadius: '3px',
+                        color: speedLimits['GZB-ALJN'] === sp ? 'black' : 'white',
+                        fontSize: '0.58rem', fontWeight: 'bold', padding: '3px 0', cursor: 'pointer',
+                      }}
+                    >{sp}</button>
+                  ))}
+                </div>
               </div>
             </div>
           )}
         </div>
 
-        {/* Panel 3: Performance & Autoplay */}
-        <div style={{ background: 'rgba(255,255,255,0.01)', padding: '15px', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', justifyStyle: 'stretch', gap: '10px' }}>
-          <h4 style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px' }}>
-            System Core Metrics
+        {/* Panel 3: System Core Metrics & Autoplay */}
+        <div style={{ background: 'rgba(255,255,255,0.01)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <h4 style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border-color)', paddingBottom: '5px', margin: 0 }}>
+            System Metrics
           </h4>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', fontSize: '0.7rem' }}>
-            <div style={{ background: 'rgba(0,0,0,0.15)', padding: '6px', borderRadius: '4px', textAlign: 'center' }}>
-              <div style={{ color: 'var(--color-text-muted)', fontSize: '0.55rem' }}>LINE EFFICIENCY</div>
-              <div style={{ fontWeight: 800, color: 'var(--color-accent)', fontSize: '0.9rem' }}>{metrics.efficiency_score}%</div>
-            </div>
-            <div style={{ background: 'rgba(0,0,0,0.15)', padding: '6px', borderRadius: '4px', textAlign: 'center' }}>
-              <div style={{ color: 'var(--color-text-muted)', fontSize: '0.55rem' }}>CAPACITY LOAD</div>
-              <div style={{ fontWeight: 800, color: 'var(--color-primary)', fontSize: '0.9rem' }}>{metrics.capacity_load}%</div>
-            </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px', fontSize: '0.65rem' }}>
+            {[
+              ['LINE EFF', `${metrics.efficiency_score}%`, 'var(--color-accent)'],
+              ['CAPACITY', `${metrics.capacity_load}%`, 'var(--color-primary)'],
+              ['AVG SPEED', `${metrics.average_speed} km/h`, 'var(--color-secondary)'],
+              ['SAFETY IDX', `${metrics.safety_index}%`, '#10B981'],
+            ].map(([label, val, color]) => (
+              <div key={label} style={{ background: 'rgba(0,0,0,0.15)', padding: '5px', borderRadius: '4px', textAlign: 'center' }}>
+                <div style={{ color: 'var(--color-text-muted)', fontSize: '0.52rem' }}>{label}</div>
+                <div style={{ fontWeight: 800, color, fontSize: '0.85rem' }}>{val}</div>
+              </div>
+            ))}
           </div>
 
-          {/* Autoplay controllers */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', marginTop: 'auto' }}>
-            <button 
-              className={autoplay ? "btn-secondary" : "btn-primary"} 
+          {/* Active trains count */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', background: 'rgba(0,0,0,0.1)', padding: '5px 8px', borderRadius: '4px' }}>
+            <span style={{ color: 'var(--color-text-muted)' }}>Active Trains</span>
+            <span style={{ fontWeight: 700, color: 'var(--color-primary)' }}>{activeTrains.length}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', background: 'rgba(0,0,0,0.1)', padding: '5px 8px', borderRadius: '4px' }}>
+            <span style={{ color: 'var(--color-text-muted)' }}>Disruptions</span>
+            <span style={{ fontWeight: 700, color: disruptions.some(d => d.status === 'ACTIVE') ? 'var(--color-danger)' : 'var(--color-accent)' }}>
+              {disruptions.filter(d => d.status === 'ACTIVE').length} ACTIVE
+            </span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', background: 'rgba(0,0,0,0.1)', padding: '5px 8px', borderRadius: '4px' }}>
+            <span style={{ color: 'var(--color-text-muted)' }}>Data Source</span>
+            <span style={{ fontWeight: 700, color: 'var(--color-accent)', fontSize: '0.58rem' }}>
+              {searchMode ? 'RapidAPI IRCTC' : 'SCENARIO+LIVE'}
+            </span>
+          </div>
+
+          {/* Autoplay */}
+          <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+            <button
+              className={autoplay ? 'btn-secondary' : 'btn-primary'}
               onClick={() => setAutoplay(!autoplay)}
               style={{
-                width: '100%', 
-                padding: '6px', 
-                fontSize: '0.7rem', 
-                background: autoplay ? 'transparent' : 'linear-gradient(135deg, var(--color-primary), rgba(0, 240, 255, 0.4))',
+                width: '100%', padding: '6px', fontSize: '0.68rem',
+                background: autoplay ? 'transparent' : 'linear-gradient(135deg, var(--color-primary), rgba(0,240,255,0.4))',
                 borderColor: autoplay ? 'var(--color-danger)' : '',
-                color: autoplay ? 'var(--color-danger)' : 'black'
+                color: autoplay ? 'var(--color-danger)' : 'black',
               }}
-            >
-              {autoplay ? "PAUSE AUTOPLAY" : "START AUTOPLAY"}
-            </button>
+            >{autoplay ? 'PAUSE AUTOPLAY' : 'START AUTOPLAY'}</button>
             {autoplay && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <div style={{ flexGrow: 1, height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', overflow: 'hidden' }}>
                   <div style={{ width: `${(autoplayCountdown / 6) * 100}%`, height: '100%', background: 'var(--color-primary)', transition: 'width 1s linear' }} />
                 </div>
@@ -966,7 +963,6 @@ export default function TelemetryMap({ trains, disruptions, onNextStep, scenario
         </div>
 
       </div>
-
     </div>
   );
 }

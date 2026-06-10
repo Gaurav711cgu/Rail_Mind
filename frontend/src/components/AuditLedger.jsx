@@ -53,15 +53,15 @@ export default function AuditLedger({ auditLogs }) {
           if (tamperedState) {
             // Inject mock tamper results
             setVerification({
-              chain_valid: False,
+              chain_valid: false,
               last_verified: new Date().toISOString(),
               total_records: data.total_records,
               corrupted_records: ['2'],
-              genesis_valid: True,
-              links_valid: False,
-              signatures_valid: False,
-              timestamps_valid: True,
-              payloads_valid: False
+              genesis_valid: true,
+              links_valid: false,
+              signatures_valid: false,
+              timestamps_valid: true,
+              payloads_valid: false
             });
           } else {
             setVerification(data);

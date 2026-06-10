@@ -27,3 +27,9 @@ async def data_freshness():
         "watchlist": live_rail_data.watchlist(),
         "status": "live" if settings.RAPIDAPI_IRCTC_KEY else "scenario-fallback",
     }
+
+
+@router.get("/health/agents")
+async def agents_health():
+    from app.agents.orchestrator import orchestrator
+    return orchestrator.agent_health

@@ -1,4 +1,6 @@
-from typing import Dict, Any, List
+import asyncio
+from typing import Dict, Any, List, Optional
+from datetime import datetime
 from app.agents.monitor_agent import MonitorAgent
 from app.agents.conflict_detector import ConflictDetector
 from app.agents.cascade_predictor import CascadePredictor
@@ -13,6 +15,8 @@ class AgentOrchestrator:
     and logging actions for transparency.
     """
     def __init__(self):
+        self._monitor_task: Optional[asyncio.Task] = None
+        self._running = False
         # Register agents in the topology sequence
         self.pipeline = [
             MonitorAgent(),
@@ -22,6 +26,15 @@ class AgentOrchestrator:
             NotificationAgent(),
             AuditAgent()
         ]
+        self.agent_health = {
+            agent.agent_name: {
+                "last_run": None,
+                "last_confidence": 1.0,
+                "status": "healthy",
+                "last_error": None
+            }
+            for agent in self.pipeline
+        }
 
     async def run_pipeline(self, initial_state: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -45,6 +58,7 @@ class AgentOrchestrator:
                 continue
                 
             try:
+                self.agent_health[agent.agent_name]["status"] = "running"
                 updates, confidence, reasoning = await agent.process(state)
                 
                 # Apply updates to shared context state
@@ -55,6 +69,14 @@ class AgentOrchestrator:
                 log_msg = f"[{agent.agent_name}] Action completed. Confidence: {confidence:.2f}. Reasoning: {reasoning}"
                 state["logs"].append(log_msg)
                 
+                # Update health info
+                self.agent_health[agent.agent_name].update({
+                    "last_run": datetime.utcnow().isoformat(),
+                    "last_confidence": confidence,
+                    "status": "healthy",
+                    "last_error": None
+                })
+                
                 # Check confidence threshold for escalation
                 if confidence < 0.85 and agent.agent_name == "DispatchAgent":
                     state["escalated"] = True
@@ -64,9 +86,75 @@ class AgentOrchestrator:
                 err_msg = f"[Orchestrator] Error executing {agent.agent_name}: {str(e)}"
                 state["logs"].append(err_msg)
                 print(err_msg)
+                self.agent_health[agent.agent_name].update({
+                    "last_run": datetime.utcnow().isoformat(),
+                    "status": "degraded",
+                    "last_error": str(e)
+                })
                 
         state["logs"].append("[Orchestrator] Multi-agent execution cycle completed successfully.")
         return state
+
+    async def _run_monitor_loop(self) -> None:
+        from app.db.database import AsyncSessionLocal
+        from sqlalchemy import select
+        from app.db.database import DBTrain
+        
+        # Give DB seed a few seconds on startup before running monitor loop
+        await asyncio.sleep(5)
+        
+        while self._running:
+            try:
+                async with AsyncSessionLocal() as session:
+                    result = await session.execute(select(DBTrain))
+                    db_trains = result.scalars().all()
+                    
+                    trains = []
+                    for t in db_trains:
+                        trains.append({
+                            "train_no": t.train_no,
+                            "train_name": t.train_name,
+                            "source": t.source,
+                            "destination": t.destination,
+                            "current_station": t.current_station,
+                            "next_station": t.next_station,
+                            "status": t.status,
+                            "current_delay": t.current_delay,
+                            "schedule_deviation": t.schedule_deviation,
+                            "kavach_enabled": t.kavach_enabled
+                        })
+                
+                initial_state = {
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "trains": trains,
+                    "disruptions": [],
+                    "recommendations": []
+                }
+                
+                await self.run_pipeline(initial_state)
+                
+            except Exception as e:
+                print(f"[Orchestrator] Monitor loop error: {e}")
+                
+            await asyncio.sleep(60)
+
+    async def start(self) -> None:
+        if self._running:
+            return
+        self._running = True
+        self._monitor_task = asyncio.create_task(self._run_monitor_loop())
+        print("[Orchestrator] Background monitoring loop started.")
+
+    async def stop(self) -> None:
+        self._running = False
+        if self._monitor_task is not None:
+            self._monitor_task.cancel()
+            try:
+                await self._monitor_task
+            except asyncio.CancelledError:
+                pass
+            self._monitor_task = None
+        print("[Orchestrator] Background monitoring loop stopped.")
 
 # Singleton instance
 orchestrator = AgentOrchestrator()

@@ -1,97 +1,174 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+
+from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy import select
 
 from app.config import settings
 from app.db.database import init_db, AsyncSessionLocal, DBStation, DBSection, DBUser
-from app.api.v1.routes import auth, trains, disruptions, cascade, rerouting, rac, audit, health
+from app.api.v1.routes import auth, trains, disruptions, cascade, rerouting, rac, audit, health, recommendations
 from app.api.v1.routes.auth import get_password_hash
+from app.agents.orchestrator import orchestrator
+from app.services.stream_service import stream_service
+from app.ml.rac_predictor import rac_predictor   # triggers model load at startup
 
-# Lifespan event handler
+
+# --------------------------------------------------------------------------- #
+#  Lifespan — startup / shutdown                                              #
+# --------------------------------------------------------------------------- #
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 1. Initialize DB tables
-    print("[Lifespan] Initializing database schemas...")
+    # 1. Database
+    print("[Lifespan] Initialising database schema...")
     await init_db()
-    
-    # 2. Seed database topology
+
+    # 2. Redis Streams
+    print("[Lifespan] Connecting to Redis Streams...")
+    await stream_service.connect()
+
+    # 3. Seed topology once
     async with AsyncSessionLocal() as session:
-        # Check if stations exist
         result = await session.execute(select(DBStation).limit(1))
         if not result.scalars().first():
-            print("[Lifespan] Seeding railway topology nodes...")
+            print("[Lifespan] Seeding railway topology...")
             stations = [
-                DBStation(code="NDLS", name="New Delhi", zone="NR", division="DLI", latitude=28.643, longitude=77.222, is_major_junction=True, platform_count=16),
-                DBStation(code="GZB", name="Ghaziabad", zone="NR", division="DLI", latitude=28.672, longitude=77.436, is_major_junction=True, platform_count=6),
-                DBStation(code="ALJN", name="Aligarh", zone="NR", division="DLI", latitude=27.892, longitude=78.078, is_major_junction=True, platform_count=7),
-                DBStation(code="CNB", name="Kanpur Central", zone="NCR", division="PRYJ", latitude=26.454, longitude=80.350, is_major_junction=True, platform_count=10),
-                DBStation(code="PRYJ", name="Prayagraj Jn", zone="NCR", division="PRYJ", latitude=25.448, longitude=81.851, is_major_junction=True, platform_count=12),
-                DBStation(code="BSB", name="Varanasi", zone="NR", division="LKO", latitude=25.317, longitude=82.973, is_major_junction=True, platform_count=9)
+                DBStation(code="NDLS", name="New Delhi",        zone="NR",  division="DLI",  latitude=28.643, longitude=77.222, is_major_junction=True,  platform_count=16),
+                DBStation(code="GZB",  name="Ghaziabad",        zone="NR",  division="DLI",  latitude=28.672, longitude=77.436, is_major_junction=True,  platform_count=6),
+                DBStation(code="ALJN", name="Aligarh Jn",       zone="NR",  division="DLI",  latitude=27.892, longitude=78.078, is_major_junction=True,  platform_count=7),
+                DBStation(code="CNB",  name="Kanpur Central",   zone="NCR", division="PRYJ", latitude=26.454, longitude=80.350, is_major_junction=True,  platform_count=10),
+                DBStation(code="PRYJ", name="Prayagraj Jn",     zone="NCR", division="PRYJ", latitude=25.448, longitude=81.851, is_major_junction=True,  platform_count=12),
+                DBStation(code="BSB",  name="Varanasi Jn",      zone="NR",  division="LKO",  latitude=25.317, longitude=82.973, is_major_junction=True,  platform_count=9),
+                DBStation(code="HWH",  name="Howrah Jn",        zone="ER",  division="HWH",  latitude=22.583, longitude=88.342, is_major_junction=True,  platform_count=23),
+                DBStation(code="MMCT", name="Mumbai Central",   zone="WR",  division="BCT",  latitude=18.971, longitude=72.820, is_major_junction=True,  platform_count=8),
+                DBStation(code="BRC",  name="Vadodara Jn",      zone="WR",  division="BRC",  latitude=22.312, longitude=73.181, is_major_junction=True,  platform_count=6),
+                DBStation(code="MAS",  name="Chennai Central",  zone="SR",  division="MAS",  latitude=13.082, longitude=80.275, is_major_junction=True,  platform_count=17),
+                DBStation(code="SBC",  name="KSR Bengaluru",    zone="SWR", division="SBC",  latitude=12.978, longitude=77.572, is_major_junction=True,  platform_count=10),
+                DBStation(code="SC",   name="Secunderabad Jn",  zone="SCR", division="SC",   latitude=17.431, longitude=78.501, is_major_junction=True,  platform_count=10),
             ]
             session.add_all(stations)
-            
+
             sections = [
-                DBSection(from_station="NDLS", to_station="GZB", distance_km=25.0, max_speed_kmh=110, signaling_type="ABSOLUTE_BLOCK", capacity_trains_per_hour=12),
-                DBSection(from_station="GZB", to_station="ALJN", distance_km=100.0, max_speed_kmh=130, signaling_type="ABSOLUTE_BLOCK", capacity_trains_per_hour=10),
-                DBSection(from_station="ALJN", to_station="CNB", distance_km=210.0, max_speed_kmh=130, signaling_type="ABSOLUTE_BLOCK", capacity_trains_per_hour=8),
-                DBSection(from_station="CNB", to_station="PRYJ", distance_km=190.0, max_speed_kmh=130, signaling_type="KAVACH", capacity_trains_per_hour=15),
-                DBSection(from_station="PRYJ", to_station="BSB", distance_km=120.0, max_speed_kmh=110, signaling_type="KAVACH", capacity_trains_per_hour=15)
+                DBSection(from_station="NDLS", to_station="GZB",  distance_km=25,  max_speed_kmh=110, signaling_type="ABSOLUTE_BLOCK", capacity_trains_per_hour=12),
+                DBSection(from_station="GZB",  to_station="ALJN", distance_km=100, max_speed_kmh=130, signaling_type="ABSOLUTE_BLOCK", capacity_trains_per_hour=10),
+                DBSection(from_station="ALJN", to_station="CNB",  distance_km=210, max_speed_kmh=130, signaling_type="ABSOLUTE_BLOCK", capacity_trains_per_hour=8),
+                DBSection(from_station="CNB",  to_station="PRYJ", distance_km=190, max_speed_kmh=130, signaling_type="KAVACH",         capacity_trains_per_hour=15),
+                DBSection(from_station="PRYJ", to_station="BSB",  distance_km=120, max_speed_kmh=110, signaling_type="KAVACH",         capacity_trains_per_hour=15),
+                DBSection(from_station="BSB",  to_station="HWH",  distance_km=635, max_speed_kmh=100, signaling_type="ABSOLUTE_BLOCK", capacity_trains_per_hour=8),
+                DBSection(from_station="NDLS", to_station="MMCT", distance_km=1384,max_speed_kmh=130, signaling_type="ABS",            capacity_trains_per_hour=10),
+                DBSection(from_station="BRC",  to_station="MMCT", distance_km=391, max_speed_kmh=130, signaling_type="ABSOLUTE_BLOCK", capacity_trains_per_hour=12),
             ]
             session.add_all(sections)
-            
-            # Seed default system users
-            print("[Lifespan] Seeding default operator and controller accounts...")
-            controller_pass = get_password_hash("controller123")
+
             users = [
-                DBUser(username="controller_north", email="controller@railmind.gov.in", password_hash=controller_pass, role="CONTROLLER", zone="NR"),
-                DBUser(username="admin", email="admin@railmind.gov.in", password_hash=get_password_hash("admin123"), role="ADMIN", zone="NR")
+                DBUser(
+                    username="controller_north",
+                    email="controller@railmind.gov.in",
+                    password_hash=get_password_hash("controller123"),
+                    role="CONTROLLER",
+                    zone="NR",
+                ),
+                DBUser(
+                    username="admin",
+                    email="admin@railmind.gov.in",
+                    password_hash=get_password_hash("admin123"),
+                    role="ADMIN",
+                    zone="NR",
+                ),
             ]
             session.add_all(users)
-            
             await session.commit()
-            print("[Lifespan] Database seeding completed successfully.")
-        else:
-            print("[Lifespan] Railway topology nodes already present. Skipping seed.")
-            
+            print("[Lifespan] Topology seeded.")
+
+    # 4. Start agent background monitoring loop
+    print("[Lifespan] Starting agent orchestrator...")
+    await orchestrator.start()
+
+    print("[Lifespan] RailMind engine ready.")
     yield
-    print("[Lifespan] Shutting down backend engine...")
+
+    # Shutdown
+    print("[Lifespan] Shutting down...")
+    await orchestrator.stop()
+    await stream_service.disconnect()
+    print("[Lifespan] Clean shutdown complete.")
 
 
-# App instantiation
+# --------------------------------------------------------------------------- #
+#  App                                                                         #
+# --------------------------------------------------------------------------- #
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
-    description="Autonomous Agentic Dispatching & Punctuality Engine for Indian Railways",
-    lifespan=lifespan
+    description=(
+        "Autonomous Agentic Dispatching & Punctuality Engine for Indian Railways. "
+        "FAR AWAY 2026 — Agentic & Autonomous Systems × Railways."
+    ),
+    lifespan=lifespan,
+    docs_url="/docs",
+    redoc_url="/redoc",
 )
 
-# CORS configurations
+
+# --------------------------------------------------------------------------- #
+#  Security middleware                                                         #
+# --------------------------------------------------------------------------- #
+app.add_middleware(
+    TrustedHostMiddleware,
+    allowed_hosts=settings.ALLOWED_HOSTS,
+)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
-# Mount Routes
-app.include_router(health.router, tags=["Health Checks"])
-app.include_router(health.router, prefix=settings.API_V1_STR, tags=["Health Checks"])
-app.include_router(auth.router, prefix=settings.API_V1_STR + "/auth", tags=["Authentication"])
-app.include_router(trains.router, prefix=settings.API_V1_STR + "/trains", tags=["Train Tracking"])
-app.include_router(disruptions.router, prefix=settings.API_V1_STR + "/disruptions", tags=["Disruptions Registry"])
-app.include_router(cascade.router, prefix=settings.API_V1_STR + "/cascade", tags=["Cascade Predictor Engine"])
-app.include_router(rerouting.router, prefix=settings.API_V1_STR + "/rerouting", tags=["Rerouting Advisories"])
-app.include_router(rac.router, prefix=settings.API_V1_STR + "/rac", tags=["RAC Confirmation Predictor"])
-app.include_router(audit.router, prefix=settings.API_V1_STR + "/audit", tags=["Cryptographic Decision Log"])
+
+# --------------------------------------------------------------------------- #
+#  Global exception handler — never leak stack traces to client               #
+# --------------------------------------------------------------------------- #
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    import logging
+    logging.getLogger("railmind").error(
+        "Unhandled exception on %s %s: %s",
+        request.method, request.url.path, exc,
+        exc_info=True,
+    )
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={"detail": "Internal server error. See server logs."},
+    )
+
+
+# --------------------------------------------------------------------------- #
+#  Routes                                                                      #
+# --------------------------------------------------------------------------- #
+app.include_router(health.router, tags=["Health"])
+app.include_router(health.router, prefix=settings.API_V1_STR, tags=["Health"])
+app.include_router(auth.router,         prefix=f"{settings.API_V1_STR}/auth",          tags=["Auth"])
+app.include_router(trains.router,       prefix=f"{settings.API_V1_STR}/trains",        tags=["Trains"])
+app.include_router(disruptions.router,  prefix=f"{settings.API_V1_STR}/disruptions",   tags=["Disruptions"])
+app.include_router(cascade.router,      prefix=f"{settings.API_V1_STR}/cascade",       tags=["Cascade"])
+app.include_router(rerouting.router,    prefix=f"{settings.API_V1_STR}/rerouting",     tags=["Rerouting"])
+app.include_router(rac.router,          prefix=f"{settings.API_V1_STR}/rac",           tags=["RAC Predictor"])
+app.include_router(audit.router,        prefix=f"{settings.API_V1_STR}/audit",         tags=["Audit"])
+app.include_router(recommendations.router, prefix=f"{settings.API_V1_STR}/recommendations", tags=["Recommendations"])
 
 
 @app.get("/")
 async def root():
     return {
-        "message": "Welcome to the RailMind Engine API",
-        "docs_url": "/docs",
+        "product": "RailMind",
+        "version": settings.VERSION,
+        "status": "operational",
+        "docs": "/docs",
         "health": "/health",
-        "scenario_mode": settings.SCENARIO_MODE
+        "scenario_mode": settings.SCENARIO_MODE,
+        "redis_connected": stream_service._redis_available,
+        "rac_model_loaded": rac_predictor._loaded,
     }
