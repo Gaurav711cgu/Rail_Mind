@@ -6,6 +6,7 @@ import RACPredictor from './components/RACPredictor';
 import AuditLedger from './components/AuditLedger';
 import OperatorProfile from './components/OperatorProfile';
 import EmergencySupport from './components/EmergencySupport';
+import AgentsPage from './pages/AgentsPage';
 
 const stepDetails = [
   { title: "Nominal",            desc: "Corridor runs at standard operational threshold" },
@@ -127,6 +128,7 @@ export default function App() {
     { id: 'dashboard', label: 'Telemetry Radar' },
     { id: 'rac',       label: 'ML RAC Solver' },
     { id: 'audit',     label: 'Audit Ledger' },
+    { id: 'agents',    label: 'Agent Pipeline' },
     { id: 'profile',   label: 'Operator Profile' },
     { id: 'support',   label: 'System Helpline' },
   ];
@@ -256,6 +258,12 @@ export default function App() {
             {activeTab === 'audit' && (
               <main className="bento-grid">
                 <div style={{ gridColumn:'span 12' }}><AuditLedger auditLogs={auditLogs} /></div>
+              </main>
+            )}
+
+            {activeTab === 'agents' && (
+              <main style={{ padding:'12px 0' }}>
+                <AgentsPage />
               </main>
             )}
 

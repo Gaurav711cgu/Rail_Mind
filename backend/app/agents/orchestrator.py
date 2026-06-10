@@ -96,33 +96,17 @@ class AgentOrchestrator:
         return state
 
     async def _run_monitor_loop(self) -> None:
-        from app.db.database import AsyncSessionLocal
-        from sqlalchemy import select
-        from app.db.database import DBTrain
+        from app.core.scenario_engine import scenario_engine
+        from app.services.live_rail_data import live_rail_data
         
         # Give DB seed a few seconds on startup before running monitor loop
         await asyncio.sleep(5)
         
         while self._running:
             try:
-                async with AsyncSessionLocal() as session:
-                    result = await session.execute(select(DBTrain))
-                    db_trains = result.scalars().all()
-                    
-                    trains = []
-                    for t in db_trains:
-                        trains.append({
-                            "train_no": t.train_no,
-                            "train_name": t.train_name,
-                            "source": t.source,
-                            "destination": t.destination,
-                            "current_station": t.current_station,
-                            "next_station": t.next_station,
-                            "status": t.status,
-                            "current_delay": t.current_delay,
-                            "schedule_deviation": t.schedule_deviation,
-                            "kavach_enabled": t.kavach_enabled
-                        })
+                trains = await live_rail_data.live_watchlist_snapshot(
+                    scenario_engine.get_state().get("trains", [])
+                )
                 
                 initial_state = {
                     "timestamp": datetime.utcnow().isoformat(),

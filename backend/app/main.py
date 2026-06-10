@@ -8,7 +8,7 @@ from sqlalchemy import select
 
 from app.config import settings
 from app.db.database import init_db, AsyncSessionLocal, DBStation, DBSection, DBUser
-from app.api.v1.routes import auth, trains, disruptions, cascade, rerouting, rac, audit, health, recommendations
+from app.api.v1.routes import auth, trains, disruptions, cascade, rerouting, rac, audit, health, recommendations, stream
 from app.api.v1.routes.auth import get_password_hash
 from app.agents.orchestrator import orchestrator
 from app.services.stream_service import stream_service
@@ -158,6 +158,7 @@ app.include_router(rerouting.router,    prefix=f"{settings.API_V1_STR}/rerouting
 app.include_router(rac.router,          prefix=f"{settings.API_V1_STR}/rac",           tags=["RAC Predictor"])
 app.include_router(audit.router,        prefix=f"{settings.API_V1_STR}/audit",         tags=["Audit"])
 app.include_router(recommendations.router, prefix=f"{settings.API_V1_STR}/recommendations", tags=["Recommendations"])
+app.include_router(stream.router,          prefix=f"{settings.API_V1_STR}/stream",          tags=["Stream SSE"])
 
 
 @app.get("/")

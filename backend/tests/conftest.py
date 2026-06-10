@@ -7,6 +7,7 @@ LLM: Anthropic calls are monkeypatched so no API key is needed in CI.
 """
 
 import asyncio
+from pathlib import Path
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
@@ -16,15 +17,18 @@ from app.main import app
 from app.db.database import Base, get_db
 from app.config import settings
 
+TEST_DB_PATH = Path("/private/tmp/railmind_test.db")
+TEST_DATABASE_URL = f"sqlite+aiosqlite:///{TEST_DB_PATH}"
+
 # Force test DB settings before anything imports them
-settings.DATABASE_URL = "sqlite+aiosqlite:///./test_railmind.db"
+settings.DATABASE_URL = TEST_DATABASE_URL
 settings.REDIS_URL = "redis://localhost:6379/0"    # falls back to in-memory if not running
 settings.SCENARIO_MODE = True
 settings.ENFORCE_RBAC = True
 settings.ANTHROPIC_API_KEY = ""                    # LLM disabled in tests
 
 TEST_ENGINE = create_async_engine(
-    "sqlite+aiosqlite:///./test_railmind.db",
+    TEST_DATABASE_URL,
     echo=False,
 )
 TestSessionLocal = async_sessionmaker(

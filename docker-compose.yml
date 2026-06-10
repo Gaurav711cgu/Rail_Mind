@@ -1,0 +1,88 @@
+version: "3.9"
+
+# RailMind — Local Development Stack
+# Start everything: docker compose up --build
+# Backend only:     docker compose up backend
+# Reset DB:         docker compose down -v && docker compose up
+
+services:
+  # ── PostgreSQL (production-equivalent) ───────────────────────────────────
+  postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: railmind
+      POSTGRES_PASSWORD: railmind_dev
+      POSTGRES_DB: railmind
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U railmind"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis (Streams + cache) ───────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── FastAPI Backend ───────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://railmind:railmind_dev@postgres:5432/railmind
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: local-dev-secret-change-in-production
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      RAPIDAPI_IRCTC_KEY: ${RAPIDAPI_IRCTC_KEY:-}
+      SCENARIO_MODE: "true"
+      ENFORCE_RBAC: "false"
+      ALLOWED_HOSTS: '["*"]'
+      CORS_ORIGINS: '["http://localhost:5173","http://localhost:3000"]'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    volumes:
+      # Mount artifacts so the RAC model survives container restarts
+      - rac_artifacts:/app/app/ml/artifacts
+
+  # ── React Frontend (dev server) ───────────────────────────────────────────
+  frontend:
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "npm install --silent && npm run dev -- --host 0.0.0.0"
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_BASE: http://backend:8000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  rac_artifacts:
