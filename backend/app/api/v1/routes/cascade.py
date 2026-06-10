@@ -51,11 +51,11 @@ async def sync_scenario_step_to_db(db: AsyncSession, state: dict):
 
     # 2. Sync Recommendations
     for r in state["recommendations"]:
-        result = await db.execute(
+        result_rec = await db.execute(
             select(DBRecommendation).where(DBRecommendation.id == r["id"])
         )
-        existing = result.scalars().first()
-        if not existing:
+        existing_rec = result_rec.scalars().first()
+        if not existing_rec:
             db_rec = DBRecommendation(
                 id=r["id"],
                 disruption_id=r["disruption_id"],
@@ -70,15 +70,15 @@ async def sync_scenario_step_to_db(db: AsyncSession, state: dict):
             )
             db.add(db_rec)
         else:
-            existing.is_approved = r["is_approved"]
+            existing_rec.is_approved = r["is_approved"]
 
     # 3. Sync Audit Log Entries
     for a in state["audit_entries"]:
-        result = await db.execute(
+        result_audit = await db.execute(
             select(DBAuditEntry).where(DBAuditEntry.current_hash == a["hash"])
         )
-        existing = result.scalars().first()
-        if not existing:
+        existing_audit = result_audit.scalars().first()
+        if not existing_audit:
             # Fetch previous entry to get the previous hash
             res_prev = await db.execute(
                 select(DBAuditEntry).order_by(DBAuditEntry.id.desc()).limit(1)

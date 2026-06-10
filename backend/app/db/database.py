@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from sqlalchemy.orm import declarative_base, Mapped, mapped_column
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy import String, Integer, Float, Boolean, DateTime, Text, event
 from app.config import settings
 
@@ -11,7 +11,9 @@ def utc_now_naive():
 
 
 # Base class for ORM models
-Base = declarative_base()
+class Base(DeclarativeBase):
+    pass
+
 
 # Async database session configuration
 engine = create_async_engine(settings.DATABASE_URL, echo=False)

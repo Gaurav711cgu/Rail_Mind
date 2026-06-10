@@ -34,15 +34,15 @@ def _first_present(source: Dict[str, Any], keys: List[str]) -> Any:
 
 def _walk_dicts(value: Any) -> List[Dict[str, Any]]:
     if isinstance(value, dict):
-        found = [value]
+        found_dict = [value]
         for nested in value.values():
-            found.extend(_walk_dicts(nested))
-        return found
+            found_dict.extend(_walk_dicts(nested))
+        return found_dict
     if isinstance(value, list):
-        found: List[Dict[str, Any]] = []
+        found_list: List[Dict[str, Any]] = []
         for item in value:
-            found.extend(_walk_dicts(item))
-        return found
+            found_list.extend(_walk_dicts(item))
+        return found_list
     return []
 
 

@@ -10,7 +10,7 @@ from app.config import settings
 
 class StreamService:
     def __init__(self) -> None:
-        self._redis = None
+        self._redis: Any = None
         self._redis_available = False
         self._memory_streams: Dict[str, List[Dict[str, Any]]] = {}
 

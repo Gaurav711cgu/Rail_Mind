@@ -7,6 +7,7 @@ __pycache__/
 .mypy_cache/
 backend/railmind_local.db
 backend/app/railmind_local.db
+backend/test_railmind.db
 
 # Node
 node_modules/

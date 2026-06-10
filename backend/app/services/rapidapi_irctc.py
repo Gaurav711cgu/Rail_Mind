@@ -16,7 +16,7 @@ class OutgoingAPICallCapper:
     def __init__(self, max_calls: int = 30, window_seconds: int = 60) -> None:
         self.max_calls = max_calls
         self.window_seconds = window_seconds
-        self.call_history = deque()
+        self.call_history: deque[float] = deque()
 
     def record_and_check(self) -> None:
         now = time.time()

@@ -38,8 +38,8 @@ async def list_disruptions(db: AsyncSession = Depends(get_db)):
             )
         return result
     else:
-        result = await db.execute(select(DBDisruption))
-        db_disruptions = result.scalars().all()
+        db_result = await db.execute(select(DBDisruption))
+        db_disruptions = db_result.scalars().all()
         return [
             Disruption(
                 id=d.id,

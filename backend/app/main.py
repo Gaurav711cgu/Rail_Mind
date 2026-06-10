@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 import asyncio
+from typing import Any, Dict, Optional
 
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -32,8 +33,8 @@ from app.ml.rac_predictor import rac_predictor  # triggers model load at startup
 # --------------------------------------------------------------------------- #
 import time
 
-_startup_time = None
-_request_metrics = {
+_startup_time: Optional[float] = None
+_request_metrics: Dict[str, Any] = {
     "total_requests": 0,
     "avg_latency_ms": 0.0,
     "p99_latency_ms": 0.0,

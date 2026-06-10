@@ -5,3 +5,5 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 railmind_local.db
+test_railmind.db
+.DS_Store

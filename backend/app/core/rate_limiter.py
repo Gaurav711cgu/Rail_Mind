@@ -7,7 +7,7 @@ class InMemoryRateLimiter:
     def __init__(self, requests_limit: int = 100, window_seconds: int = 60):
         self.requests_limit = requests_limit
         self.window_seconds = window_seconds
-        self.history = defaultdict(list)
+        self.history: defaultdict[str, list[float]] = defaultdict(list)
 
     async def check_rate_limit(self, request: Request):
         # Allow open access to docs

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, Dict, List
 
 from app.config import settings
 
@@ -10,9 +11,9 @@ from app.config import settings
 class RACPredictor:
     def __init__(self) -> None:
         self._loaded = False
-        self._model = None
-        self._pipeline = None
-        self._explainer = None
+        self._model: Any = None
+        self._pipeline: Any = None
+        self._explainer: Any = None
         self._try_load()
 
     def _try_load(self) -> None:
@@ -38,6 +39,8 @@ class RACPredictor:
         Falls back to heuristic if model is not loaded.
         """
         import pandas as pd
+
+        factors: List[Dict[str, Any]] = []
 
         if not self._loaded:
             # Fallback heuristic
