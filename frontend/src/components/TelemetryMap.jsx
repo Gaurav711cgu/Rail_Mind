@@ -37,28 +37,28 @@ const ZONE_CONFIG = {
     label: 'Northern (NR/NCR)',
     center: [27.5, 78.8],
     zoom: 7,
-    color: '#00F0FF',
+    color: '#FFFFFF',
     stations: ['NDLS', 'GZB', 'ALJN', 'CNB'],
   },
   WEST: {
     label: 'Western (WR)',
     center: [21.0, 73.0],
     zoom: 7,
-    color: '#A855F7',
+    color: '#FFFFFF',
     stations: ['MMCT', 'ST', 'BRC', 'ADI'],
   },
   SOUTH: {
     label: 'Southern (SR/SWR)',
     center: [12.8, 79.0],
     zoom: 8,
-    color: '#10B981',
+    color: '#FFFFFF',
     stations: ['SBC', 'BWT', 'JTJ', 'MAS'],
   },
   ALL: {
     label: 'All India Grid',
     center: [21.5, 78.0],
     zoom: 5,
-    color: '#F59E0B',
+    color: '#FFFFFF',
     stations: Object.keys(STATION_COORDS),
   },
 };
@@ -70,10 +70,8 @@ function coordsFor(code) {
 
 /* colour by delay */
 function trainColor(delay, isFreight) {
-  if (isFreight) return '#F59E0B';
-  if (delay >= 30) return '#EF4444';
-  if (delay >= 10) return '#F97316';
-  return '#00F0FF';
+  if (delay >= 10) return '#E31A22'; // Crimson Red for delays
+  return '#FFFFFF'; // Crisp White for on-time / freight
 }
 
 /* ─────────────────────────────────────────────────────────────────
@@ -323,7 +321,7 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
       }).addTo(map);
 
       m.bindTooltip(
-        `<div style="font-family:monospace;font-size:0.65rem;"><strong style="color:#00F0FF">${s.name}</strong><br/><span style="color:#aaa">${code}</span></div>`,
+        `<div style="font-family:monospace;font-size:0.65rem;"><strong style="color:#FFFFFF">${s.name}</strong><br/><span style="color:#aaa">${code}</span></div>`,
         { permanent: false, direction: 'top', className: 'custom-map-tooltip' }
       );
 
@@ -548,8 +546,8 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
           onClick={searchRoute}
           disabled={routeLoading}
           style={{
-            background: 'linear-gradient(135deg, var(--color-primary), var(--color-accent))',
-            border: 'none', borderRadius: '4px', color: 'black', fontWeight: 800,
+            background: 'var(--color-primary)',
+            border: 'none', borderRadius: '4px', color: 'white', fontWeight: 800,
             fontSize: '0.65rem', padding: '6px 14px', cursor: 'pointer', letterSpacing: '0.5px',
             opacity: routeLoading ? 0.6 : 1,
           }}
@@ -581,7 +579,7 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
               key={lbl}
               onClick={() => { setFromCode(f); setFromInput(f); setToCode(t); setToInput(t); }}
               style={{
-                background: fromCode === f && toCode === t ? 'rgba(0,240,255,0.1)' : 'rgba(255,255,255,0.02)',
+                background: fromCode === f && toCode === t ? 'var(--color-primary-dim)' : 'rgba(255,255,255,0.02)',
                 border: `1px solid ${fromCode === f && toCode === t ? 'var(--color-primary)' : 'var(--border-color)'}`,
                 borderRadius: '4px', color: fromCode === f && toCode === t ? 'var(--color-primary)' : 'var(--color-text-muted)',
                 fontSize: '0.58rem', fontWeight: 700, padding: '3px 7px', cursor: 'pointer',
@@ -726,7 +724,7 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
       <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1.6fr 1.3fr', gap: '12px' }}>
 
         {/* Panel 1: Sensors & Kavach / Station Board */}
-        <div style={{ background: 'rgba(255,255,255,0.01)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div className="glass-card" style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px', boxShadow: 'none' }}>
           {stationBoard ? (
             <>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -788,7 +786,7 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
         </div>
 
         {/* Panel 2: Telemetry Inspector */}
-        <div style={{ background: 'rgba(255,255,255,0.01)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column' }}>
+        <div className="glass-card" style={{ padding: '12px', display: 'flex', flexDirection: 'column', boxShadow: 'none' }}>
           <h4 style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border-color)', paddingBottom: '5px', marginBottom: '8px', marginTop: 0 }}>
             Telemetry Inspector
           </h4>
@@ -866,7 +864,7 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
               {/* Live status fetch result */}
               {liveLoading && <div style={{ fontSize: '0.62rem', color: 'var(--color-text-muted)', textAlign: 'center' }}>Fetching live status…</div>}
               {liveStatus && !liveLoading && (
-                <div style={{ background: 'rgba(0,240,255,0.04)', border: '1px solid rgba(0,240,255,0.12)', borderRadius: '4px', padding: '6px', fontSize: '0.62rem' }}>
+                <div style={{ background: 'var(--color-primary-dim)', border: '1px solid rgba(227,26,34,0.15)', borderRadius: '4px', padding: '6px', fontSize: '0.62rem' }}>
                   <div style={{ color: 'var(--color-primary)', fontWeight: 700, marginBottom: '3px' }}>⚡ Live Telemetry</div>
                   {liveStatus.error ? (
                     <span style={{ color: 'var(--color-warning)' }}>Live status API unavailable</span>
@@ -902,17 +900,17 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
         </div>
 
         {/* Panel 3: System Core Metrics & Autoplay */}
-        <div style={{ background: 'rgba(255,255,255,0.01)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div className="glass-card" style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px', boxShadow: 'none' }}>
           <h4 style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border-color)', paddingBottom: '5px', margin: 0 }}>
             System Metrics
           </h4>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px', fontSize: '0.65rem' }}>
             {[
-              ['LINE EFF', `${metrics.efficiency_score}%`, 'var(--color-accent)'],
+              ['LINE EFF', `${metrics.efficiency_score}%`, 'var(--color-secondary)'],
               ['CAPACITY', `${metrics.capacity_load}%`, 'var(--color-primary)'],
               ['AVG SPEED', `${metrics.average_speed} km/h`, 'var(--color-secondary)'],
-              ['SAFETY IDX', `${metrics.safety_index}%`, '#10B981'],
+              ['SAFETY IDX', `${metrics.safety_index}%`, 'var(--color-secondary)'],
             ].map(([label, val, color]) => (
               <div key={label} style={{ background: 'rgba(0,0,0,0.15)', padding: '5px', borderRadius: '4px', textAlign: 'center' }}>
                 <div style={{ color: 'var(--color-text-muted)', fontSize: '0.52rem' }}>{label}</div>

@@ -11,12 +11,12 @@ export default function AgentLogs({ logs }) {
 
   const agentsList = [
     { label: 'ALL', value: 'ALL', color: 'var(--color-text-main)' },
-    { label: 'Monitor', value: 'MonitorAgent', color: 'var(--color-accent)' },
-    { label: 'Conflict', value: 'ConflictDetector', color: 'var(--color-warning)' },
+    { label: 'Monitor', value: 'MonitorAgent', color: 'var(--color-primary)' },
+    { label: 'Conflict', value: 'ConflictDetector', color: 'var(--color-primary)' },
     { label: 'Cascade', value: 'CascadePredictor', color: 'var(--color-primary)' },
-    { label: 'Dispatch', value: 'DispatchAgent', color: 'var(--color-secondary)' },
-    { label: 'Notify', value: 'NotificationAgent', color: '#60A5FA' },
-    { label: 'Audit', value: 'AuditAgent', color: '#F472B6' }
+    { label: 'Dispatch', value: 'DispatchAgent', color: 'var(--color-primary)' },
+    { label: 'Notify', value: 'NotificationAgent', color: 'var(--color-primary)' },
+    { label: 'Audit', value: 'AuditAgent', color: 'var(--color-primary)' }
   ];
 
   // Filter logs based on selection
@@ -38,8 +38,8 @@ export default function AgentLogs({ logs }) {
   return (
     <div className="glass-card" style={{ gridColumn: 'span 12', minHeight: '340px', display: 'flex', flexDirection: 'column' }}>
       <div className="card-header" style={{ marginBottom: '15px' }}>
-        <h3 style={{ fontSize: '1.1rem', fontWeight: 600 }}>Autonomous Decision Log Console</h3>
-        <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Explainable AI Agent Execution Telemetries</p>
+        <h3 style={{ fontSize: '1.1rem', fontWeight: 600 }}>Operations Decision Logs</h3>
+        <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>System Diagnostics & Logs</p>
       </div>
 
       {/* Filter Badges */}

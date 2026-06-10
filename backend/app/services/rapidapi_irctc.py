@@ -1,9 +1,33 @@
+import time
+from collections import deque
 from typing import Any, Dict, Optional
 
 import httpx
 from fastapi import HTTPException, status
 
 from app.config import settings
+
+
+class OutgoingAPICallCapper:
+    """
+    Prevents exceeding RapidAPI pricing tier limits by capping outgoing calls.
+    """
+    def __init__(self, max_calls: int = 30, window_seconds: int = 60) -> None:
+        self.max_calls = max_calls
+        self.window_seconds = window_seconds
+        self.call_history = deque()
+
+    def record_and_check(self) -> None:
+        now = time.time()
+        while self.call_history and now - self.call_history[0] > self.window_seconds:
+            self.call_history.popleft()
+
+        if len(self.call_history) >= self.max_calls:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"Outgoing RapidAPI rate limit hit: max {self.max_calls} requests per {self.window_seconds}s."
+            )
+        self.call_history.append(now)
 
 
 class RapidAPIIrctcClient:
@@ -14,6 +38,7 @@ class RapidAPIIrctcClient:
         self.host = settings.RAPIDAPI_IRCTC_HOST
         self.api_key = settings.RAPIDAPI_IRCTC_KEY
         self.timeout = settings.RAPIDAPI_IRCTC_TIMEOUT_SECONDS
+        self.capper = OutgoingAPICallCapper(max_calls=30, window_seconds=60)
 
     def _headers(self) -> Dict[str, str]:
         if not self.api_key:
@@ -29,6 +54,7 @@ class RapidAPIIrctcClient:
         }
 
     async def get(self, path: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        self.capper.record_and_check()
         url = f"{self.base_url}{path}"
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:

@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import useWebSocket from './useWebSocket';
 
 /**
- * useAgentStream — subscribes to /api/v1/stream/agents SSE endpoint.
+ * useAgentStream — subscribes to agent health data via WebSocket (preferred)
+ * with automatic fallback to SSE /api/v1/stream/agents.
  *
  * Returns:
  *   agents     — latest agent health snapshot (object keyed by agent name)
@@ -11,16 +13,24 @@ import { useState, useEffect, useRef, useCallback } from 'react';
  *   reconnect  — manually force a reconnection
  */
 export default function useAgentStream() {
-  const [agents, setAgents] = useState({});
-  const [connected, setConnected] = useState(false);
-  const [lastUpdate, setLastUpdate] = useState(null);
-  const [error, setError] = useState(null);
+  // --- WebSocket transport (preferred) ---
+  const ws = useWebSocket();
+
+  // --- SSE fallback state ---
+  const [sseAgents, setSseAgents] = useState({});
+  const [sseConnected, setSseConnected] = useState(false);
+  const [sseLastUpdate, setSseLastUpdate] = useState(null);
+  const [sseError, setSseError] = useState(null);
 
   const esRef = useRef(null);
   const retryRef = useRef(null);
   const retryDelay = useRef(2000); // start at 2s, exponential back-off
+  const wsWasConnected = useRef(false);
 
-  const connect = useCallback(() => {
+  const connectSSE = useCallback(() => {
+    // Don't start SSE if WebSocket is connected
+    if (ws.connected) return;
+
     // Clean up any existing connection
     if (esRef.current) {
       esRef.current.close();
@@ -32,8 +42,8 @@ export default function useAgentStream() {
     esRef.current = es;
 
     es.onopen = () => {
-      setConnected(true);
-      setError(null);
+      setSseConnected(true);
+      setSseError(null);
       retryDelay.current = 2000; // reset backoff on successful connect
     };
 
@@ -41,35 +51,76 @@ export default function useAgentStream() {
       try {
         const data = JSON.parse(evt.data);
         if (data.agents) {
-          setAgents(data.agents);
-          setLastUpdate(data.timestamp);
+          setSseAgents(data.agents);
+          setSseLastUpdate(data.timestamp);
         }
       } catch (err) {
-        console.warn('[useAgentStream] Parse error:', err);
+        console.warn('[useAgentStream] SSE parse error:', err);
       }
     };
 
     es.onerror = () => {
-      setConnected(false);
-      setError('Stream disconnected — reconnecting…');
+      setSseConnected(false);
+      setSseError('Stream disconnected — reconnecting…');
       es.close();
       esRef.current = null;
 
       // Exponential back-off: 2s → 4s → 8s → cap at 30s
       retryRef.current = setTimeout(() => {
         retryDelay.current = Math.min(retryDelay.current * 2, 30000);
-        connect();
+        connectSSE();
       }, retryDelay.current);
     };
-  }, []);
+  }, [ws.connected]);
 
+  // Manage SSE lifecycle based on WebSocket connection state
   useEffect(() => {
-    connect();
+    if (ws.connected) {
+      // WebSocket connected — tear down SSE if active
+      wsWasConnected.current = true;
+      if (esRef.current) {
+        esRef.current.close();
+        esRef.current = null;
+      }
+      clearTimeout(retryRef.current);
+      setSseConnected(false);
+    } else if (!ws.connected && !esRef.current) {
+      // WebSocket not connected and no SSE active — start SSE fallback
+      connectSSE();
+    }
+  }, [ws.connected, connectSSE]);
+
+  // Cleanup on unmount
+  useEffect(() => {
     return () => {
       if (esRef.current) esRef.current.close();
       clearTimeout(retryRef.current);
     };
-  }, [connect]);
+  }, []);
 
-  return { agents, connected, lastUpdate, error, reconnect: connect };
+  // --- Merge: prefer WebSocket data when connected ---
+  const reconnect = useCallback(() => {
+    ws.reconnect();
+    // Also reset SSE so it can pick up if WS fails
+    connectSSE();
+  }, [ws, connectSSE]);
+
+  if (ws.connected && ws.data) {
+    return {
+      agents: ws.data.agents || {},
+      connected: true,
+      lastUpdate: ws.data.timestamp || null,
+      error: null,
+      reconnect,
+    };
+  }
+
+  // Fallback to SSE data
+  return {
+    agents: sseAgents,
+    connected: sseConnected,
+    lastUpdate: sseLastUpdate,
+    error: ws.error || sseError,
+    reconnect,
+  };
 }

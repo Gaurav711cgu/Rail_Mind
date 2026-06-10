@@ -1,6 +1,6 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 
 class User(BaseModel):
@@ -10,8 +10,8 @@ class User(BaseModel):
     role: str  # 'PASSENGER', 'STATION_AGENT', 'CONTROLLER', 'ADMIN'
     zone: Optional[str] = None
     is_active: bool = True
-    created_at: datetime = datetime.utcnow()
-    updated_at: datetime = datetime.utcnow()
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class UserLogin(BaseModel):
@@ -24,6 +24,7 @@ class Token(BaseModel):
     token_type: str = "bearer"
     role: str
     zone: Optional[str] = None
+    refresh_token: Optional[str] = None
 
 
 class TokenData(BaseModel):

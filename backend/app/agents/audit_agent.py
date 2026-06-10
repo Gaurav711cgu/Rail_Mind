@@ -1,5 +1,5 @@
 import hashlib
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any, Tuple
 from app.agents.base_agent import BaseAgent
 
@@ -24,7 +24,7 @@ class AuditAgent(BaseAgent):
         current_hash = hashlib.sha256(f"{prev_hash}|{log_payload}".encode("utf-8")).hexdigest()
         
         new_block = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "prev_hash": prev_hash,
             "hash": current_hash,
             "logs_count": len(logs)

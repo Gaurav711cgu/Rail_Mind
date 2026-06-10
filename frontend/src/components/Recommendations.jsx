@@ -16,7 +16,7 @@ export default function Recommendations({ recommendations, onApprove, onOverride
   return (
     <div className="glass-card" style={{ gridColumn: 'span 4', minHeight: '320px', display: 'flex', flexDirection: 'column' }}>
       <div className="card-header" style={{ marginBottom: '15px' }}>
-        <h3 style={{ fontSize: '1.1rem', fontWeight: 600 }}>Autonomous Dispatch Recommendations</h3>
+        <h3 style={{ fontSize: '1.1rem', fontWeight: 600 }}>Automated Dispatch Solutions</h3>
         <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Confidence-gated hold/proceed resolutions</p>
       </div>
 
@@ -54,7 +54,7 @@ export default function Recommendations({ recommendations, onApprove, onOverride
                         cy="35"
                         r={radius}
                         fill="transparent"
-                        stroke={rec.confidence < 0.85 ? 'var(--color-secondary)' : 'var(--color-accent)'}
+                        stroke={rec.confidence < 0.85 ? 'var(--color-secondary)' : 'var(--color-primary)'}
                         strokeWidth={strokeWidth}
                         strokeDasharray={circumference}
                         strokeDashoffset={strokeDashoffset}
@@ -91,10 +91,11 @@ export default function Recommendations({ recommendations, onApprove, onOverride
                         fontSize: '0.65rem',
                         padding: '2px 6px',
                         borderRadius: '4px',
-                        background: rec.tier === 2 ? 'rgba(189, 0, 255, 0.15)' : 'rgba(57, 255, 20, 0.15)',
-                        color: rec.tier === 2 ? 'var(--color-secondary)' : 'var(--color-accent)'
+                        background: rec.tier === 2 ? 'rgba(227, 26, 34, 0.12)' : 'rgba(255, 255, 255, 0.12)',
+                        color: rec.tier === 2 ? 'var(--color-primary)' : 'var(--color-secondary)',
+                        border: `1px solid ${rec.tier === 2 ? 'rgba(227, 26, 34, 0.2)' : 'rgba(255, 255, 255, 0.2)'}`
                       }}>
-                        {rec.tier === 2 ? 'Tier-2 Escalated' : 'Tier-1 Auto'}
+                        {rec.tier === 2 ? 'Escalated' : 'System Auto'}
                       </span>
                     </div>
                     <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', lineHeight: '1.4' }}>

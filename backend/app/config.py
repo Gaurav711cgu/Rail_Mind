@@ -56,6 +56,8 @@ class Settings(BaseSettings):
     # ------------------------------------------------------------------ #
     ANTHROPIC_API_KEY: str = ""
     ANTHROPIC_MODEL: str = "claude-sonnet-4-20250514"
+    GROQ_API_KEY: str = ""
+    GROQ_MODEL: str = "llama-3.3-70b-versatile"
 
     # ------------------------------------------------------------------ #
     #  Live Data — indianrailapi.com / RapidAPI IRCTC                     #

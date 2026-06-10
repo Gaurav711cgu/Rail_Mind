@@ -212,6 +212,102 @@ export default function RACPredictor() {
         </form>
       </div>
 
+      {/* SHAP Feature Impact Bars */}
+      {prediction && prediction.key_factors && prediction.key_factors.length > 0 && (
+        <div className="glass-card" style={{ gridColumn: 'span 12', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px', marginBottom: '16px' }}>
+            <div>
+              <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.5px', margin: 0 }}>
+                SHAP Feature Impact — Log-Odds Contributions
+              </h4>
+              {prediction.model_version && (
+                <span style={{ fontSize: '0.6rem', color: 'var(--color-text-muted)', marginTop: '4px', display: 'inline-block' }}>
+                  Model: {prediction.model_version}
+                </span>
+              )}
+            </div>
+            {prediction.confidence_interval && (
+              <div style={{ textAlign: 'right' }}>
+                <span style={{ fontSize: '0.6rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', display: 'block' }}>95% Confidence Interval</span>
+                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'white' }}>
+                  [{prediction.confidence_interval[0]?.toFixed(3)}, {prediction.confidence_interval[1]?.toFixed(3)}]
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {(() => {
+              const maxAbsImpact = Math.max(...prediction.key_factors.map(f => Math.abs(f.impact)), 0.001);
+              return prediction.key_factors.map((factor, idx) => {
+                const barWidthPct = (Math.abs(factor.impact) / maxAbsImpact) * 45;
+                const isPositive = factor.impact >= 0;
+                return (
+                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    {/* Factor name */}
+                    <span style={{ flex: '0 0 160px', fontSize: '0.72rem', fontWeight: 600, color: 'var(--color-text-muted)', textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {factor.factor}
+                    </span>
+
+                    {/* Bar container */}
+                    <div style={{ flex: 1, position: 'relative', height: '20px', background: 'rgba(255,255,255,0.02)', borderRadius: '3px', overflow: 'hidden' }}>
+                      {/* Center line */}
+                      <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: '1px', background: 'rgba(255,255,255,0.12)', zIndex: 1 }} />
+
+                      {isPositive ? (
+                        /* Positive: bar extends right from center */
+                        <div style={{
+                          position: 'absolute',
+                          left: '50%',
+                          top: '2px',
+                          bottom: '2px',
+                          width: `${barWidthPct}%`,
+                          background: 'var(--color-accent)',
+                          borderRadius: '0 3px 3px 0',
+                          opacity: 0.85,
+                          transition: 'width 0.4s ease'
+                        }} />
+                      ) : (
+                        /* Negative: bar extends left from center */
+                        <div style={{
+                          position: 'absolute',
+                          right: '50%',
+                          top: '2px',
+                          bottom: '2px',
+                          width: `${barWidthPct}%`,
+                          background: 'var(--color-primary)',
+                          borderRadius: '3px 0 0 3px',
+                          opacity: 0.85,
+                          transition: 'width 0.4s ease'
+                        }} />
+                      )}
+                    </div>
+
+                    {/* Impact value */}
+                    <span style={{
+                      flex: '0 0 60px',
+                      fontSize: '0.7rem',
+                      fontWeight: 700,
+                      fontFamily: 'monospace',
+                      textAlign: 'left',
+                      color: isPositive ? 'var(--color-accent)' : 'var(--color-primary)'
+                    }}>
+                      {isPositive ? '+' : ''}{factor.impact.toFixed(3)}
+                    </span>
+                  </div>
+                );
+              });
+            })()}
+          </div>
+
+          {prediction.disclaimer && (
+            <p style={{ fontSize: '0.6rem', color: 'var(--color-text-dark)', fontStyle: 'italic', marginTop: '14px', borderTop: '1px solid var(--border-color)', paddingTop: '8px' }}>
+              {prediction.disclaimer}
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Feature 2: Interactive SVG RAC Seat Split & Upgrade Analyzer */}
       <div className="glass-card" style={{ gridColumn: 'span 4', minHeight: '380px', display: 'flex', flexDirection: 'column' }}>
         <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px', marginBottom: '12px' }}>
@@ -225,12 +321,12 @@ export default function RACPredictor() {
             <rect x="10" y="10" width="200" height="50" rx="4" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="2" />
             
             {/* Passenger 1 partition */}
-            <rect x="15" y="15" width="90" height="40" rx="3" fill="rgba(0, 240, 255, 0.05)" stroke="var(--color-primary)" strokeWidth="1" />
+            <rect x="15" y="15" width="90" height="40" rx="3" fill="rgba(227, 26, 34, 0.05)" stroke="var(--color-primary)" strokeWidth="1" />
             <text x="60" y="35" textAnchor="middle" fill="white" fontSize="0.65rem" fontWeight="bold">RAC Pax #1</text>
             <text x="60" y="47" textAnchor="middle" fill="var(--color-text-muted)" fontSize="0.5rem">Side Lower A</text>
 
             {/* Passenger 2 partition */}
-            <rect x="115" y="15" width="90" height="40" rx="3" fill="rgba(168, 85, 247, 0.05)" stroke="var(--color-secondary)" strokeWidth="1" />
+            <rect x="115" y="15" width="90" height="40" rx="3" fill="rgba(255, 255, 255, 0.05)" stroke="var(--color-secondary)" strokeWidth="1" />
             <text x="160" y="35" textAnchor="middle" fill="white" fontSize="0.65rem" fontWeight="bold">RAC Pax #2</text>
             <text x="160" y="47" textAnchor="middle" fill="var(--color-text-muted)" fontSize="0.5rem">Side Lower B</text>
           </svg>
@@ -279,7 +375,7 @@ export default function RACPredictor() {
             <div key={q.quota} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem' }}>
                 <span style={{ fontWeight: 600, color: 'white' }}>{q.quota}</span>
-                <span style={{ fontWeight: 700, color: q.probability > 0.6 ? 'var(--color-accent)' : q.probability > 0.3 ? 'var(--color-warning)' : 'var(--color-danger)' }}>
+                <span style={{ fontWeight: 700, color: 'white' }}>
                   {Math.round(q.probability * 100)}%
                 </span>
               </div>
@@ -287,7 +383,7 @@ export default function RACPredictor() {
                 <div style={{
                   width: `${q.probability * 100}%`,
                   height: '100%',
-                  background: q.probability > 0.6 ? 'var(--color-accent)' : q.probability > 0.3 ? 'var(--color-warning)' : 'var(--color-danger)'
+                  background: 'var(--color-primary)'
                 }} />
               </div>
             </div>
@@ -359,7 +455,7 @@ export default function RACPredictor() {
                           <g key={idx}>
                             <circle cx={x} cy={y} r="3" fill="#FFFFFF" stroke="var(--color-primary)" strokeWidth="1.5" />
                             <text x={x} y="134" textAnchor="middle" fill="var(--color-text-muted)" fontSize="0.55rem">{t.month}</text>
-                            <text x={x} y={y - 8} textAnchor="middle" fill="var(--color-accent)" fontSize="0.5rem" fontWeight="bold">
+                            <text x={x} y={y - 8} textAnchor="middle" fill="var(--color-primary)" fontSize="0.5rem" fontWeight="bold">
                               {Math.round(t.rate * 100)}%
                             </text>
                           </g>

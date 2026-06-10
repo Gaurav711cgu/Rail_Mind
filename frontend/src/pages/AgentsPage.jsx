@@ -6,16 +6,16 @@ const AGENT_META = {
   MonitorAgent:     { icon: '🔍', label: 'Monitor',      desc: 'Z-score anomaly detection on live NTES telemetry' },
   ConflictDetector: { icon: '⚠️',  label: 'Conflict',     desc: 'NetworkX DiGraph route conflict analysis' },
   CascadePredictor: { icon: '📡', label: 'Cascade',      desc: 'BFS delay propagation across timetable graph' },
-  DispatchAgent:    { icon: '🚦', label: 'Dispatch',     desc: 'Claude API dispatch resolution with heuristic fallback' },
+  DispatchAgent:    { icon: '🚦', label: 'Dispatch',     desc: 'Automated dispatch resolution with heuristic fallback' },
   NotificationAgent:{ icon: '📢', label: 'Notification', desc: 'Passenger advisory & alternate train ranking' },
   AuditAgent:       { icon: '🔐', label: 'Audit',        desc: 'Append-only ECDSA cryptographic audit chain' },
 };
 
 function StatusBadge({ status }) {
   const map = {
-    healthy:  { bg: 'rgba(34,197,94,0.08)',  border: 'rgba(34,197,94,0.3)',  color: '#22c55e', dot: 'active',  text: 'HEALTHY' },
-    running:  { bg: 'rgba(59,130,246,0.08)', border: 'rgba(59,130,246,0.3)', color: '#3b82f6', dot: 'warning', text: 'RUNNING' },
-    degraded: { bg: 'rgba(239,68,68,0.08)',  border: 'rgba(239,68,68,0.3)',  color: '#ef4444', dot: 'danger',  text: 'DEGRADED' },
+    healthy:  { bg: 'rgba(255,255,255,0.08)', border: 'rgba(255,255,255,0.2)', color: '#ffffff', dot: 'active',  text: 'HEALTHY' },
+    running:  { bg: 'rgba(255,255,255,0.08)', border: 'rgba(255,255,255,0.2)', color: '#ffffff', dot: 'warning', text: 'RUNNING' },
+    degraded: { bg: 'rgba(227,26,34,0.08)',   border: 'rgba(227,26,34,0.3)',   color: 'var(--color-primary)', dot: 'danger',  text: 'DEGRADED' },
   };
   const s = map[status] || map.healthy;
   return (
@@ -33,13 +33,13 @@ function StatusBadge({ status }) {
 
 function ConfidenceBar({ value }) {
   const pct = Math.round((value || 1.0) * 100);
-  const color = pct >= 90 ? '#22c55e' : pct >= 75 ? '#f59e0b' : '#ef4444';
+  const color = 'var(--color-primary)'; // Fixed color: Crimson Red
   return (
     <div style={{ marginTop:6 }}>
       <div style={{ display:'flex', justifyContent:'space-between', fontSize:'0.6rem',
         color:'var(--color-text-muted)', marginBottom:3 }}>
         <span>CONFIDENCE</span>
-        <span style={{ color, fontWeight:700 }}>{pct}%</span>
+        <span style={{ color: 'white', fontWeight:700 }}>{pct}%</span>
       </div>
       <div style={{ height:3, background:'rgba(255,255,255,0.05)', borderRadius:2 }}>
         <div style={{ width:`${pct}%`, height:'100%', background:color,
@@ -70,23 +70,23 @@ export default function AgentsPage() {
         display:'flex', justifyContent:'space-between', alignItems:'center' }}>
         <div>
           <h3 style={{ fontSize:'1rem', fontWeight:700, marginBottom:2 }}>
-            Agent Pipeline Monitor
+            System Decision Flow Monitor
           </h3>
           <p style={{ fontSize:'0.72rem', color:'var(--color-text-muted)' }}>
-            Real-time SSE stream · 6-agent LangGraph-style orchestration
+            Real-time SSE stream · Automated multi-step dispatch verification
           </p>
         </div>
 
         <div style={{ display:'flex', gap:10, alignItems:'center' }}>
           {/* Connection indicator */}
           <div style={{ display:'flex', alignItems:'center', gap:6,
-            background:'rgba(255,255,255,0.03)', border:`1px solid ${connected ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}`,
+            background:'rgba(255,255,255,0.03)', border:`1px solid ${connected ? 'rgba(255,255,255,0.3)' : 'rgba(227,26,34,0.3)'}`,
             borderRadius:16, padding:'4px 12px' }}>
             <span className={`led-indicator ${connected ? 'active' : 'danger'}`} style={{ width:6, height:6 }} />
             <span style={{ fontSize:'0.6rem', fontWeight:700,
-              color: connected ? '#22c55e' : '#ef4444',
+              color: connected ? '#ffffff' : 'var(--color-primary)',
               fontFamily:"'JetBrains Mono', monospace", letterSpacing:'1px' }}>
-              {connected ? 'SSE LIVE' : 'DISCONNECTED'}
+              {connected ? 'LIVE CONNECTION' : 'DISCONNECTED'}
             </span>
           </div>
 

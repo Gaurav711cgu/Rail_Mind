@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -132,7 +132,7 @@ async def list_trains(db: AsyncSession = Depends(get_db)):
                 delay_minutes=train["current_delay"],
                 data_source=train["data_source"],
                 data_quality=train["data_quality"],
-                recorded_at=datetime.utcnow(),
+                recorded_at=datetime.now(timezone.utc),
             )
             for train in live_trains
         ]
@@ -149,7 +149,7 @@ async def list_trains(db: AsyncSession = Depends(get_db)):
                     delay_minutes=t["current_delay"],
                     data_source="cache" if settings.SCENARIO_MODE else "ntes",
                     data_quality=1.0,
-                    recorded_at=datetime.utcnow()
+                    recorded_at=datetime.now(timezone.utc)
                 )
             )
         return result
@@ -164,7 +164,7 @@ async def list_trains(db: AsyncSession = Depends(get_db)):
                 delay_minutes=0,
                 data_source="db",
                 data_quality=1.0,
-                recorded_at=datetime.utcnow()
+                recorded_at=datetime.now(timezone.utc)
             )
         ]
 
@@ -366,16 +366,19 @@ async def rapidapi_passthrough(endpoint_key: str, request: Request):
 @router.get("/{train_no}", response_model=TrainStatus)
 async def get_train_status(train_no: str, db: AsyncSession = Depends(get_db)):
     if settings.RAPIDAPI_IRCTC_KEY:
-        live_train = await live_rail_data.live_train_snapshot(train_no)
-        route_nodes = get_mock_route_for_train(train_no, live_train["current_delay"])
-        return TrainStatus(
-            train_no=live_train["train_no"],
-            train_name=live_train["train_name"],
-            current_station=live_train["current_station"],
-            current_delay=live_train["current_delay"],
-            last_updated=datetime.utcnow(),
-            route=route_nodes,
-        )
+        try:
+            live_train = await live_rail_data.live_train_snapshot(train_no)
+            route_nodes = get_mock_route_for_train(train_no, live_train["current_delay"])
+            return TrainStatus(
+                train_no=live_train["train_no"],
+                train_name=live_train["train_name"],
+                current_station=live_train["current_station"],
+                current_delay=live_train["current_delay"],
+                last_updated=datetime.now(timezone.utc),
+                route=route_nodes,
+            )
+        except Exception:
+            pass
 
     if settings.SCENARIO_MODE:
         state = scenario_engine.get_state()
@@ -398,7 +401,7 @@ async def get_train_status(train_no: str, db: AsyncSession = Depends(get_db)):
             train_name=train_data["train_name"],
             current_station=train_data["current_station"],
             current_delay=train_data["current_delay"],
-            last_updated=datetime.utcnow(),
+            last_updated=datetime.now(timezone.utc),
             route=route_nodes
         )
     else:
@@ -410,7 +413,7 @@ async def get_train_status(train_no: str, db: AsyncSession = Depends(get_db)):
                 train_name="Shatabdi Express" if train_no == "12002" else "Vande Bharat" if train_no == "22415" else "Coal Freight",
                 current_station="NDLS",
                 current_delay=0,
-                last_updated=datetime.utcnow(),
+                last_updated=datetime.now(timezone.utc),
                 route=route_nodes
             )
         raise HTTPException(

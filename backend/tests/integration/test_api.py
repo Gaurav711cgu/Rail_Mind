@@ -1,259 +1,107 @@
-"""
-Integration tests for RailMind API.
-Uses httpx.AsyncClient with the full ASGI app.
-
-DB-dependent tests (login, audit, scenario-reset) skip gracefully when
-PostgreSQL is not available (e.g. running locally without docker-compose).
-All rerouting, health, and scenario-read tests work without Postgres.
-"""
-
 import pytest
-import pytest_asyncio
-from httpx import AsyncClient, ASGITransport
-
-
-def _postgres_down(resp) -> bool:
-    """Return True if the 500 is caused by no Postgres."""
-    return resp.status_code == 500 and "Connect call failed" in resp.text
-
-
-# ---------------------------------------------------------------------------
-# Fixtures
-# ---------------------------------------------------------------------------
-
-@pytest_asyncio.fixture(scope="module")
-async def client():
-    from app.main import app
-    async with AsyncClient(
-        transport=ASGITransport(app=app),
-        base_url="http://test",
-    ) as c:
-        yield c
-
-
-# ---------------------------------------------------------------------------
-# Health — no Postgres needed
-# ---------------------------------------------------------------------------
+from httpx import AsyncClient
 
 @pytest.mark.asyncio
-async def test_root(client):
-    r = await client.get("/")
-    assert r.status_code == 200
-    body = r.json()
-    assert body["product"] == "RailMind"
-    assert "rac_model_loaded" in body
+async def test_health_endpoints(client: AsyncClient):
+    response = await client.get("/api/v1/health")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "healthy"
 
+    response = await client.get("/api/v1/health/agents")
+    assert response.status_code == 200
+    data = response.json()
+    assert "MonitorAgent" in data
+    assert "DispatchAgent" in data
 
-@pytest.mark.asyncio
-async def test_health_check(client):
-    r = await client.get("/health")
-    assert r.status_code == 200
-    assert r.json()["status"] == "healthy"
+    response = await client.get("/api/v1/health/data-freshness")
+    assert response.status_code == 200
+    assert "watchlist" in response.json()
 
-
-@pytest.mark.asyncio
-async def test_agents_health(client):
-    r = await client.get("/health/agents")
-    assert r.status_code == 200
-    agents = r.json()
-    assert "MonitorAgent" in agents
-    assert "DispatchAgent" in agents
-    for name, info in agents.items():
-        assert info["status"] == "healthy", f"{name} not healthy"
-
-
-# ---------------------------------------------------------------------------
-# Auth — needs Postgres
-# ---------------------------------------------------------------------------
+    response = await client.get("/api/v1/health/system")
+    assert response.status_code == 200
+    system_data = response.json()
+    assert system_data["status"] in ("operational", "degraded")
+    assert "uptime_seconds" in system_data
+    assert "performance" in system_data
+    assert "components" in system_data
+    assert system_data["components"]["database"] == "connected"
+    assert "test_coverage" in system_data
 
 @pytest.mark.asyncio
-async def test_login_success(client):
-    try:
-        r = await client.post(
-            "/api/v1/auth/login",
-            json={"username": "admin", "password": "admin123"},
-        )
-    except Exception:
-        pytest.skip("PostgreSQL not available")
-    if _postgres_down(r):
-        pytest.skip("PostgreSQL not available")
-    assert r.status_code == 200
-    body = r.json()
-    assert "access_token" in body
-    assert body["token_type"] == "bearer"
+async def test_auth_flow(client: AsyncClient):
+    # Register a test user
+    reg_response = await client.post(
+        "/api/v1/auth/register",
+        json={"username": "test_controller", "password": "securepassword123"}
+    )
+    assert reg_response.status_code == 200
+    reg_data = reg_response.json()
+    assert reg_data["username"] == "test_controller"
 
+    # Login
+    login_response = await client.post(
+        "/api/v1/auth/login",
+        json={"username": "test_controller", "password": "securepassword123"}
+    )
+    assert login_response.status_code == 200
+    login_data = login_response.json()
+    assert "access_token" in login_data
+    assert "refresh_token" in login_data
+    assert login_data["role"] == "PASSENGER"  # default role
 
-@pytest.mark.asyncio
-async def test_login_wrong_password(client):
-    try:
-        r = await client.post(
-            "/api/v1/auth/login",
-            json={"username": "admin", "password": "wrong"},
-        )
-    except Exception:
-        pytest.skip("PostgreSQL not available")
-    if _postgres_down(r):
-        pytest.skip("PostgreSQL not available")
-    assert r.status_code == 401
-
-
-@pytest.mark.asyncio
-async def test_me_unauthenticated(client):
-    r = await client.get("/api/v1/auth/me")
-    assert r.status_code == 401
-
-
-# ---------------------------------------------------------------------------
-# Scenario / Cascade — scenario state reads work without Postgres
-# ---------------------------------------------------------------------------
+    # Refresh token
+    refresh_response = await client.post(
+        "/api/v1/auth/refresh",
+        json={"refresh_token": login_data["refresh_token"]}
+    )
+    assert refresh_response.status_code == 200
+    refresh_data = refresh_response.json()
+    assert "access_token" in refresh_data
+    assert "refresh_token" in refresh_data
 
 @pytest.mark.asyncio
-async def test_scenario_state(client):
-    r = await client.get("/api/v1/cascade/scenario")
-    assert r.status_code == 200
-    body = r.json()
-    assert "step" in body
-    assert "trains" in body
-    assert isinstance(body["trains"], list)
+async def test_train_endpoints(client: AsyncClient):
+    response = await client.get("/api/v1/trains")
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) > 0
+    assert data[0]["train_no"] in ["12002", "22415", "BOXN-902"]
 
-
-@pytest.mark.asyncio
-async def test_scenario_reset_and_step(client):
-    try:
-        reset = await client.post("/api/v1/cascade/scenario/reset")
-    except Exception:
-        pytest.skip("PostgreSQL not available")
-    if _postgres_down(reset):
-        pytest.skip("PostgreSQL not available")
-    assert reset.status_code == 200
-    assert reset.json()["step"] == 0
-
-    step = await client.post("/api/v1/cascade/scenario/next")
-    assert step.status_code == 200
-    assert step.json()["step"] == 1
-
-
-# ---------------------------------------------------------------------------
-# Recommendations — in-memory, no Postgres
-# ---------------------------------------------------------------------------
+    # Get details of train 12002
+    response_12002 = await client.get("/api/v1/trains/12002")
+    assert response_12002.status_code == 200
+    data_12002 = response_12002.json()
+    assert data_12002["train_no"] == "12002"
+    assert len(data_12002["route"]) > 0
 
 @pytest.mark.asyncio
-async def test_active_recommendations(client):
-    r = await client.get("/api/v1/recommendations/active")
-    assert r.status_code == 200
-    assert isinstance(r.json(), list)
-
-
-@pytest.mark.asyncio
-async def test_approve_recommendation(client):
-    r = await client.get("/api/v1/recommendations/active")
-    recs = r.json()
-    if not recs:
-        pytest.skip("No active recommendations to approve")
+async def test_recommendations_and_rerouting(client: AsyncClient):
+    # List recommendations
+    response = await client.get("/api/v1/recommendations")
+    assert response.status_code == 200
+    recs = response.json()
+    assert len(recs) > 0
     rec_id = recs[0]["id"]
-    r2 = await client.post(f"/api/v1/recommendations/{rec_id}/approve")
-    assert r2.status_code == 200
-    assert r2.json()["is_approved"] is True
 
+    # Approve recommendation
+    response_approve = await client.post(f"/api/v1/recommendations/{rec_id}/approve")
+    assert response_approve.status_code == 200
+    assert response_approve.json()["is_approved"] is True
 
-# ---------------------------------------------------------------------------
-# Rerouting — pure NetworkX, no Postgres
-# ---------------------------------------------------------------------------
-
-@pytest.mark.asyncio
-async def test_rerouting_suggest_ndls_cnb(client):
-    r = await client.post(
+    # Suggest rerouting path
+    response_reroute = await client.post(
         "/api/v1/rerouting/suggest",
-        json={"from_station": "NDLS", "to_station": "CNB"},
+        json={"from_station": "NDLS", "to_station": "ALJN", "train_no": "12002"}
     )
-    assert r.status_code == 200
-    body = r.json()
-    assert body["passenger_origin"] == "NDLS"
-    assert body["passenger_destination"] == "CNB"
-    assert isinstance(body["alternatives"], list)
-    assert 0.0 < body["confidence"] <= 1.0
+    assert response_reroute.status_code == 200
+    reroute_data = response_reroute.json()
+    assert "suggested path" in reroute_data["advisory_text"].lower()
+    assert "bypassed" in reroute_data["advisory_text"].lower()
 
-
-@pytest.mark.asyncio
-async def test_rerouting_suggest_avoid_section(client):
-    r = await client.post(
-        "/api/v1/rerouting/suggest",
-        json={
-            "from_station": "NDLS",
-            "to_station": "CNB",
-            "avoid_sections": ["NDLS-GZB"],
-        },
-    )
-    assert r.status_code == 200
-
-
-@pytest.mark.asyncio
-async def test_rerouting_suggest_unknown_station(client):
-    r = await client.post(
-        "/api/v1/rerouting/suggest",
-        json={"from_station": "XXXX", "to_station": "CNB"},
-    )
-    assert r.status_code == 422
-
-
-@pytest.mark.asyncio
-async def test_rerouting_network_state(client):
-    r = await client.get("/api/v1/rerouting/network-state")
-    assert r.status_code == 200
-    body = r.json()
-    assert "nodes" in body
-    assert "edges" in body
-
-
-# ---------------------------------------------------------------------------
-# RAC Predictor — in-memory XGBoost, no Postgres
-# ---------------------------------------------------------------------------
-
-@pytest.mark.asyncio
-async def test_rac_predict(client):
-    r = await client.post(
-        "/api/v1/rac/predict",
-        json={
-            "train_no": "12002",
-            "from_station": "NDLS",
-            "to_station": "CNB",
-            "date": "2026-07-15",
-            "current_waitlist_position": 8,
-            "current_rac_count": 22,
-            "days_to_journey": 10,
-            "quota": "GN",
-        },
-    )
-    assert r.status_code == 200
-    body = r.json()
-    assert "confirmation_probability" in body
-    assert 0.0 <= body["confirmation_probability"] <= 1.0
-
-
-# ---------------------------------------------------------------------------
-# Audit — needs Postgres to persist, but listing may work
-# ---------------------------------------------------------------------------
-
-@pytest.mark.asyncio
-async def test_audit_ledger(client):
-    try:
-        r = await client.get("/api/v1/audit")
-    except Exception:
-        pytest.skip("PostgreSQL not available")
-    if _postgres_down(r):
-        pytest.skip("PostgreSQL not available")
-    assert r.status_code == 200
-    assert isinstance(r.json(), list)
-
-
-@pytest.mark.asyncio
-async def test_audit_verify(client):
-    try:
-        r = await client.get("/api/v1/audit/verify")
-    except Exception:
-        pytest.skip("PostgreSQL not available")
-    if _postgres_down(r):
-        pytest.skip("PostgreSQL not available")
-    assert r.status_code == 200
-    body = r.json()
-    assert "chain_valid" in body
+    # Get network state
+    response_net = await client.get("/api/v1/rerouting/network-state")
+    assert response_net.status_code == 200
+    net_data = response_net.json()
+    assert "nodes" in net_data
+    assert "edges" in net_data

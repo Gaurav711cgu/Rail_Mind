@@ -1,5 +1,5 @@
 """
-SSE endpoints for real-time agent events and train position updates.
+SSE + WebSocket endpoints for real-time agent events and train position updates.
 Falls back gracefully when Redis is unavailable (memory-mode).
 """
 
@@ -7,10 +7,10 @@ from __future__ import annotations
 
 import asyncio
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import AsyncGenerator
 
-from fastapi import APIRouter
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse
 
 from app.agents.orchestrator import orchestrator
@@ -20,6 +20,10 @@ from app.services.live_rail_data import live_rail_data
 router = APIRouter()
 
 
+# --------------------------------------------------------------------------- #
+#  SSE generators (unchanged — kept for backward compatibility)                #
+# --------------------------------------------------------------------------- #
+
 async def _agent_event_generator() -> AsyncGenerator[str, None]:
     """
     Yields SSE-formatted agent health snapshots every 5 seconds.
@@ -27,7 +31,7 @@ async def _agent_event_generator() -> AsyncGenerator[str, None]:
     """
     while True:
         payload = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "agents": orchestrator.agent_health,
         }
         yield f"data: {json.dumps(payload)}\n\n"
@@ -44,7 +48,7 @@ async def _position_event_generator() -> AsyncGenerator[str, None]:
             scenario_engine.get_state().get("trains", [])
         )
         payload = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "trains": trains,
         }
         yield f"data: {json.dumps(payload)}\n\n"
@@ -81,3 +85,35 @@ async def stream_positions():
             "X-Accel-Buffering": "no",
         },
     )
+
+
+# --------------------------------------------------------------------------- #
+#  WebSocket endpoint — combined agent health + train positions                #
+# --------------------------------------------------------------------------- #
+
+@router.websocket("/ws")
+async def websocket_stream(ws: WebSocket):
+    """
+    WebSocket endpoint at ``/api/v1/stream/ws``.
+
+    Sends a combined JSON payload every 5 seconds containing:
+    - ``agents``: current agent health snapshot from the orchestrator.
+    - ``trains``: live train position data.
+    """
+    await ws.accept()
+    try:
+        while True:
+            trains = await live_rail_data.live_watchlist_snapshot(
+                scenario_engine.get_state().get("trains", [])
+            )
+            payload = {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "agents": orchestrator.agent_health,
+                "trains": trains,
+            }
+            await ws.send_json(payload)
+            await asyncio.sleep(5)
+    except WebSocketDisconnect:
+        pass
+    except Exception:
+        await ws.close()

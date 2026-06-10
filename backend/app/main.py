@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+import asyncio
 
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,10 +17,26 @@ from app.ml.rac_predictor import rac_predictor   # triggers model load at startu
 
 
 # --------------------------------------------------------------------------- #
+#  Performance & Startup Metrics                                              #
+# --------------------------------------------------------------------------- #
+import time
+_startup_time = None
+_request_metrics = {
+    "total_requests": 0,
+    "avg_latency_ms": 0.0,
+    "p99_latency_ms": 0.0,
+    "_latencies": []
+}
+
+
+# --------------------------------------------------------------------------- #
 #  Lifespan — startup / shutdown                                              #
 # --------------------------------------------------------------------------- #
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    global _startup_time
+    _startup_time = time.time()
+
     # 1. Database
     print("[Lifespan] Initialising database schema...")
     await init_db()
@@ -81,7 +98,18 @@ async def lifespan(app: FastAPI):
             await session.commit()
             print("[Lifespan] Topology seeded.")
 
-    # 4. Start agent background monitoring loop
+    # 4. Start Redis stream consumer (background task)
+    async def _on_telemetry_events(events):
+        """Process telemetry events from the Redis stream."""
+        for event_id, data in events:
+            print(f"[StreamConsumer] event {event_id}: {data}")
+
+    consumer_task = asyncio.create_task(
+        stream_service.start_consumer(_on_telemetry_events)
+    )
+    print("[Lifespan] Redis stream consumer started.")
+
+    # 5. Start agent background monitoring loop
     print("[Lifespan] Starting agent orchestrator...")
     await orchestrator.start()
 
@@ -90,6 +118,11 @@ async def lifespan(app: FastAPI):
 
     # Shutdown
     print("[Lifespan] Shutting down...")
+    consumer_task.cancel()
+    try:
+        await consumer_task
+    except asyncio.CancelledError:
+        pass
     await orchestrator.stop()
     await stream_service.disconnect()
     print("[Lifespan] Clean shutdown complete.")
@@ -126,6 +159,41 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT"],
     allow_headers=["Authorization", "Content-Type"],
 )
+
+@app.middleware("http")
+async def performance_middleware(request: Request, call_next):
+    start_time = time.perf_counter()
+    try:
+        response = await call_next(request)
+        return response
+    finally:
+        latency = (time.perf_counter() - start_time) * 1000.0
+        _request_metrics["total_requests"] += 1
+        n = _request_metrics["total_requests"]
+        old_avg = _request_metrics["avg_latency_ms"]
+        _request_metrics["avg_latency_ms"] = round(old_avg + (latency - old_avg) / n, 2)
+        
+        _request_metrics["_latencies"].append(latency)
+        if len(_request_metrics["_latencies"]) > 100:
+            _request_metrics["_latencies"].pop(0)
+            
+        sorted_l = sorted(_request_metrics["_latencies"])
+        if sorted_l:
+            idx = min(int(len(sorted_l) * 0.99), len(sorted_l) - 1)
+            _request_metrics["p99_latency_ms"] = round(sorted_l[idx], 2)
+        else:
+            _request_metrics["p99_latency_ms"] = 0.0
+
+
+@app.middleware("http")
+async def rate_limit_middleware(request: Request, call_next):
+    from fastapi import HTTPException
+    from app.core.rate_limiter import rate_limiter
+    try:
+        await rate_limiter.check_rate_limit(request)
+    except HTTPException as exc:
+        return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+    return await call_next(request)
 
 
 # --------------------------------------------------------------------------- #

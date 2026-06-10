@@ -1,5 +1,5 @@
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from fastapi import HTTPException, status
@@ -142,7 +142,7 @@ class LiveRailDataService:
             "longitude": float(coords.get("longitude", fallback_lng)),
             "data_source": provider_payload.get("provider", settings.LIVE_DATA_PROVIDER),
             "data_quality": 0.95 if current_station != "UNKNOWN" else 0.65,
-            "recorded_at": datetime.utcnow().isoformat(),
+            "recorded_at": datetime.now(timezone.utc).isoformat(),
             "raw_provider_path": provider_payload.get("path"),
         }
 
@@ -156,6 +156,10 @@ class LiveRailDataService:
         return self.normalize_train_status(train_no, payload, fallback=fallback)
 
     async def live_watchlist_snapshot(self, fallback_trains: Optional[List[Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
+        if not fallback_trains:
+            from app.core.scenario_engine import scenario_engine
+            fallback_trains = scenario_engine.get_state().get("trains", [])
+
         fallback_by_train = {str(train["train_no"]): train for train in fallback_trains or [] if train.get("train_no")}
         train_numbers = list(dict.fromkeys([*fallback_by_train.keys(), *self.watchlist()]))
         live_trains: List[Dict[str, Any]] = []
@@ -166,8 +170,10 @@ class LiveRailDataService:
                 live_trains.append(
                     await self.live_train_snapshot(train_no, fallback=fallback_by_train.get(train_no))
                 )
-            except HTTPException as exc:
-                failures.append(f"{train_no}: {exc.status_code}")
+            except Exception as exc:
+                # Catch any Exception (HTTPException, connection error, etc.) to ensure complete resilience
+                status_code = getattr(exc, "status_code", 500)
+                failures.append(f"{train_no}: {status_code}")
                 if fallback_by_train.get(train_no):
                     stale = dict(fallback_by_train[train_no])
                     stale["data_source"] = "scenario-fallback"

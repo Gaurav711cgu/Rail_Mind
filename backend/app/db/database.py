@@ -1,9 +1,11 @@
-import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import AsyncGenerator
+
+def utc_now_naive():
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import declarative_base, Mapped, mapped_column
-from sqlalchemy import String, Integer, Float, Boolean, DateTime, Text
+from sqlalchemy import String, Integer, Float, Boolean, DateTime, Text, event
 from app.config import settings
 
 # Base class for ORM models
@@ -43,7 +45,7 @@ class DBUser(Base):
     role: Mapped[str] = mapped_column(String(50), default="PASSENGER")  # PASSENGER, CONTROLLER, ADMIN
     zone: Mapped[str] = mapped_column(String(10), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now_naive)
 
 
 class DBStation(Base):
@@ -84,7 +86,7 @@ class DBDisruption(Base):
     trains_affected_json: Mapped[str] = mapped_column(Text, default="[]")  # Serialized list
     passengers_affected: Mapped[int] = mapped_column(Integer, default=0)
     status: Mapped[str] = mapped_column(String(20), default="ACTIVE")  # ACTIVE, RESOLVED, ESCALATED
-    detected_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    detected_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now_naive)
     resolved_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
 
 
@@ -101,7 +103,7 @@ class DBRecommendation(Base):
     tier: Mapped[int] = mapped_column(Integer, default=1)
     is_approved: Mapped[bool] = mapped_column(Boolean, default=False)
     override_reason: Mapped[str] = mapped_column(Text, nullable=True)
-    generated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    generated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now_naive)
 
 
 class DBAuditEntry(Base):
@@ -113,7 +115,7 @@ class DBAuditEntry(Base):
     target: Mapped[str] = mapped_column(String(100), nullable=False)
     reasoning: Mapped[str] = mapped_column(Text, nullable=False)
     confidence: Mapped[float] = mapped_column(Float, nullable=False)
-    timestamp: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    timestamp: Mapped[datetime] = mapped_column(DateTime, default=utc_now_naive)
     prev_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     current_hash: Mapped[str] = mapped_column(String(64), nullable=False)
 
@@ -123,3 +125,17 @@ async def init_db():
     async with engine.begin() as conn:
         # Create all tables if they do not exist
         await conn.run_sync(Base.metadata.create_all)
+
+
+# --------------------------------------------------------------------------- #
+#  Audit-log tamper-proofing                                                   #
+#  Block UPDATE / DELETE on the audit_log table at the cursor level.           #
+# --------------------------------------------------------------------------- #
+@event.listens_for(engine.sync_engine, "before_cursor_execute")
+def _guard_audit_log(conn, cursor, statement, parameters, context, executemany):
+    """Raise PermissionError if a statement tries to UPDATE or DELETE audit_log rows."""
+    normalised = statement.upper()
+    if ("UPDATE" in normalised or "DELETE" in normalised) and "AUDIT_LOG" in normalised:
+        raise PermissionError(
+            "Audit log is append-only: UPDATE/DELETE operations are forbidden."
+        )

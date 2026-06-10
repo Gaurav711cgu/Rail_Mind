@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from pydantic import BaseModel
 from app.config import settings
 from app.models.recommendation import DispatchRec
@@ -20,7 +20,7 @@ _mock_recommendations = [
         confidence=0.78,
         tier=2,
         is_approved=False,
-        generated_at=datetime.utcnow()
+        generated_at=datetime.now(timezone.utc)
     )
 ]
 

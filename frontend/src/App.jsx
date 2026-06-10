@@ -6,6 +6,7 @@ import RACPredictor from './components/RACPredictor';
 import AuditLedger from './components/AuditLedger';
 import OperatorProfile from './components/OperatorProfile';
 import EmergencySupport from './components/EmergencySupport';
+import SystemStatusBar from './components/SystemStatusBar';
 import AgentsPage from './pages/AgentsPage';
 
 const stepDetails = [
@@ -128,13 +129,13 @@ export default function App() {
     { id: 'dashboard', label: 'Telemetry Radar' },
     { id: 'rac',       label: 'ML RAC Solver' },
     { id: 'audit',     label: 'Audit Ledger' },
-    { id: 'agents',    label: 'Agent Pipeline' },
+    { id: 'agents',    label: 'Decision Flow' },
     { id: 'profile',   label: 'Operator Profile' },
     { id: 'support',   label: 'System Helpline' },
   ];
 
   return (
-    <div style={{ minHeight:'100vh', display:'flex', flexDirection:'column' }}>
+    <div style={{ minHeight:'100vh', display:'flex', flexDirection:'column', paddingBottom:'24px' }}>
 
       {/* ── HEADER ── */}
       <header className="app-header">
@@ -142,7 +143,7 @@ export default function App() {
           <div className="brand-logo">RM</div>
           <div>
             <div className="brand-title">RailMind</div>
-            <div className="brand-tagline">Autonomous Intelligence · Indian Railways</div>
+            <div className="brand-tagline">Operations Solver · Indian Railways</div>
           </div>
         </div>
 
@@ -281,6 +282,9 @@ export default function App() {
           </div>
         )}
       </div>
+
+      {/* ── SYSTEM STATUS BAR ── */}
+      <SystemStatusBar />
     </div>
   );
 }

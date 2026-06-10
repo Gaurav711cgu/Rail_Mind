@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -29,12 +29,23 @@ def get_password_hash(password: str) -> str:
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm="HS256")
     return encoded_jwt
+
+def create_refresh_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.now(timezone.utc) + expires_delta
+    else:
+        expire = datetime.now(timezone.utc) + timedelta(days=7)
+    to_encode.update({"exp": expire, "type": "refresh"})
+    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm="HS256")
+    return encoded_jwt
+
 
 async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)) -> DBUser:
     credentials_exception = HTTPException(
@@ -133,12 +144,14 @@ async def login(user_in: UserLogin, db: AsyncSession = Depends(get_db)):
         data={"sub": user.username, "role": user.role},
         expires_delta=access_token_expires
     )
+    refresh_token = create_refresh_token(data={"sub": user.username})
     
     return Token(
         access_token=access_token,
         token_type="bearer",
         role=user.role,
-        zone=user.zone
+        zone=user.zone,
+        refresh_token=refresh_token
     )
 
 
@@ -168,5 +181,51 @@ async def get_operator_performance():
         "active_duty_hours": 3.5,
         "system_cohesion_index": 95.8,
         "kavach_override_count": 1,
-        "last_tamper_check": datetime.utcnow().isoformat()
+        "last_tamper_check": datetime.now(timezone.utc).isoformat()
     }
+
+
+from pydantic import BaseModel
+
+class RefreshTokenPayload(BaseModel):
+    refresh_token: str
+
+@router.post("/refresh", response_model=Token)
+async def refresh_token(payload: RefreshTokenPayload, db: AsyncSession = Depends(get_db)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate refresh token",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        token_payload = jwt.decode(payload.refresh_token, settings.SECRET_KEY, algorithms=["HS256"])
+        username: str = token_payload.get("sub")
+        if username is None or token_payload.get("type") != "refresh":
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+        
+    result = await db.execute(select(DBUser).where(DBUser.username == username))
+    user = result.scalars().first()
+    if user is None or not user.is_active:
+        raise credentials_exception
+        
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.username, "role": user.role},
+        expires_delta=access_token_expires
+    )
+    
+    new_refresh_token = create_refresh_token(data={"sub": user.username})
+    
+    return Token(
+        access_token=access_token,
+        token_type="bearer",
+        role=user.role,
+        zone=user.zone,
+        refresh_token=new_refresh_token
+    )
+
+@router.post("/logout")
+async def logout(current_user: DBUser = Depends(get_current_active_user)):
+    return {"message": "Successfully logged out"}
