@@ -2,10 +2,9 @@ from datetime import datetime, timezone
 from typing import Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 
 from app.config import settings
-from app.db.database import get_db, DBStation
+from app.db.database import get_db
 from app.core.scenario_engine import scenario_engine
 from app.models.train import TrainPosition, TrainStatus, TrainRouteNode
 from app.services.live_rail_data import live_rail_data

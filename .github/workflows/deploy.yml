@@ -43,29 +43,35 @@ jobs:
           HF_SPACE: ${{ secrets.HF_SPACE_ID }}   # e.g. "your-username/railmind-backend"
         run: |
           python - <<'EOF'
-          from huggingface_hub import HfApi
           import os
 
-          api = HfApi(token=os.environ["HF_TOKEN"])
-          space_id = os.environ["HF_SPACE"]
+          token = os.environ.get("HF_TOKEN")
+          space_id = os.environ.get("HF_SPACE") or "Gaurav711/Rail_Mind"
 
-          # Upload entire backend directory to the Space
-          api.upload_folder(
-              folder_path=".",
-              repo_id=space_id,
-              repo_type="space",
-              commit_message=f"Deploy: {os.environ.get('GITHUB_SHA', 'manual')[:8]}",
-              ignore_patterns=[
-                  ".git*",
-                  "__pycache__",
-                  "*.pyc",
-                  "tests/",
-                  ".env",
-                  "railmind_local.db",
-                  "test_railmind.db",
-              ],
-          )
-          print(f"✓ Deployed to https://huggingface.co/spaces/{space_id}")
+          if not token:
+              print("HF_TOKEN is not configured. Skipping Hugging Face Space upload.")
+          elif not space_id:
+              print("HF_SPACE is not configured. Skipping Hugging Face Space upload.")
+          else:
+              from huggingface_hub import HfApi
+              api = HfApi(token=token)
+              # Upload entire backend directory to the Space
+              api.upload_folder(
+                  folder_path=".",
+                  repo_id=space_id,
+                  repo_type="space",
+                  commit_message=f"Deploy: {os.environ.get('GITHUB_SHA', 'manual')[:8]}",
+                  ignore_patterns=[
+                      ".git*",
+                      "__pycache__",
+                      "*.pyc",
+                      "tests/",
+                      ".env",
+                      "railmind_local.db",
+                      "test_railmind.db",
+                  ],
+              )
+              print(f"✓ Deployed to https://huggingface.co/spaces/{space_id}")
           EOF
 
       - name: Verify deployment health
@@ -108,5 +114,9 @@ jobs:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
-          npm install -g vercel --quiet
-          vercel deploy --prod --token=$VERCEL_TOKEN
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "VERCEL_TOKEN is not configured. Skipping Vercel deploy."
+          else
+            npm install -g vercel --quiet
+            vercel deploy --prod --token=$VERCEL_TOKEN --yes
+          fi

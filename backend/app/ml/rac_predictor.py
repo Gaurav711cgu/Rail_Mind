@@ -38,7 +38,6 @@ class RACPredictor:
         Falls back to heuristic if model is not loaded.
         """
         import pandas as pd
-        import numpy as np
 
         if not self._loaded:
             # Fallback heuristic

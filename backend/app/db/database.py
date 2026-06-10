@@ -1,12 +1,12 @@
 from datetime import datetime, timezone
 from typing import AsyncGenerator
-
-def utc_now_naive():
-    return datetime.now(timezone.utc).replace(tzinfo=None)
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import declarative_base, Mapped, mapped_column
 from sqlalchemy import String, Integer, Float, Boolean, DateTime, Text, event
 from app.config import settings
+
+def utc_now_naive():
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 # Base class for ORM models
 Base = declarative_base()

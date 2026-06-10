@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
 from fastapi.security import OAuth2PasswordBearer
 import bcrypt
 from jose import JWTError, jwt
@@ -185,7 +186,6 @@ async def get_operator_performance():
     }
 
 
-from pydantic import BaseModel
 
 class RefreshTokenPayload(BaseModel):
     refresh_token: str

@@ -1,5 +1,5 @@
 import asyncio
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
 from datetime import datetime
 from app.agents.monitor_agent import MonitorAgent
 from app.agents.conflict_detector import ConflictDetector
@@ -80,7 +80,7 @@ class AgentOrchestrator:
                 # Check confidence threshold for escalation
                 if confidence < 0.85 and agent.agent_name == "DispatchAgent":
                     state["escalated"] = True
-                    state["logs"].append(f"[Orchestrator] Halted auto-execution. Escaled to local dispatcher controller.")
+                    state["logs"].append("[Orchestrator] Halted auto-execution. Escaled to local dispatcher controller.")
                     
             except Exception as e:
                 err_msg = f"[Orchestrator] Error executing {agent.agent_name}: {str(e)}"

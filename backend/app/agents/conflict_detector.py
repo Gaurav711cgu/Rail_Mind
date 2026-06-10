@@ -19,7 +19,7 @@ class ConflictDetector(BaseAgent):
         
         # Simulating route conflict detection
         if active_disp["status"] == "ACTIVE" and active_disp["severity"] == "MEDIUM":
-            self.log(f"Conflict identified on GZB-ALJN section between passenger and freight train.")
+            self.log("Conflict identified on GZB-ALJN section between passenger and freight train.")
             active_disp["severity"] = "HIGH"
             active_disp["cascade_depth"] = 1
             

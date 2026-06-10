@@ -1,8 +1,7 @@
-from fastapi import APIRouter, HTTPException, status, Depends
-from typing import List, Optional
+from fastapi import APIRouter, HTTPException, status
+from typing import List
 from datetime import datetime, timezone
 from pydantic import BaseModel
-from app.config import settings
 from app.models.recommendation import DispatchRec
 
 router = APIRouter()

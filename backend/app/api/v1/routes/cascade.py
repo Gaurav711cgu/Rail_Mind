@@ -1,8 +1,7 @@
 import json
 from datetime import datetime
-from typing import List, Optional
 import networkx as nx
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 
@@ -98,7 +97,7 @@ async def get_scenario_state():
 
 @router.post("/scenario/next")
 async def next_scenario_step(db: AsyncSession = Depends(get_db)):
-    step = scenario_engine.next_step()
+    scenario_engine.next_step()
     state = await live_rail_data.hydrate_scenario_state(scenario_engine.get_state())
     if settings.SCENARIO_MODE:
         await sync_scenario_step_to_db(db, state)
@@ -227,7 +226,7 @@ async def approve_recommendation(
         await db.commit()
         
         # Add to scenario log memory
-        state["logs"].append(f"[DispatchAgent] Action Approved: Hold recommendation approved by User 'Controller_Northern'.")
+        state["logs"].append("[DispatchAgent] Action Approved: Hold recommendation approved by User 'Controller_Northern'.")
         
         return DispatchRec(
             id=rec_id,
@@ -463,7 +462,7 @@ async def demo_run_full_scenario(db: AsyncSession = Depends(get_db)):
     # Advance through all 7 steps, collecting snapshots
     snapshots = []
     for i in range(7):
-        step = scenario_engine.next_step()
+        scenario_engine.next_step()
         state = await live_rail_data.hydrate_scenario_state(scenario_engine.get_state())
         snapshots.append({
             "step": state["step"],
