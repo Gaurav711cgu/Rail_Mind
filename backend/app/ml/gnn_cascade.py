@@ -175,7 +175,7 @@ class RailwayGNN(nn.Module):
         time_of_day: Optional[float] = None,  # Normalized float (0.0 to 1.0)
         disruption_node_mask: Optional[torch.Tensor] = None,  # [N]
     ):
-        is_compat_mode = (time_of_day is None and disruption_node_mask is None)
+        is_compat_mode = time_of_day is None and disruption_node_mask is None
 
         if time_of_day is None:
             time_of_day = 0.0
@@ -192,7 +192,7 @@ class RailwayGNN(nn.Module):
                 )
                 edge_attr = torch.cat([edge_attr, padding], dim=-1)
             else:
-                edge_attr = edge_attr[..., :self.edge_feat_dim]
+                edge_attr = edge_attr[..., : self.edge_feat_dim]
 
         # 1. Temporal encoding: sin/cos representing diurnal cycles
         t = torch.tensor(
@@ -258,6 +258,8 @@ class CascadeLoss(nn.Module):
         else:
             # Compatibility mode for older tests
             if cascade_weights is not None:
-                return torch.nn.functional.binary_cross_entropy(pred, target, weight=cascade_weights)
+                return torch.nn.functional.binary_cross_entropy(
+                    pred, target, weight=cascade_weights
+                )
             else:
                 return torch.nn.functional.binary_cross_entropy(pred, target)
