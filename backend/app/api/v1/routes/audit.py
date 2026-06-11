@@ -43,6 +43,7 @@ async def list_audit_logs(db: AsyncSession = Depends(get_db)):
                     timestamp=datetime.utcnow(),
                     prev_hash=prev_h,
                     current_hash=a["hash"],
+                    hash=a["hash"],
                 )
             )
             prev_h = a["hash"]
@@ -59,6 +60,7 @@ async def list_audit_logs(db: AsyncSession = Depends(get_db)):
             timestamp=e.timestamp,
             prev_hash=e.prev_hash,
             current_hash=e.current_hash,
+            hash=e.current_hash,
         )
         for e in db_entries
     ]

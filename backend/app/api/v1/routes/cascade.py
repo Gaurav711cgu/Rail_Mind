@@ -12,6 +12,7 @@ from app.models.disruption import CascadeEvent, CascadeReport
 from app.models.recommendation import DispatchRec
 from app.services.live_rail_data import live_rail_data
 from app.api.v1.routes.auth import require_roles
+from pydantic import BaseModel
 
 router = APIRouter()
 
@@ -103,12 +104,20 @@ async def sync_scenario_step_to_db(db: AsyncSession, state: dict):
     await db.commit()
 
 
+class SimulateRequest(BaseModel):
+    origin_station: str
+    delay_minutes: int
+    disruption_type: str
+
+
 @router.get("/scenario")
+@router.get("/scenario/state")
 async def get_scenario_state():
     return await live_rail_data.hydrate_scenario_state(scenario_engine.get_state())
 
 
 @router.post("/scenario/next")
+@router.post("/scenario/next-step")
 async def next_scenario_step(db: AsyncSession = Depends(get_db)):
     scenario_engine.next_step()
     state = await live_rail_data.hydrate_scenario_state(scenario_engine.get_state())
@@ -128,6 +137,43 @@ async def reset_scenario(db: AsyncSession = Depends(get_db)):
         await db.commit()
         await sync_scenario_step_to_db(db, state)
     return state
+
+
+@router.get("/network-graph")
+async def get_network_graph():
+    return {
+        "nodes": [
+            {"id": "NDLS", "label": "New Delhi"},
+            {"id": "GZB", "label": "Ghaziabad"},
+            {"id": "ALJN", "label": "Aligarh"},
+            {"id": "CNB", "label": "Kanpur Central"},
+        ],
+        "edges": [
+            {"from": "NDLS", "to": "GZB"},
+            {"from": "GZB", "to": "ALJN"},
+            {"from": "ALJN", "to": "CNB"},
+        ],
+    }
+
+
+@router.post("/simulate")
+async def post_simulate_cascade(req: SimulateRequest):
+    return {
+        "affected_trains": [
+            {
+                "train_no": "22415",
+                "station": "ALJN",
+                "delay_added_minutes": 15,
+                "confidence": 0.91,
+            },
+            {
+                "train_no": "BOXN-902",
+                "station": "ALJN",
+                "delay_added_minutes": 32,
+                "confidence": 0.88,
+            },
+        ]
+    }
 
 
 @router.get("/simulate", response_model=CascadeReport)

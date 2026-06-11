@@ -15,6 +15,7 @@ class AuditLogEntry(BaseModel):
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     prev_hash: str
     current_hash: str
+    hash: Optional[str] = None
 
 
 class AuditEntry(BaseModel):

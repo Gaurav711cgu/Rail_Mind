@@ -387,6 +387,11 @@ async def rapidapi_passthrough(endpoint_key: str, request: Request):
     return await rapidapi_irctc.get(provider_path, dict(request.query_params))
 
 
+@router.get("/watchlist", response_model=List[str])
+async def get_watchlist():
+    return [t.strip() for t in settings.LIVE_TRAIN_WATCHLIST.split(",") if t.strip()]
+
+
 @router.get("/{train_no}", response_model=TrainStatus)
 async def get_train_status(train_no: str, db: AsyncSession = Depends(get_db)):
     if settings.RAPIDAPI_IRCTC_KEY:

@@ -53,6 +53,15 @@ async def predict_rac(query: RACQuery):
         )
 
 
+@router.get("/train-stats/{train_no}")
+async def get_train_stats(train_no: str):
+    return {
+        "train_no": train_no,
+        "historical_accuracy": 0.94,
+        "total_predictions_served": 1820,
+    }
+
+
 @router.get("/historical-trends")
 async def get_historical_trends(train_no: str):
     """

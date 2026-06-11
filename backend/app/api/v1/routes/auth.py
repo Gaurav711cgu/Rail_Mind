@@ -123,6 +123,9 @@ async def register_user(
             detail="Username already registered",
         )
 
+    if email == "default@railmind.gov.in":
+        email = f"{user_in.username}@railmind.gov.in"
+
     password_hash = get_password_hash(user_in.password)
     db_user = DBUser(
         username=user_in.username,
