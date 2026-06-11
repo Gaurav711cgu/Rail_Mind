@@ -62,7 +62,7 @@ async def get_historical_trends(train_no: str):
     """
     import hashlib
 
-    seed = int(hashlib.md5(train_no.encode()).hexdigest(), 16) % 1000
+    seed = int(hashlib.md5(train_no.encode(), usedforsecurity=False).hexdigest(), 16) % 1000
     import random
 
     rng = random.Random(seed)

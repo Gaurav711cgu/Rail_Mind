@@ -379,7 +379,7 @@ export default function OperatorProfile() {
               <div style={{ borderTop: '1px dashed var(--border-color)', paddingTop: '8px', color: 'var(--color-accent)', fontSize: '0.62rem', wordBreak: 'break-all' }}>
                 <strong>ECDSA SHA-256 SIGNATURE:</strong>
                 <br />
-                {scenarioStep ? `0x${scenarioStep}a89d3c5f21ea1893ef2d31c4fbe567a18f9e2b10a9c8` : '0x04a89d3c5f21ea1893ef2d31c4fbe567a18f9e2b10a9c8'}
+                0x04a89d3c5f21ea1893ef2d31c4fbe567a18f9e2b10a9c8
               </div>
             </div>
 
