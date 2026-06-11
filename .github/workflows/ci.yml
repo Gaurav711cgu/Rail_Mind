@@ -34,7 +34,7 @@ jobs:
       - name: mypy type check
         run: |
           pip install types-redis pydantic-settings --quiet
-          mypy app/ --explicit-package-bases --ignore-missing-imports --no-strict-optional
+          mypy app/ --ignore-missing-imports --no-strict-optional
 
   test:
     name: Test Suite

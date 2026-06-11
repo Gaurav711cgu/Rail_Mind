@@ -12,20 +12,21 @@ class Settings(BaseSettings):
     #  Security — NEVER hardcode. All loaded from .env / HF Space secrets #
     # ------------------------------------------------------------------ #
     SECRET_KEY: str = os.environ.get(
-        "SECRET_KEY", "change-me-before-any-deployment-this-is-not-safe"
+        "SECRET_KEY",
+        "change-me-before-any-deployment-this-is-not-safe"
     )
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30  # 30 min access token
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30          # 30 min access token
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
-    ENFORCE_RBAC: bool = True  # ALWAYS on
+    ENFORCE_RBAC: bool = True                       # ALWAYS on
 
     # ------------------------------------------------------------------ #
     #  Hosts / CORS — never wildcard in production                        #
     # ------------------------------------------------------------------ #
-    ALLOWED_HOSTS: List[str] = ["*"]  # Overridden by .env
+    ALLOWED_HOSTS: List[str] = ["*"]               # Overridden by .env
     CORS_ORIGINS: List[str] = [
         "http://localhost:5173",
         "http://localhost:3000",
-        "https://railmind.vercel.app",  # Set real Vercel URL in .env
+        "https://railmind.vercel.app",             # Set real Vercel URL in .env
     ]
 
     # ------------------------------------------------------------------ #
@@ -45,8 +46,8 @@ class Settings(BaseSettings):
     REDIS_STREAM_DISRUPTIONS: str = "railmind:stream:disruptions"
     REDIS_STREAM_RECOMMENDATIONS: str = "railmind:stream:recommendations"
     REDIS_STREAM_AUDIT: str = "railmind:stream:audit"
-    REDIS_CACHE_TTL_POSITIONS: int = 90  # seconds
-    REDIS_CACHE_TTL_GRAPH: int = 86400  # 24 hours
+    REDIS_CACHE_TTL_POSITIONS: int = 90            # seconds
+    REDIS_CACHE_TTL_GRAPH: int = 86400             # 24 hours
 
     # ------------------------------------------------------------------ #
     #  Anthropic (Dispatch Agent LLM)                                     #

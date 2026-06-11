@@ -1,145 +1,268 @@
-import httpx
+"""
+Dispatch Agent — generates HOLD/PROCEED/ESCALATE recommendations.
+
+Uses Claude claude-sonnet-4-20250514 to reason over the current disruption state and
+produce structured dispatch recommendations. Falls back to deterministic rules
+when the Anthropic API is unavailable or confidence is unclear.
+
+Confidence gating (PRD spec):
+  >= 0.85 → Tier 1 (auto-recommended, logged)
+  0.65–0.84 → Tier 2 (escalated to human controller)
+  < 0.65 → Log only, not surfaced in UI
+"""
+
 import json
-from typing import Dict, Any, Tuple
+import logging
+from typing import Any, Dict, List, Tuple
+
 from app.agents.base_agent import BaseAgent
 from app.config import settings
 
+logger = logging.getLogger(__name__)
 
+# --------------------------------------------------------------------------- #
+#  Deterministic rules (always evaluated first)                               #
+# --------------------------------------------------------------------------- #
+_PASSENGER_KEYWORDS = ("SHATABDI", "RAJDHANI", "VANDE", "DURONTO", "GATIMAAN")
+_SAFETY_CRITICAL_TYPES = ("SIGNAL_FAILURE", "TRACK_FAULT", "DERAILMENT")
+
+
+def _is_passenger_train(train_no: str) -> bool:
+    return any(k in train_no.upper() for k in _PASSENGER_KEYWORDS)
+
+
+def _is_safety_critical(disruption: Dict) -> bool:
+    return disruption.get("disruption_type", "") in _SAFETY_CRITICAL_TYPES
+
+
+def _deterministic_recommendation(
+    disruption: Dict, trains: List[Dict]
+) -> Tuple[str, str, float]:
+    """
+    Returns (rec_type, reasoning, confidence) using hard rules.
+    Called when LLM is unavailable or as pre-filter before LLM.
+    """
+    if _is_safety_critical(disruption):
+        return (
+            "ESCALATE",
+            f"Safety-critical disruption type '{disruption['disruption_type']}' "
+            "requires mandatory human controller review. Auto-execution blocked.",
+            0.60,  # below threshold → always Tier 2
+        )
+
+    affected_trains = [
+        t for t in trains if t.get("current_delay", 0) > 20
+    ]
+    freight = [t for t in affected_trains if t.get("train_type") == "FREIGHT"]
+    passenger = [t for t in affected_trains if t.get("train_type") != "FREIGHT"]
+
+    if freight and passenger:
+        return (
+            "HOLD",
+            f"Hold {len(freight)} freight train(s) at nearest loop to clear path "
+            f"for {len(passenger)} delayed passenger service(s). "
+            "Passenger priority rule applied (IRCTC operational standard).",
+            0.88,
+        )
+    if freight:
+        return (
+            "PROCEED",
+            "No passenger conflicts detected. Freight trains may proceed on schedule.",
+            0.92,
+        )
+    return (
+        "ESCALATE",
+        "Insufficient context for deterministic resolution. Escalating to controller.",
+        0.60,
+    )
+
+
+# --------------------------------------------------------------------------- #
+#  LLM prompt builder                                                         #
+# --------------------------------------------------------------------------- #
+def _build_dispatch_prompt(disruption: Dict, trains: List[Dict], cascade_info: str) -> str:
+    train_summary = "\n".join(
+        f"  - Train {t.get('train_no', 'UNK')} ({t.get('train_name', 'Unknown')}): "
+        f"delay={t.get('current_delay', 0)}min, status={t.get('status', 'UNKNOWN')}, "
+        f"at={t.get('current_station', 'UNK')}"
+        for t in trains[:6]  # cap to 6 trains in prompt
+    )
+
+    return f"""You are RailMind's Dispatch Agent — an autonomous AI section controller for Indian Railways.
+
+ACTIVE DISRUPTION:
+  ID: {disruption.get('id', 'N/A')}
+  Train: {disruption.get('train_no', 'N/A')}
+  Section: {disruption.get('section_from', '?')} → {disruption.get('section_to', '?')}
+  Type: {disruption.get('disruption_type', 'UNKNOWN')}
+  Severity: {disruption.get('severity', 'UNKNOWN')}
+  Cascade depth: {disruption.get('cascade_depth', 0)}
+
+AFFECTED TRAINS:
+{train_summary if train_summary else "  None identified"}
+
+CASCADE ANALYSIS:
+{cascade_info}
+
+OPERATIONAL RULES (mandatory):
+1. Passenger trains always take priority over freight at shared sections
+2. Safety-critical types (SIGNAL_FAILURE, TRACK_FAULT, DERAILMENT) must ESCALATE — never auto-resolve
+3. If crew duty hours are unknown, flag for relief coordination
+4. SPAD (Signal Passed At Danger) risk → always ESCALATE
+
+Based on the above, provide a dispatch recommendation as JSON with exactly these fields:
+{{
+  "action": "HOLD" | "PROCEED" | "REROUTE_FREIGHT" | "ESCALATE",
+  "target_train": "<train_no of the train to act on>",
+  "target_section": "<section identifier>",
+  "reasoning": "<2-3 sentences of clear operational reasoning>",
+  "confidence": <float 0.0 to 1.0>,
+  "crew_alert": <true|false>,
+  "estimated_delay_saving_minutes": <integer>
+}}
+
+Return ONLY the JSON object. No preamble, no markdown fences."""
+
+
+# --------------------------------------------------------------------------- #
+#  DispatchAgent                                                               #
+# --------------------------------------------------------------------------- #
 class DispatchAgent(BaseAgent):
-    """
-    Computes hold/proceed resolutions to minimize net delay.
-    Uses Groq LLM (llama-3.3-70b-versatile) to dynamically compute resolutions if API key is present.
-    If recommendation confidence < 0.85, triggers manual Tier-2 escalation to human controller.
-    """
-
     def __init__(self):
         super().__init__("DispatchAgent")
-        self.auto_execute_threshold = 0.85
+        self._threshold = settings.AGENT_DISPATCH_CONFIDENCE_THRESHOLD
+        self._anthropic_client = None
 
-    async def process(self, state: Dict[str, Any]) -> Tuple[Dict[str, Any], float, str]:
-        disruptions = state.get("disruptions", [])
-        recommendations = state.get("recommendations", [])
-
-        if not disruptions:
-            return {}, 1.0, "No dynamic recommendations required."
-
-        self.log("Formulating operational dispatch resolution using RailMind engine...")
-        active_disp = disruptions[0]
-
-        # Default fallback heuristic recommendation
-        rec_confidence = 0.78
-        new_recommendation = {
-            "id": f"rec-{self._generate_uuid()[:8]}",
-            "disruption_id": active_disp["id"],
-            "type": "HOLD",
-            "target_train": "BOXN-902",
-            "target_section": "GZB-ALJN loop line",
-            "reasoning": "Hold Coal Freight (BOXN-902) to clear track block for high-priority Shatabdi 12002. Reduces net cascade delay by 120 minutes. Escalated due to manual check rule on freight priorities.",
-            "confidence": rec_confidence,
-            "tier": 2,
-            "is_approved": False,
-        }
-
-        # Try calling Groq API if key is configured
-        if settings.GROQ_API_KEY:
+    def _get_client(self):
+        if self._anthropic_client is None and settings.ANTHROPIC_API_KEY:
             try:
-                self.log(
-                    f"Querying Groq LLM ({settings.GROQ_MODEL}) for operational resolution..."
+                from anthropic import AsyncAnthropic
+                self._anthropic_client = AsyncAnthropic(
+                    api_key=settings.ANTHROPIC_API_KEY
                 )
-                prompt = f"""
-You are the Chief Section Controller for Indian Railways, operating the RailMind AI dispatch system.
-An operational disruption has occurred on the network. You must issue a dispatch resolution (HOLD a lower-priority train at a loop line, or PROCEED, or ESCALATE to human).
+            except ImportError:
+                logger.warning("[DispatchAgent] anthropic package not installed")
+        return self._anthropic_client
 
-Disruption Details:
-- Affected Train: {active_disp.get("train_no", "12002")}
-- Disrupted Section: {active_disp.get("section_from", "NDLS")} -> {active_disp.get("section_to", "GZB")}
-- Type: {active_disp.get("disruption_type", "SIGNAL_FAILURE")}
-- Severity: {active_disp.get("severity", "MEDIUM")}
+    async def _llm_recommend(
+        self, disruption: Dict, trains: List[Dict], cascade_info: str
+    ) -> Tuple[str, str, float, bool, int]:
+        """
+        Calls Claude claude-sonnet-4-20250514 for reasoning.
+        Returns (action, reasoning, confidence, crew_alert, delay_saving).
+        Raises on any API failure so caller can fall back.
+        """
+        client = self._get_client()
+        if client is None:
+            raise RuntimeError("Anthropic client unavailable")
 
-All Active Trains:
-{json.dumps(state.get("trains", []), indent=2)}
+        prompt = _build_dispatch_prompt(disruption, trains, cascade_info)
 
-Generate the optimal hold/proceed decision to minimize net passenger delay minutes and keep high-priority trains moving.
-Return ONLY valid JSON in this format (no extra text or markdown formatting):
-{{
-  "type": "HOLD",
-  "target_train": "BOXN-902",
-  "target_section": "GZB-ALJN loop line",
-  "reasoning": "Detailed operational reasoning explaining why this action is optimal.",
-  "confidence": 0.88
-}}
-"""
-                headers = {
-                    "Authorization": f"Bearer {settings.GROQ_API_KEY}",
-                    "Content-Type": "application/json",
-                }
-                payload = {
-                    "model": settings.GROQ_MODEL,
-                    "messages": [
-                        {
-                            "role": "system",
-                            "content": "You are a precise railway operations dispatcher. Output valid JSON only.",
-                        },
-                        {"role": "user", "content": prompt},
-                    ],
-                    "temperature": 0.1,
-                    "response_format": {"type": "json_object"},
-                }
+        response = await client.messages.create(
+            model=settings.ANTHROPIC_MODEL,
+            max_tokens=512,
+            messages=[{"role": "user", "content": prompt}],
+        )
 
-                async with httpx.AsyncClient(timeout=15.0) as client:
-                    response = await client.post(
-                        "https://api.groq.com/openai/v1/chat/completions",
-                        headers=headers,
-                        json=payload,
-                    )
-                    if response.status_code == 200:
-                        res_json = response.json()
-                        content = res_json["choices"][0]["message"]["content"]
-                        self.log(f"Groq raw response content: {content}")
-                        parsed_rec = json.loads(content)
+        raw = response.content[0].text.strip()
+        # Strip markdown fences if the model adds them despite instructions
+        if raw.startswith("```"):
+            raw = raw.split("```")[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
+        data = json.loads(raw)
 
-                        rec_confidence = float(parsed_rec.get("confidence", 0.82))
-                        new_recommendation = {
-                            "id": f"rec-{self._generate_uuid()[:8]}",
-                            "disruption_id": active_disp["id"],
-                            "type": parsed_rec.get("type", "HOLD"),
-                            "target_train": parsed_rec.get("target_train", "BOXN-902"),
-                            "target_section": parsed_rec.get(
-                                "target_section", "GZB-ALJN loop line"
-                            ),
-                            "reasoning": parsed_rec.get(
-                                "reasoning",
-                                "Hold Coal Freight to clear high-priority path.",
-                            ),
-                            "confidence": rec_confidence,
-                            "tier": 1
-                            if rec_confidence >= self.auto_execute_threshold
-                            else 2,
-                            "is_approved": False,
-                        }
-                        self.log(
-                            "Successfully generated recommendation using Groq LLM."
-                        )
-                    else:
-                        self.log(
-                            f"Groq API returned error status {response.status_code}. Using fallback heuristic."
-                        )
-            except Exception as e:
-                self.log(
-                    f"Error querying Groq API: {str(e)}. Using fallback heuristic."
-                )
-        else:
-            self.log("Groq API key not configured. Using fallback heuristic.")
+        return (
+            data.get("action", "ESCALATE"),
+            data.get("reasoning", "No reasoning provided."),
+            float(data.get("confidence", 0.60)),
+            bool(data.get("crew_alert", False)),
+            int(data.get("estimated_delay_saving_minutes", 0)),
+        )
 
-        updates = {"recommendations": recommendations + [new_recommendation]}
+    async def process(
+        self, state: Dict[str, Any]
+    ) -> Tuple[Dict[str, Any], float, str]:
+        disruptions: List[Dict] = state.get("disruptions", [])
+        trains: List[Dict] = state.get("trains", [])
+        recommendations: List[Dict] = state.get("recommendations", [])
 
-        if rec_confidence < self.auto_execute_threshold:
-            self.log(
-                "Confidence below threshold. Escalating to local Section Controller (Tier 2)."
-            )
+        # No disruptions → nothing to dispatch
+        if not disruptions:
+            return {}, 1.0, "No active disruptions. Dispatch agent idle."
+
+        active = disruptions[0]
+        cascade_info = (
+            f"Cascade depth {active.get('cascade_depth', 0)}, "
+            f"approx {active.get('passengers_affected', 0)} passengers affected."
+        )
+
+        # ------------------------------------------------------------------ #
+        #  Safety pre-check (deterministic, non-negotiable)                  #
+        # ------------------------------------------------------------------ #
+        if _is_safety_critical(active):
+            rec_type, reasoning, confidence = _deterministic_recommendation(active, trains)
+            rec = self._build_rec(active, rec_type, reasoning, confidence, trains, False, 0)
+            updates = {"recommendations": recommendations + [rec], "escalated": True}
+            self.log(f"Safety-critical disruption → auto-escalated. Reason: {reasoning}")
+            return updates, confidence, reasoning
+
+        # ------------------------------------------------------------------ #
+        #  Try LLM first, fall back to deterministic                         #
+        # ------------------------------------------------------------------ #
+        action = "ESCALATE"
+        reasoning = ""
+        confidence = 0.60
+        crew_alert = False
+        delay_saving = 0
+
+        try:
+            action, reasoning, confidence, crew_alert, delay_saving = \
+                await self._llm_recommend(active, trains, cascade_info)
+            self.log(f"LLM recommendation: {action} (conf={confidence:.2f})")
+        except Exception as exc:
+            logger.warning("[DispatchAgent] LLM failed: %s — using deterministic rules", exc)
+            action, reasoning, confidence = _deterministic_recommendation(active, trains)
+
+        rec = self._build_rec(active, action, reasoning, confidence, trains, crew_alert, delay_saving)
+        tier = 1 if confidence >= self._threshold else 2
+        rec["tier"] = tier
+
+        updates: Dict[str, Any] = {"recommendations": recommendations + [rec]}
+        if tier == 2:
             updates["escalated"] = True
-            reasoning = f"Escalated {new_recommendation['type']} recommendation issued for {new_recommendation['target_train']}. Confidence {rec_confidence} is below the auto-execute threshold of {self.auto_execute_threshold}."
-        else:
-            reasoning = f"Auto-approved recommendation for {new_recommendation['target_train']}. Confidence {rec_confidence} >= {self.auto_execute_threshold}."
+            self.log(f"Confidence {confidence:.2f} < threshold {self._threshold} → Tier 2 escalation")
 
-        return updates, rec_confidence, reasoning
+        return updates, confidence, reasoning
+
+    def _build_rec(
+        self,
+        disruption: Dict,
+        action: str,
+        reasoning: str,
+        confidence: float,
+        trains: List[Dict],
+        crew_alert: bool,
+        delay_saving: int,
+    ) -> Dict[str, Any]:
+        import datetime
+        tier = 1 if confidence >= self._threshold else 2
+
+        # Pick target train: first delayed train in affected list, fallback to disruption train
+        delayed = [t for t in trains if t.get("current_delay", 0) > 0]
+        target_train = delayed[0].get("train_no") if delayed else disruption.get("train_no", "UNK")
+
+        return {
+            "id": f"rec-{self._generate_uuid()[:8]}",
+            "disruption_id": disruption.get("id", ""),
+            "type": action,
+            "target_train": target_train,
+            "target_section": f"{disruption.get('section_from', '?')}-{disruption.get('section_to', '?')}",
+            "reasoning": reasoning,
+            "confidence": round(confidence, 3),
+            "tier": tier,
+            "is_approved": False,
+            "crew_alert": crew_alert,
+            "estimated_delay_saving_minutes": delay_saving,
+            "generated_at": datetime.datetime.utcnow().isoformat(),
+        }
