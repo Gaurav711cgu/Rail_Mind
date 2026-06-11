@@ -1,36 +1,41 @@
-# 🚂 RailMind — Autonomous Dispatching Intelligence for Indian Railways
+# RailMind - Autonomous Dispatching Intelligence for Indian Railways
 
-[![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![React](https://img.shields.io/badge/React-61DAFB?logo=react&logoColor=black)](https://react.dev)
-[![XGBoost](https://img.shields.io/badge/XGBoost-FF6600?logo=xgboost&logoColor=white)](https://xgboost.readthedocs.io)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white)](https://postgresql.org)
-[![Redis](https://img.shields.io/badge/Redis-DC382D?logo=redis&logoColor=white)](https://redis.io)
-[![Tests](https://img.shields.io/badge/Tests-18%2F18%20Passing-brightgreen)](./backend/tests)
-[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](./docker-compose.yml)
+[![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)](https://www.python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev)
+[![PyTorch](https://img.shields.io/badge/PyTorch-%23EE4C2C.svg?style=for-the-badge&logo=PyTorch&logoColor=white)](https://pytorch.org)
+[![PostgreSQL](https://img.shields.io/badge/postgresql-4169e1?style=for-the-badge&logo=postgresql&logoColor=white)](https://postgresql.org)
+[![Redis](https://img.shields.io/badge/redis-%23DD0031.svg?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io)
+[![scikit-learn](https://img.shields.io/badge/scikit--learn-%23F7931E.svg?style=for-the-badge&logo=scikit-learn&logoColor=white)](https://scikit-learn.org)
+[![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)](./docker-compose.yml)
+[![Pytest](https://img.shields.io/badge/pytest-%230A9EDC.svg?style=for-the-badge&logo=pytest&logoColor=white)](./backend/tests)
+[![GitHub Actions](https://img.shields.io/badge/github%20actions-%232671E5.svg?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com)
 
-> **Multi-agent AI system** that autonomously detects disruptions, predicts delay cascades, and dispatches optimal hold/proceed resolutions across the Indian Railways network — with **explainable ML**, **LLM-powered decisions**, and a **tamper-proof audit chain**.
+RailMind is an enterprise-grade multi-agent autonomous dispatching and punctuality optimization system designed for the Indian Railways network. The platform consumes real-time telemetry streams, analyzes route congestion, predicts downstream delay cascades using Graph Neural Networks, and schedules optimal dispatching interventions (hold, proceed, or reroute) using a LangGraph workflow and reinforcement learning models. To ensure operational safety and compliance, all autonomous decisions are cryptographically chained and written to a tamper-proof audit ledger.
 
 ---
 
-## ⚡ Key Numbers
+## Key Performance Indicators
 
 | Metric | Value |
 |--------|-------|
-| Agents in pipeline | **6** (Monitor → Conflict → Cascade → Dispatch → Notify → Audit) |
-| API endpoints | **62** |
-| ML model | **XGBoost** classifier with SHAP explainability |
-| LLM engine | **Groq Llama 3.3 70B** for dynamic dispatch |
-| Test coverage | **18/18 passing** |
-| Real-time transport | **WebSocket** + SSE fallback |
-| Audit integrity | **SHA-256 hash chain** + cursor-level tamper guard |
+| Agent Orchestrator | LangGraph State Machine (6 autonomous agents) |
+| API Layer | 62 REST and WebSocket endpoints |
+| Delay Cascade Model | Graph Neural Network (RailwayGNN: SAGEConv + GATConv) |
+| Ticket confirmation model | Stacked Ensemble (XGBoost + RandomForest + HistGradientBoosting) |
+| Decision Engine | Groq Llama 3.3 70B with local fallback heuristics |
+| Reinforcement learning | Gymnasium environment (RailGym PPO Dispatcher) |
+| Test validation status | 136/136 tests passing (86% backend coverage) |
+| Telemetry transport | Real-time WebSocket with EventSource Server-Sent Events (SSE) fallback |
+| Audit security | SHA-256 cryptographic blockchain ledger with cursor-level DDL protection |
 
 ---
 
-## 🏗️ Architecture
+## System Architecture
 
 ```mermaid
 graph TB
-    subgraph Frontend["🖥️ Vite + React Dashboard"]
+    subgraph Frontend["Vite + React Dashboard"]
         WS[WebSocket Hook] --> UI[7 Glass-Card Components]
         SSE[SSE Fallback] -.-> UI
         UI --> MAP[Telemetry Radar Map]
@@ -38,12 +43,12 @@ graph TB
         UI --> AUDIT_UI[Audit Ledger Viewer]
     end
 
-    subgraph Backend["⚙️ FastAPI Backend"]
+    subgraph Backend["FastAPI Application Server"]
         API[62 REST Endpoints] --> PIPE[Agent Pipeline]
-        API --> ML[XGBoost RAC Predictor]
+        API --> ML[Stacked Ensemble RAC Predictor]
         API --> ROUTE[NetworkX Router]
         
-        subgraph Pipeline["🤖 6-Agent Orchestrator"]
+        subgraph Pipeline["LangGraph 6-Agent Orchestrator"]
             M[MonitorAgent] --> CD[ConflictDetector]
             CD --> CP[CascadePredictor]
             CP --> DA[DispatchAgent + Groq LLM]
@@ -52,7 +57,7 @@ graph TB
         end
     end
 
-    subgraph Data["💾 Persistence Layer"]
+    subgraph Data["Persistence and Streaming Layer"]
         PG[(PostgreSQL / SQLite)]
         RD[(Redis Streams)]
         ALM[Alembic Migrations]
@@ -66,164 +71,163 @@ graph TB
 
 ---
 
-## 🤖 Multi-Agent Pipeline
+## Agentic Workflow and LangGraph Orchestrator
 
-The core of RailMind is a **sequential state machine** where each agent transforms a shared context:
+The dispatch pipeline is modeled as a LangGraph state machine. Each agent executes in a dependency-aware step, transforming a shared state object:
 
 ```mermaid
 graph LR
-    A[📡 MonitorAgent] -->|"Anomaly detected"| B[⚡ ConflictDetector]
-    B -->|"Section conflict"| C[📊 CascadePredictor]
-    C -->|"180min cascade"| D[🧠 DispatchAgent]
-    D -->|"Confidence ≥ 85%"| E[✅ Auto-Dispatch]
-    D -->|"Confidence < 85%"| F[⚠️ Tier-2 Escalation]
-    E --> G[📢 NotificationAgent]
+    A[MonitorAgent] -->|"Telemetry anomaly detected"| B[ConflictDetector]
+    B -->|"Section occupancy conflict"| C[CascadePredictor]
+    C -->|"Downstream cascade projected"| D[DispatchAgent]
+    D -->|"Confidence >= 85%"| E[Auto-Dispatch Action]
+    D -->|"Confidence < 85%"| F[Human controller escalation]
+    E --> G[NotificationAgent]
     F --> G
-    G --> H[🔒 AuditAgent]
-    H -->|"SHA-256 sealed"| I[(Immutable Ledger)]
+    G --> H[AuditAgent]
+    H -->|"SHA-256 sealed"| I[(Tamper-Proof SQLite Ledger)]
 ```
 
-| Agent | Role | Technology |
-|-------|------|-----------|
-| **MonitorAgent** | Ingests GPS telemetry, detects delays > threshold | Async polling, RapidAPI IRCTC |
-| **ConflictDetector** | Identifies section occupancy conflicts | Graph analysis, BFS traversal |
-| **CascadePredictor** | Projects downstream delay propagation | NetworkX weighted graph |
-| **DispatchAgent** | Formulates hold/proceed resolution | **Groq Llama 3.3 70B** + heuristic fallback |
-| **NotificationAgent** | Broadcasts passenger advisories | RAC probability alerts |
-| **AuditAgent** | Seals decisions in hash chain | SHA-256 linked blocks |
+| Agent | Responsibility | Implementation Details |
+|-------|----------------|------------------------|
+| **MonitorAgent** | Ingests live telemetry streams, compares current run times against scheduled paths, and flags anomalies. | Background asyncio loops, HTTP client wrappers for RapidAPI IRCTC datasets. |
+| **ConflictDetector** | Performs spatial-temporal checks to find overlapping section allocations for multiple trains. | NetworkX lookup indices, section reservation constraints. |
+| **CascadePredictor** | Projects how a single train's delay will propagate across downstream stations and intersecting routes. | GraphSAGE and GATConv neural layers, Breadth-First Search (BFS) graph propagation. |
+| **DispatchAgent** | Evaluates resolution scenarios (holding, rerouting, or speed locking) and chooses the path of minimum delay. | Groq Cloud Llama 3.3 70B engine, structured JSON validation, fail-safe fallback heuristics. |
+| **NotificationAgent** | Broadcasts alerts to affected stations and estimates ticket confirmation likelihoods for passengers. | Stacked ensemble classifiers, probability calibration logic. |
+| **AuditAgent** | Encapsulates dispatch actions, metadata, and reasonings, then seals them in a cryptographic blockchain. | SHA-256 hashing, database integrity validation hooks. |
 
 ---
 
-## 🧠 ML & Explainability
+## Machine Learning and Neural Network Foundations
 
-### XGBoost RAC Predictor
-- Trained `XGBClassifier` with `ColumnTransformer` feature pipeline
-- Predicts railway waitlist → confirmed ticket probability
-- **SHAP TreeExplainer** decomposes predictions into per-feature log-odds contributions
-- Visual horizontal bar chart shows exactly *why* the model decided
+### 1. Waitlist Confirmation Ensemble (app/ml/ensemble_rac.py)
+To forecast the probability of Waitlist (WL) tickets converting to Confirmed (CNF) status during disruptions, RailMind implements a stacked machine learning ensemble:
+* **Models:** Combines predictions from an `XGBClassifier`, a `RandomForestClassifier`, and a `HistGradientBoostingClassifier`.
+* **Calibration:** Fits an isotonic calibration layer to verify that predicted probabilities correspond directly to empirical confirmation rates. Calculates Expected Calibration Error (ECE) to bound statistical drift.
+* **Explainability:** Integrated with **SHAP (SHapley Additive exPlanations)**. The frontend renders real-time log-odds feature contributions, showing exactly how ticket class, travel day, waitlist position, and section delay severity contributed to the confirmation prediction.
 
-### Groq LLM Dispatch
-- Dynamic resolution generation using **Llama 3.3 70B Versatile**
-- Structured JSON output with confidence scores
-- Automatic heuristic fallback when API is unavailable
+### 2. Delay Cascade Propagation GNN (app/ml/gnn_cascade.py)
+Downstream delay propagation is modeled using a custom Graph Neural Network (`RailwayGNN`):
+* **Architecture:** Combines inductive GraphSAGE layers (for neighborhood feature aggregation) with a Graph Attention Network (GAT) layer (to learn dynamic attention coefficients for delay transmission across junctions).
+* **Optimization:** Evaluated using `CascadeLoss`, which joins Huber regression loss (for delay magnitude) and Binary Cross Entropy (to project whether the delay cascade will breach neighboring zones).
 
----
+### 3. Reinforcement Learning Dispatcher (app/ml/railgym.py)
+For complex multi-train dispatching scenarios, RailMind includes a Gymnasium reinforcement learning environment:
+* **Observations:** State representation encapsulates current train speeds, section occupancies, signal states, and accumulated network delays.
+* **Actions:** Discrete action spaces representing holding commands, path rerouting, or dynamic speed locks.
+* **Rewards:** Weighted penalty function minimizing aggregate passenger delay minutes, priority train delays, and schedule variance.
 
-## 🔒 Security & Integrity
-
-| Feature | Implementation |
-|---------|---------------|
-| **Audit tamper-proofing** | SQLAlchemy `before_cursor_execute` event blocks UPDATE/DELETE on `audit_log` |
-| **JWT authentication** | Access tokens (30min) + refresh token rotation with logout revocation |
-| **RBAC** | Role-based access: PASSENGER, CONTROLLER, ADMIN |
-| **Rate limiting** | IP-based request throttling middleware |
-| **CORS** | Whitelist-only origins, no wildcards |
-| **Hash chain** | Each audit entry stores SHA-256 of previous — any tampering breaks the chain |
+### 4. Anomaly Detection Engines (app/services/anomaly_detector.py)
+* **Spatial Outliers:** An `IsolationForest` pipeline detects abnormal telemetry coordinates indicative of sensor malfunctions or sudden blockages.
+* **Sequence Outliers:** An `LSTMAutoencoder` evaluates consecutive speed patterns, flagging operational deviations when reconstruction error exceeds a dynamic threshold.
 
 ---
 
-## 📊 Dashboard Features
+## System Integrity and Security
 
-| Tab | Features |
-|-----|----------|
-| **Telemetry Radar** | Live train map, Kavach zones, disruption markers, corridor metrics, weather overlays |
-| **ML RAC Solver** | XGBoost predictor, SHAP feature bars, quota heatmap, historical trends, alternative routes |
-| **Audit Ledger** | Hash chain viewer, integrity verification, tamper detection, audit statistics |
-| **Decision Flow** | Agent pipeline visualization, confidence scores, escalation tracking |
-| **Operator Profile** | Controller dashboard, zone assignment, action history |
-| **System Helpline** | Emergency contacts, SOS protocols, operational guides |
+* **Append-Only Immutability:** Enforced at the cursor level. A custom SQLAlchemy event listener on `before_cursor_execute` blocks any `UPDATE` or `DELETE` statements targeting the `audit_log` table, returning a `PermissionError`.
+* **Cryptographic Chaining:** Every decision made by the agent network is stored as a block containing the hash of the preceding block (`prev_hash`). Any change to past logs invalidates the cryptographic verification chain.
+* **Role-Based Access Control (RBAC):** Endpoints are wrapped with role checking dependencies (PASSENGER, CONTROLLER, ADMIN). Token authentication is processed dynamically at request-time, allowing isolated unit tests to run cleanly under disabled configurations.
+* **Rate Limiting Middleware:** Protects public and internal endpoints using an sliding window IP-based rate capper.
 
 ---
 
-## 🚀 Quick Start
-
-### Option 1: Docker (recommended)
-```bash
-docker compose up --build
-# Frontend: http://localhost:5173
-# Backend API: http://localhost:8000/docs
-```
-
-### Option 2: Local Development
-```bash
-# Backend
-cd backend
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
-
-# Frontend (new terminal)
-cd frontend
-npm install && npm run dev
-```
-
-### Run Tests
-```bash
-cd backend && source .venv/bin/activate
-pytest tests/ -v  # 18/18 passing ✅
-```
-
----
-
-## 🎯 Demo Script (3 minutes)
-
-| Time | Action | What judges see |
-|------|--------|----------------|
-| 0:00 | Open dashboard | Train map in NOMINAL state, all green |
-| 0:30 | Click "Next Step" | Signal fault detected → agent logs stream in |
-| 0:50 | Click "Next Step" | Route conflict → red disruption markers on map |
-| 1:10 | Click "Next Step" | Cascade prediction → 180min delay projected |
-| 1:30 | Click "Next Step" | **AI dispatch** — Groq LLM generates resolution |
-| 1:50 | Switch to "ML RAC Solver" | SHAP bars showing feature impact |
-| 2:15 | Switch to "Audit Ledger" | Hash chain with integrity verification |
-| 2:30 | Architecture overview | 6 agents, XGBoost, Groq, WebSocket |
-| 3:00 | Q&A | |
-
----
-
-## 🛠️ Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| **Frontend** | React 18, Vite, WebSocket, SVG/Canvas |
-| **Backend** | FastAPI, SQLAlchemy (async), Pydantic |
-| **ML** | XGBoost, SHAP, scikit-learn, joblib |
-| **LLM** | Groq API (Llama 3.3 70B Versatile) |
-| **Graph** | NetworkX (weighted shortest path) |
-| **Database** | PostgreSQL + SQLite fallback, Alembic migrations |
-| **Cache/Stream** | Redis Streams with in-memory fallback |
-| **Auth** | JWT (access + refresh), bcrypt, RBAC |
-| **Deploy** | Docker Compose, Vercel (frontend) |
-| **Testing** | pytest, pytest-asyncio, httpx |
-
----
-
-## 📁 Project Structure
+## Directory Structure
 
 ```
 railmind/
 ├── backend/
 │   ├── app/
-│   │   ├── agents/          # 6 specialized agents + orchestrator
-│   │   ├── api/v1/routes/   # 62 REST + WebSocket endpoints
-│   │   ├── core/            # Scenario engine, rate limiter
-│   │   ├── db/              # SQLAlchemy models + audit guard
-│   │   ├── ml/              # XGBoost predictor + SHAP + training
-│   │   └── services/        # Redis streams, live rail data
-│   ├── alembic/             # Database migrations
-│   └── tests/               # 18 unit + integration tests
+│   │   ├── agents/          # LangGraph orchestrator and agent definitions
+│   │   ├── api/v1/routes/   # REST endpoint routing and WS controllers
+│   │   ├── core/            # Scenario engine, middleware, rate limiter
+│   │   ├── db/              # SQLAlchemy schemas and immutability event listeners
+│   │   ├── ml/              # PyTorch GNNs, scikit-learn ensembles, RL environment
+│   │   ├── models/          # Pydantic schemas and serialization definitions
+│   │   └── services/        # Redis streaming client, anomaly classifiers
+│   ├── alembic/             # Database migration configurations and revision scripts
+│   └── tests/               # 136 passing unit and integration tests
 ├── frontend/
+│   ├── public/              # Static logo assets
 │   └── src/
-│       ├── components/      # 7 glass-card UI components
-│       ├── hooks/           # WebSocket + SSE transport hooks
-│       └── pages/           # Agent decision flow page
-└── docker-compose.yml       # Full stack: Postgres + Redis + API + UI
+│       ├── components/      # React glass-card UI layout components
+│       ├── hooks/           # WebSocket and Server-Sent Events hooks
+│       └── pages/           # Pipeline step visualizer and status dashboards
+├── docker-compose.yml       # Multi-container setup (Postgres + Redis + Backend + Frontend)
+└── setup.sh                 # Environment initialization script
 ```
 
 ---
 
-## 📄 License
+## Getting Started
 
-Built for the **FAR AWAY 2026** hackathon — Agentic & Autonomous Systems × Railways.
+### Prerequisites
+* Docker and Docker Compose
+* Python 3.11+ (if running bare-metal)
+* Node.js 18+ (if running bare-metal)
 
-*Delhi Regional Finals → Japan Grand Finals*
+### Running with Docker Compose
+To boot the complete application stack (Database, Cache, Redis Streams, FastAPI Server, React Frontend):
+```bash
+docker compose up --build
+```
+* React Frontend Dashboard: `http://localhost:5173`
+* Swagger Interactive Docs: `http://localhost:8000/docs`
+
+### Running Locally
+To install and start backend and frontend components individually:
+
+1. **Start the Backend:**
+```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+2. **Start the Frontend:**
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### Running Tests
+To run the full backend verification suite:
+```bash
+cd backend
+source .venv/bin/activate
+OMP_NUM_THREADS=1 pytest tests/ -v
+```
+
+---
+
+## 3-Minute Hackathon Presentation Guide
+
+```
+Time   │ Action                      │ Presenter Script / What Judges See
+───────┼─────────────────────────────┼───────────────────────────────────────────────────────────────────────
+00:00  │ Load Dashboard homepage     │ Telemetry Radar Map shows nominal state. Uptime, latency, and ML
+       │                             │ statuses show green on the status bar.
+───────┼─────────────────────────────┼───────────────────────────────────────────────────────────────────────
+00:30  │ Advance Scenario Step 1-2   │ Anomaly detected on a section. The LangGraph pipeline launches.
+       │                             │ Monitor and Conflict agents log activities. Red sections appear on map.
+───────┼─────────────────────────────┼───────────────────────────────────────────────────────────────────────
+01:10  │ Advance Scenario Step 3-4   │ GNN Cascade Predictor projects downstream delay impact.
+       │                             │ Dispatch Agent triggers Groq Llama 3.3 to find optimal hold-patterns.
+───────┼─────────────────────────────┼───────────────────────────────────────────────────────────────────────
+01:50  │ Switch to ML RAC Solver     │ Display Waitlist Confirmation forecast. Point out the interactive SHAP
+       │                             │ logs proving model explainability for passengers.
+───────┼─────────────────────────────┼───────────────────────────────────────────────────────────────────────
+02:20  │ Open Audit Ledger Tab       │ Show the SHA-256 cryptographic chain. Click "Verify Ledger" to prove
+       │                             │ zero alterations have occurred. Explain SQL-level write blocking.
+───────┼─────────────────────────────┼───────────────────────────────────────────────────────────────────────
+03:00  │ Q&A / Tech Stack Summary    │ Summarize: LangGraph, GNNs, XGBoost Ensemble, and SQLite/PG.
+```
+
+---
+
+## License
+Created for the Delhi Regional Finals of the FAR AWAY 2026 Hackathon (Autonomous Agentic Systems Category).
