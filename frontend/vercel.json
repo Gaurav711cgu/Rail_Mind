@@ -5,7 +5,7 @@
       "destination": "https://gaurav711-rail-mind.hf.space/api/:path*"
     },
     {
-      "source": "/((?!assets/|vite.svg|favicon.ico).*)|/",
+      "source": "/((?!assets/|logo.jpg|favicon.ico).*)|/",
       "destination": "/index.html"
     }
   ]

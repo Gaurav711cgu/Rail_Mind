@@ -140,7 +140,7 @@ export default function App() {
       {/* ── HEADER ── */}
       <header className="app-header">
         <div className="brand-section">
-          <div className="brand-logo">RM</div>
+          <img src="/logo.jpg" className="brand-logo-img" alt="RailMind Logo" />
           <div>
             <div className="brand-title">RailMind</div>
             <div className="brand-tagline">Operations Solver · Indian Railways</div>

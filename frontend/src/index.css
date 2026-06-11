@@ -197,6 +197,15 @@ body::after {
   flex-shrink: 0;
 }
 
+.brand-logo-img {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  box-shadow: var(--shadow-neon-cyan), 0 2px 8px rgba(0,0,0,0.5);
+  flex-shrink: 0;
+  object-fit: cover;
+}
+
 .brand-title {
   font-family: 'Bebas Neue', sans-serif;
   font-size: 1.25rem;
