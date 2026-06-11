@@ -14,6 +14,24 @@ class User(BaseModel):
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
+class UserCreate(BaseModel):
+    username: str
+    password: str
+    email: Optional[EmailStr] = None
+    role: str = "PASSENGER"
+    zone: Optional[str] = None
+
+
+class UserResponse(BaseModel):
+    id: Optional[str] = None
+    username: str
+    email: Optional[EmailStr] = None
+    role: str
+    zone: Optional[str] = None
+    is_active: bool = True
+    created_at: Optional[datetime] = None
+
+
 class UserLogin(BaseModel):
     username: str
     password: str

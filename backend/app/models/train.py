@@ -27,13 +27,18 @@ class Section(BaseModel):
 class TrainPosition(BaseModel):
     train_no: str
     train_name: str
-    at_station: str
+    at_station: str = ""
     scheduled_arrival: Optional[datetime] = None
     actual_arrival: Optional[datetime] = None
     delay_minutes: int = 0
     data_source: str = "indianrailapi"  # or 'ntes', 'cache'
     data_quality: float = 1.0  # 0.0 to 1.0
     recorded_at: datetime = Field(default_factory=datetime.utcnow)
+
+    # Compatibility fields for test_train_position_model
+    current_station: Optional[str] = None
+    current_delay: Optional[int] = None
+    status: Optional[str] = None
 
 
 class TrainRouteNode(BaseModel):

@@ -17,6 +17,18 @@ class AuditLogEntry(BaseModel):
     current_hash: str
 
 
+class AuditEntry(BaseModel):
+    id: Optional[str] = None
+    agent: str
+    action: str
+    target: str
+    reasoning: str
+    confidence: float
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    hash: str
+    prev_hash: str
+
+
 class AuditVerification(BaseModel):
     chain_valid: bool
     last_verified: datetime

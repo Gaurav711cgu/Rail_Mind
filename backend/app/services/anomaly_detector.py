@@ -41,6 +41,17 @@ class NTESAnomalyDetector:
         """Predicts if samples are anomalous based on threshold."""
         return self.score(X) < threshold
 
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        """Predicts class labels: 1 for normal, -1 for anomaly."""
+        if not self._is_fitted:
+            raise RuntimeError("Detector is not fitted yet.")
+        X_scaled = self.scaler.transform(X)
+        return self.model.predict(X_scaled)
+
+    def score_samples(self, X: np.ndarray) -> np.ndarray:
+        """Returns anomaly score per sample. Lower = more anomalous."""
+        return self.score(X)
+
 
 class LSTMAutoencoder(nn.Module):
     """

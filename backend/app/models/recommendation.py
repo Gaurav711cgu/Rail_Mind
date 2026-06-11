@@ -18,6 +18,21 @@ class DispatchRec(BaseModel):
     expires_at: Optional[datetime] = None
 
 
+class Recommendation(BaseModel):
+    id: Optional[str] = None
+    disruption_id: str
+    type: str = "HOLD"  # 'HOLD', 'PROCEED', 'REROUTE_FREIGHT', 'ESCALATE'
+    target_train: str
+    target_section: Optional[str] = None
+    reasoning: str
+    confidence: float
+    tier: int = 1  # 1 = Auto, 2 = Manual Escalated
+    is_approved: bool = False
+    override_reason: Optional[str] = None
+    generated_at: datetime = Field(default_factory=datetime.utcnow)
+    expires_at: Optional[datetime] = None
+
+
 class AlternativeTrain(BaseModel):
     train_no: str
     departure_station: str
