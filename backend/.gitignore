@@ -7,3 +7,4 @@ __pycache__/
 railmind_local.db
 test_railmind.db
 .DS_Store
+.coverage

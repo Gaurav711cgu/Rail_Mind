@@ -55,6 +55,4 @@ def test_rac_prediction_boundary_conditions():
     )
     result_high = rac_predictor.predict(query_high)
 
-    assert (
-        result_high["confirmation_probability"] > result_low["confirmation_probability"]
-    )
+    assert result_high["confirmation_probability"] > result_low["confirmation_probability"]

@@ -42,11 +42,13 @@ def event_loop():
 #  DB fixtures — only used by integration tests (NOT autouse)
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 @pytest_asyncio.fixture(scope="session")
 async def setup_test_db():
     """Create all tables once per session, drop after. Must be explicitly requested."""
     # Late import so unit tests never trigger app startup
     from app.config import settings
+
     settings.DATABASE_URL = TEST_DB_URL
     settings.REDIS_URL = "redis://localhost:6379/0"
     settings.SCENARIO_MODE = True
@@ -54,6 +56,7 @@ async def setup_test_db():
     settings.ANTHROPIC_API_KEY = ""
 
     from app.db.database import Base
+
     async with TEST_ENGINE.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield
@@ -94,6 +97,7 @@ async def client(db_session):
 # ─────────────────────────────────────────────────────────────────────────────
 #  Shared test data factories
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 def make_train(
     train_no: str = "12002",

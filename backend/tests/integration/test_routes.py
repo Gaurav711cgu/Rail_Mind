@@ -12,6 +12,7 @@ from httpx import AsyncClient
 #  Disruptions
 # ─────────────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_list_disruptions_scenario_mode(client: AsyncClient):
     """Step 0 has no disruptions; stepping forward should produce some."""
@@ -36,8 +37,11 @@ async def test_list_disruptions_after_scenario_step(client: AsyncClient):
     assert d["train_no"] == "12002"
     assert d["status"] == "ACTIVE"
     assert d["disruption_type"] in (
-        "SIGNAL_FAILURE", "DELAY_CASCADE", "TRACK_OBSTRUCTION",
-        "EQUIPMENT_FAILURE", "WEATHER"
+        "SIGNAL_FAILURE",
+        "DELAY_CASCADE",
+        "TRACK_OBSTRUCTION",
+        "EQUIPMENT_FAILURE",
+        "WEATHER",
     )
 
 
@@ -67,6 +71,7 @@ async def test_get_disruption_not_found(client: AsyncClient):
 # ─────────────────────────────────────────────────────────────
 #  Cascade
 # ─────────────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_cascade_scenario_next_step(client: AsyncClient):
@@ -129,6 +134,7 @@ async def test_cascade_simulate(client: AsyncClient):
 #  Audit
 # ─────────────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_list_audit_logs(client: AsyncClient):
     resp = await client.get("/api/v1/audit")
@@ -166,6 +172,7 @@ async def test_audit_verify_chain(client: AsyncClient):
 #  RAC Route
 # ─────────────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_rac_predict_endpoint(client: AsyncClient):
     resp = await client.post(
@@ -198,6 +205,7 @@ async def test_rac_train_stats(client: AsyncClient):
 # ─────────────────────────────────────────────────────────────
 #  Trains (extended coverage)
 # ─────────────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_list_all_trains(client: AsyncClient):
@@ -236,6 +244,7 @@ async def test_trains_watchlist(client: AsyncClient):
 # ─────────────────────────────────────────────────────────────
 #  Auth — extended
 # ─────────────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_register_duplicate_user(client: AsyncClient):
@@ -280,6 +289,7 @@ async def test_protected_endpoint_without_token(client: AsyncClient):
 # ─────────────────────────────────────────────────────────────
 #  Rerouting (extended)
 # ─────────────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_rerouting_network_state(client: AsyncClient):

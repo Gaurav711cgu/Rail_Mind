@@ -4,20 +4,22 @@ These cover the 165-stmt orchestrator and 105-stmt main.py.
 """
 
 import pytest
-import asyncio
 
 
 # ─────────────────────────────────────────────────────────────
 #  AgentOrchestrator
 # ─────────────────────────────────────────────────────────────
 
+
 def test_orchestrator_singleton_exists():
     from app.agents.orchestrator import orchestrator, AgentOrchestrator
+
     assert isinstance(orchestrator, AgentOrchestrator)
 
 
 def test_orchestrator_has_all_agents():
     from app.agents.orchestrator import orchestrator
+
     assert len(orchestrator.pipeline) == 6
     names = {a.agent_name for a in orchestrator.pipeline}
     assert "MonitorAgent" in names
@@ -30,6 +32,7 @@ def test_orchestrator_has_all_agents():
 
 def test_orchestrator_agent_health_structure():
     from app.agents.orchestrator import orchestrator
+
     for name, health in orchestrator.agent_health.items():
         assert "status" in health
         assert "last_confidence" in health
@@ -39,9 +42,15 @@ def test_orchestrator_agent_health_structure():
 @pytest.mark.asyncio
 async def test_orchestrator_run_pipeline_nominal():
     from app.agents.orchestrator import orchestrator
+
     initial = {
         "trains": [
-            {"train_no": "12002", "current_station": "NDLS", "current_delay": 5, "status": "RUNNING"},
+            {
+                "train_no": "12002",
+                "current_station": "NDLS",
+                "current_delay": 5,
+                "status": "RUNNING",
+            },
         ],
         "disruptions": [],
         "recommendations": [],
@@ -59,22 +68,30 @@ async def test_orchestrator_run_pipeline_nominal():
 @pytest.mark.asyncio
 async def test_orchestrator_run_pipeline_with_disruption():
     from app.agents.orchestrator import orchestrator
+
     initial = {
         "trains": [
-            {"train_no": "12002", "current_station": "GZB", "current_delay": 50,
-             "status": "HELD", "train_type": "SUPERFAST"},
+            {
+                "train_no": "12002",
+                "current_station": "GZB",
+                "current_delay": 50,
+                "status": "HELD",
+                "train_type": "SUPERFAST",
+            },
         ],
-        "disruptions": [{
-            "id": "disp-orch-001",
-            "train_no": "12002",
-            "section_from": "NDLS",
-            "section_to": "GZB",
-            "disruption_type": "SIGNAL_FAILURE",
-            "severity": "HIGH",
-            "cascade_depth": 0,
-            "status": "ACTIVE",
-            "upstream_delay_minutes": 50,
-        }],
+        "disruptions": [
+            {
+                "id": "disp-orch-001",
+                "train_no": "12002",
+                "section_from": "NDLS",
+                "section_to": "GZB",
+                "disruption_type": "SIGNAL_FAILURE",
+                "severity": "HIGH",
+                "cascade_depth": 0,
+                "status": "ACTIVE",
+                "upstream_delay_minutes": 50,
+            }
+        ],
         "recommendations": [],
         "audit_entries": [],
         "audit_chain": [],
@@ -85,28 +102,28 @@ async def test_orchestrator_run_pipeline_with_disruption():
     result = await orchestrator.run_pipeline(initial)
     assert isinstance(result, dict)
     # Pipeline should produce recommendations or logs
-    has_output = (
-        len(result.get("recommendations", [])) > 0 or
-        len(result.get("logs", [])) > 0
-    )
+    has_output = len(result.get("recommendations", [])) > 0 or len(result.get("logs", [])) > 0
     assert has_output
 
 
 @pytest.mark.asyncio
 async def test_orchestrator_run_pipeline_empty_state():
     from app.agents.orchestrator import orchestrator
+
     result = await orchestrator.run_pipeline({})
     assert isinstance(result, dict)
 
 
 def test_orchestrator_not_running_initially():
     from app.agents.orchestrator import orchestrator
+
     # Background loop should not be running in test context
     assert orchestrator._running is False or orchestrator._task is None
 
 
 def test_route_after_cascade_with_disruptions():
     from app.agents.orchestrator import _route_after_cascade, AgentState
+
     state: AgentState = {
         "trains": [],
         "disruptions": [{"id": "d1", "status": "ACTIVE"}],
@@ -124,6 +141,7 @@ def test_route_after_cascade_with_disruptions():
 
 def test_route_after_cascade_no_disruptions():
     from app.agents.orchestrator import _route_after_cascade, AgentState
+
     state: AgentState = {
         "trains": [],
         "disruptions": [],
@@ -143,10 +161,12 @@ def test_route_after_cascade_no_disruptions():
 #  main.py — app startup and lifespan coverage
 # ─────────────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_app_imports_cleanly():
     """Importing main.py should not raise."""
     from app import main
+
     assert main.app is not None
 
 
@@ -184,6 +204,7 @@ async def test_all_route_prefixes_registered(client):
 async def test_request_metrics_tracked(client):
     """After requests, _request_metrics should be updated."""
     from app.main import _request_metrics
+
     await client.get("/api/v1/health")
     await client.get("/api/v1/health")
     assert _request_metrics["total_requests"] >= 0  # may be 0 in test mode
@@ -193,8 +214,10 @@ async def test_request_metrics_tracked(client):
 #  _update_health helper
 # ─────────────────────────────────────────────────────────────
 
+
 def test_update_health_sets_status():
     from app.agents.orchestrator import _update_health, orchestrator
+
     _update_health("MonitorAgent", "running", confidence=0.87)
     health = orchestrator.agent_health.get("MonitorAgent", {})
     assert health["status"] == "running"
@@ -203,6 +226,7 @@ def test_update_health_sets_status():
 
 def test_update_health_error_status():
     from app.agents.orchestrator import _update_health, orchestrator
+
     _update_health("DispatchAgent", "error", error="LLM timeout")
     health = orchestrator.agent_health.get("DispatchAgent", {})
     assert health["status"] == "error"

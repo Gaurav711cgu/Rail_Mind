@@ -33,9 +33,7 @@ async def guarded_session():
     @event.listens_for(test_engine.sync_engine, "before_cursor_execute")
     def _guard(conn, cursor, statement, parameters, context, executemany):
         normalised = statement.upper()
-        if (
-            "UPDATE" in normalised or "DELETE" in normalised
-        ) and "AUDIT_LOG" in normalised:
+        if ("UPDATE" in normalised or "DELETE" in normalised) and "AUDIT_LOG" in normalised:
             raise PermissionError(
                 "Audit log is append-only: UPDATE/DELETE operations are forbidden."
             )

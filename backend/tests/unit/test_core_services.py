@@ -5,15 +5,17 @@ These tests exercise the zero-coverage files without requiring DB or HTTP stack.
 
 import pytest
 import numpy as np
-from unittest.mock import MagicMock, AsyncMock
+from unittest.mock import MagicMock
 
 
 # ─────────────────────────────────────────────────────────────
 #  ScenarioEngine
 # ─────────────────────────────────────────────────────────────
 
+
 def test_scenario_engine_initial_state():
     from app.core.scenario_engine import ScenarioEngine
+
     engine = ScenarioEngine()
     state = engine.get_state()
     assert state["step"] == 0
@@ -24,6 +26,7 @@ def test_scenario_engine_initial_state():
 
 def test_scenario_engine_next_step():
     from app.core.scenario_engine import ScenarioEngine
+
     engine = ScenarioEngine()
     assert engine.next_step() == 1
     assert engine.next_step() == 2
@@ -33,6 +36,7 @@ def test_scenario_engine_next_step():
 
 def test_scenario_engine_reset():
     from app.core.scenario_engine import ScenarioEngine
+
     engine = ScenarioEngine()
     engine.next_step()
     engine.next_step()
@@ -43,6 +47,7 @@ def test_scenario_engine_reset():
 
 def test_scenario_engine_all_steps_valid():
     from app.core.scenario_engine import ScenarioEngine
+
     engine = ScenarioEngine()
     for _ in range(engine.max_steps):
         engine.next_step()
@@ -56,6 +61,7 @@ def test_scenario_engine_all_steps_valid():
 
 def test_scenario_engine_does_not_exceed_max_steps():
     from app.core.scenario_engine import ScenarioEngine
+
     engine = ScenarioEngine()
     for _ in range(10):
         engine.next_step()
@@ -64,6 +70,7 @@ def test_scenario_engine_does_not_exceed_max_steps():
 
 def test_scenario_engine_step6_has_resolved_disruption():
     from app.core.scenario_engine import ScenarioEngine
+
     engine = ScenarioEngine()
     while engine.current_step < 6:
         engine.next_step()
@@ -74,6 +81,7 @@ def test_scenario_engine_step6_has_resolved_disruption():
 
 def test_scenario_engine_hash_is_sha256():
     from app.core.scenario_engine import ScenarioEngine
+
     engine = ScenarioEngine()
     h = engine._hash("test-input")
     assert len(h) == 64
@@ -84,9 +92,11 @@ def test_scenario_engine_hash_is_sha256():
 #  InMemoryRateLimiter
 # ─────────────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_rate_limiter_allows_requests_under_limit():
     from app.core.rate_limiter import InMemoryRateLimiter
+
     limiter = InMemoryRateLimiter(requests_limit=5, window_seconds=60)
     request = MagicMock()
     request.url.path = "/api/v1/trains"
@@ -104,6 +114,7 @@ async def test_rate_limiter_allows_requests_under_limit():
 @pytest.mark.asyncio
 async def test_rate_limiter_bypasses_docs_paths():
     from app.core.rate_limiter import InMemoryRateLimiter
+
     limiter = InMemoryRateLimiter(requests_limit=1, window_seconds=60)
     request = MagicMock()
     request.url.path = "/docs"
@@ -120,6 +131,7 @@ async def test_rate_limiter_bypasses_docs_paths():
 @pytest.mark.asyncio
 async def test_rate_limiter_bypasses_testserver():
     from app.core.rate_limiter import InMemoryRateLimiter
+
     limiter = InMemoryRateLimiter(requests_limit=1, window_seconds=60)
     request = MagicMock()
     request.url.path = "/api/v1/trains"
@@ -133,12 +145,60 @@ async def test_rate_limiter_bypasses_testserver():
         await limiter.check_rate_limit(request)
 
 
+@pytest.mark.asyncio
+async def test_rate_limiter_exceeds_limit():
+    from app.core.rate_limiter import InMemoryRateLimiter
+    from app.config import settings
+    from fastapi import HTTPException
+
+    original_scenario_mode = settings.SCENARIO_MODE
+    settings.SCENARIO_MODE = False
+
+    try:
+        limiter = InMemoryRateLimiter(requests_limit=2, window_seconds=60)
+        request = MagicMock()
+        request.url.path = "/api/v1/trains"
+        request.base_url = MagicMock()
+        request.base_url.__str__ = lambda s: "http://realapi.example.com/"
+        request.client = MagicMock()
+        request.client.host = "1.2.3.4"
+        request.headers = {}
+
+        await limiter.check_rate_limit(request)
+        await limiter.check_rate_limit(request)
+
+        with pytest.raises(HTTPException) as exc_info:
+            await limiter.check_rate_limit(request)
+        assert exc_info.value.status_code == 429
+        assert "Rate limit exceeded" in exc_info.value.detail
+
+        # Auth limit of 10
+        auth_limiter = InMemoryRateLimiter(requests_limit=2, window_seconds=60)
+        auth_request = MagicMock()
+        auth_request.url.path = "/api/v1/auth/login"
+        auth_request.base_url = MagicMock()
+        auth_request.base_url.__str__ = lambda s: "http://realapi.example.com/"
+        auth_request.client = MagicMock()
+        auth_request.client.host = "1.2.3.4"
+
+        for _ in range(10):
+            await auth_limiter.check_rate_limit(auth_request)
+        with pytest.raises(HTTPException) as exc_info:
+            await auth_limiter.check_rate_limit(auth_request)
+        assert exc_info.value.status_code == 429
+
+    finally:
+        settings.SCENARIO_MODE = original_scenario_mode
+
+
 # ─────────────────────────────────────────────────────────────
 #  Models — Pydantic schema validation
 # ─────────────────────────────────────────────────────────────
 
+
 def test_disruption_model_valid():
     from app.models.disruption import Disruption
+
     d = Disruption(
         id="disp-001",
         train_no="12002",
@@ -156,6 +216,7 @@ def test_disruption_model_valid():
 
 def test_disruption_model_defaults():
     from app.models.disruption import Disruption
+
     d = Disruption(
         id="disp-002",
         train_no="22415",
@@ -170,6 +231,7 @@ def test_disruption_model_defaults():
 
 def test_train_position_model():
     from app.models.train import TrainPosition
+
     t = TrainPosition(
         train_no="12002",
         train_name="Shatabdi Express",
@@ -183,6 +245,7 @@ def test_train_position_model():
 
 def test_recommendation_model():
     from app.models.recommendation import Recommendation
+
     r = Recommendation(
         id="rec-001",
         disruption_id="disp-001",
@@ -198,7 +261,8 @@ def test_recommendation_model():
 
 
 def test_rac_model():
-    from app.models.rac import RACQuery, RACPrediction
+    from app.models.rac import RACQuery
+
     q = RACQuery(
         train_no="12002",
         from_station="NDLS",
@@ -214,6 +278,7 @@ def test_rac_model():
 
 def test_audit_model():
     from app.models.audit import AuditEntry
+
     entry = AuditEntry(
         agent="MonitorAgent",
         action="ANOMALY_INGESTED",
@@ -228,7 +293,8 @@ def test_audit_model():
 
 
 def test_user_model():
-    from app.models.user import UserCreate, UserResponse
+    from app.models.user import UserCreate
+
     u = UserCreate(username="test_user", password="password123")
     assert u.username == "test_user"
 
@@ -237,8 +303,10 @@ def test_user_model():
 #  NTESAnomalyDetector
 # ─────────────────────────────────────────────────────────────
 
+
 def test_anomaly_detector_fit_and_predict():
     from app.services.anomaly_detector import NTESAnomalyDetector
+
     detector = NTESAnomalyDetector()
     # Generate synthetic nominal telemetry
     rng = np.random.default_rng(42)
@@ -252,6 +320,7 @@ def test_anomaly_detector_fit_and_predict():
 
 def test_anomaly_detector_detects_outlier():
     from app.services.anomaly_detector import NTESAnomalyDetector
+
     detector = NTESAnomalyDetector(contamination=0.05)
     rng = np.random.default_rng(0)
     X_train = rng.normal(loc=[0.0, 0.0], scale=[0.1, 0.1], size=(300, 2))
@@ -264,6 +333,7 @@ def test_anomaly_detector_detects_outlier():
 
 def test_anomaly_detector_score():
     from app.services.anomaly_detector import NTESAnomalyDetector
+
     detector = NTESAnomalyDetector()
     rng = np.random.default_rng(1)
     X = rng.normal(size=(100, 3))
