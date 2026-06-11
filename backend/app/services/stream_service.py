@@ -92,6 +92,8 @@ class StreamService:
                     await callback(events)
                     # advance cursor to last consumed id
                     last_id = events[-1][0]
+                else:
+                    await asyncio.sleep(1)
             except asyncio.CancelledError:
                 break
             except Exception as exc:  # noqa: BLE001
