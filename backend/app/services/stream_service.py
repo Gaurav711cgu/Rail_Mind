@@ -69,7 +69,7 @@ class StreamService:
 
     async def disconnect(self) -> None:
         if self._client:
-            await self._client.aclose()
+            await self._client.close()
 
     # ----------------------------------------------------------------------- #
     #  Publish                                                                  #
