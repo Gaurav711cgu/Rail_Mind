@@ -13,7 +13,7 @@ Falls back to in-memory asyncio.Queue if Redis is unavailable (local dev without
 import asyncio
 import json
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Callable, Coroutine
 
 import redis.asyncio as aioredis
 
@@ -168,6 +168,81 @@ class StreamService:
             return payload
         except asyncio.TimeoutError:
             return None
+
+    # ----------------------------------------------------------------------- #
+    #  Legacy Stream Consumer (for telemetry event orchestration)              #
+    # ----------------------------------------------------------------------- #
+    async def read_stream(
+        self,
+        stream: str,
+        count: int = 10,
+        block: int = 5000,
+        last_id: str = "$",
+    ) -> List:
+        """
+        Read new entries from a Redis Stream.
+        When Redis is available, delegates to XREAD.
+        When offline, drains and returns events buffered in memory.
+        """
+        if self._redis_available and self._client is not None:
+            try:
+                result = await self._client.xread(
+                    {stream: last_id}, count=count, block=block
+                )
+                if result:
+                    # xread returns: [[stream_name, [(entry_id, fields), ...]]]
+                    parsed_entries = []
+                    for entry_id, fields in result[0][1]:
+                        try:
+                            data = json.loads(fields.get("data", "{}"))
+                            parsed_entries.append((entry_id, data))
+                        except Exception:
+                            parsed_entries.append((entry_id, fields))
+                    return parsed_entries
+                return []
+            except Exception as exc:
+                logger.warning("[StreamService] xread failed: %s", exc)
+                return []
+
+        # In-memory fallback: read items from history that are newer than last_id
+        history = _fallback_history.get(stream, [])
+        start_idx = 0
+        if last_id and last_id.startswith("mem-"):
+            try:
+                start_idx = int(last_id.split("-")[1]) + 1
+            except ValueError:
+                pass
+        elif last_id == "$":
+            start_idx = len(history)
+
+        events = history[start_idx:start_idx + count]
+        return [(ev["id"], ev) for ev in events]
+
+    async def start_consumer(
+        self,
+        callback: Callable[[List], Coroutine[Any, Any, None]],
+    ) -> None:
+        """
+        Continuously read from the positions stream and invoke the callback.
+        """
+        stream = settings.REDIS_STREAM_POSITIONS
+        last_id = "0-0"  # start from the beginning for a new consumer
+
+        while True:
+            try:
+                events = await self.read_stream(
+                    stream, count=10, block=5000, last_id=last_id
+                )
+                if events:
+                    await callback(events)
+                    last_id = events[-1][0]
+                else:
+                    await asyncio.sleep(1)
+            except asyncio.CancelledError:
+                break
+            except Exception as exc:
+                logger.warning("[StreamService] consumer error: %s", exc)
+                await asyncio.sleep(1)
 
     # ----------------------------------------------------------------------- #
     #  Cache helpers (Redis GET/SET with TTL)                                  #
