@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from typing import List
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -71,8 +72,8 @@ class Settings(BaseSettings):
     # ------------------------------------------------------------------ #
     #  ML Model paths                                                      #
     # ------------------------------------------------------------------ #
-    RAC_MODEL_PATH: str = "app/ml/artifacts/rac_model.joblib"
-    RAC_PIPELINE_PATH: str = "app/ml/artifacts/feature_pipeline.joblib"
+    RAC_MODEL_PATH: str = str(Path(__file__).parent / "ml" / "artifacts" / "rac_model.joblib")
+    RAC_PIPELINE_PATH: str = str(Path(__file__).parent / "ml" / "artifacts" / "feature_pipeline.joblib")
 
     # ------------------------------------------------------------------ #
     #  Agent settings                                                      #
