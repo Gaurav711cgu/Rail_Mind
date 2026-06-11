@@ -14,9 +14,12 @@ TRAIN_POSITION_EVENT_SCHEMA = {
         {"name": "delay_minutes", "type": "int"},
         {"name": "data_quality", "type": "float"},
         {"name": "anomaly_flag", "type": ["null", "string"], "default": None},
-        {"name": "source", "type": {"type": "enum", "name": "Source", "symbols": ["NTES", "RAPIDAPI", "CACHE"]}},
-        {"name": "event_time", "type": "long"}
-    ]
+        {
+            "name": "source",
+            "type": {"type": "enum", "name": "Source", "symbols": ["NTES", "RAPIDAPI", "CACHE"]},
+        },
+        {"name": "event_time", "type": "long"},
+    ],
 }
 
 DISRUPTION_EVENT_SCHEMA = {
@@ -31,8 +34,8 @@ DISRUPTION_EVENT_SCHEMA = {
         {"name": "disruption_type", "type": "string"},
         {"name": "severity", "type": "string"},
         {"name": "cascade_depth", "type": "int"},
-        {"name": "event_time", "type": "long"}
-    ]
+        {"name": "event_time", "type": "long"},
+    ],
 }
 
 RECOMMENDATION_EVENT_SCHEMA = {
@@ -42,14 +45,21 @@ RECOMMENDATION_EVENT_SCHEMA = {
     "fields": [
         {"name": "recommendation_id", "type": "string"},
         {"name": "disruption_id", "type": "string"},
-        {"name": "type", "type": {"type": "enum", "name": "RecType", "symbols": ["HOLD", "PROCEED", "REROUTE_FREIGHT", "ESCALATE"]}},
+        {
+            "name": "type",
+            "type": {
+                "type": "enum",
+                "name": "RecType",
+                "symbols": ["HOLD", "PROCEED", "REROUTE_FREIGHT", "ESCALATE"],
+            },
+        },
         {"name": "target_train", "type": "string"},
         {"name": "confidence", "type": "float"},
         {"name": "tier", "type": "int"},
         {"name": "reasoning", "type": "string"},
         {"name": "is_approved", "type": "boolean"},
-        {"name": "event_time", "type": "long"}
-    ]
+        {"name": "event_time", "type": "long"},
+    ],
 }
 
 AUDIT_EVENT_SCHEMA = {
@@ -63,8 +73,8 @@ AUDIT_EVENT_SCHEMA = {
         {"name": "hash", "type": "string"},
         {"name": "prev_hash", "type": "string"},
         {"name": "metadata_json", "type": "string"},
-        {"name": "event_time", "type": "long"}
-    ]
+        {"name": "event_time", "type": "long"},
+    ],
 }
 
 

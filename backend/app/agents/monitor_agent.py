@@ -31,24 +31,44 @@ _DELAY_SPIKE_THRESHOLD_MIN = 30
 
 # Haversine distance between station coords (simplified flat-earth for short distances)
 _STATION_COORDS: Dict[str, Tuple[float, float]] = {
-    "NDLS": (28.643, 77.222), "GZB": (28.672, 77.436), "ALJN": (27.892, 78.078),
-    "CNB": (26.454, 80.350), "PRYJ": (25.448, 81.851), "BSB": (25.317, 82.973),
-    "MGS": (25.145, 83.115), "DDU": (25.273, 83.448), "HWH": (22.583, 88.342),
-    "KOTA": (25.181, 75.845), "RTM": (23.333, 75.033), "BRC": (22.312, 73.181),
-    "ST":  (21.205, 72.841), "BVI": (19.229, 72.857), "MMCT": (18.971, 72.820),
-    "AGC": (27.194, 77.999), "JHS": (25.449, 78.568), "BPL": (23.259, 77.412),
-    "NGP": (21.145, 79.082), "SC":  (17.431, 78.501), "MAS": (13.082, 80.275),
-    "JTJ": (12.571, 78.580), "BWT": (12.969, 78.204), "SBC": (12.978, 77.572),
+    "NDLS": (28.643, 77.222),
+    "GZB": (28.672, 77.436),
+    "ALJN": (27.892, 78.078),
+    "CNB": (26.454, 80.350),
+    "PRYJ": (25.448, 81.851),
+    "BSB": (25.317, 82.973),
+    "MGS": (25.145, 83.115),
+    "DDU": (25.273, 83.448),
+    "HWH": (22.583, 88.342),
+    "KOTA": (25.181, 75.845),
+    "RTM": (23.333, 75.033),
+    "BRC": (22.312, 73.181),
+    "ST": (21.205, 72.841),
+    "BVI": (19.229, 72.857),
+    "MMCT": (18.971, 72.820),
+    "AGC": (27.194, 77.999),
+    "JHS": (25.449, 78.568),
+    "BPL": (23.259, 77.412),
+    "NGP": (21.145, 79.082),
+    "SC": (17.431, 78.501),
+    "MAS": (13.082, 80.275),
+    "JTJ": (12.571, 78.580),
+    "BWT": (12.969, 78.204),
+    "SBC": (12.978, 77.572),
     "ADI": (23.027, 72.601),
 }
 
 
 def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     import math
+
     R = 6371
     dlat = math.radians(lat2 - lat1)
     dlon = math.radians(lon2 - lon1)
-    a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon/2)**2
+    a = (
+        math.sin(dlat / 2) ** 2
+        + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2) ** 2
+    )
     return R * 2 * math.asin(math.sqrt(a))
 
 
@@ -65,11 +85,9 @@ def _position_jump_km(prev_station: Optional[str], curr_station: Optional[str]) 
 class MonitorAgent(BaseAgent):
     def __init__(self):
         super().__init__("MonitorAgent")
-        self._prev_positions: Dict[str, Dict] = {}   # train_no → last known state
+        self._prev_positions: Dict[str, Dict] = {}  # train_no → last known state
 
-    async def process(
-        self, state: Dict[str, Any]
-    ) -> Tuple[Dict[str, Any], float, str]:
+    async def process(self, state: Dict[str, Any]) -> Tuple[Dict[str, Any], float, str]:
         self.log("Polling live train telemetry...")
 
         trains = state.get("trains", [])
@@ -79,9 +97,13 @@ class MonitorAgent(BaseAgent):
         live_trains = await self._fetch_live_trains(trains)
 
         if not live_trains:
-            return {
-                "trains": trains  # Return existing state unchanged
-            }, 0.70, "Live data unavailable. Serving cached train state."
+            return (
+                {
+                    "trains": trains  # Return existing state unchanged
+                },
+                0.70,
+                "Live data unavailable. Serving cached train state.",
+            )
 
         # Run anomaly detection
         new_disruptions = []
@@ -102,22 +124,14 @@ class MonitorAgent(BaseAgent):
                 )
                 anomaly_count += 1
                 if not any(d.get("train_no") == train_no for d in disruptions):
-                    new_disruptions.append(
-                        self._make_disruption(train, "DELAY_CASCADE", "HIGH")
-                    )
+                    new_disruptions.append(self._make_disruption(train, "DELAY_CASCADE", "HIGH"))
 
             # Check 2: Delay threshold (>20 min, not already disrupted)
-            elif current_delay > 20 and not any(
-                d.get("train_no") == train_no for d in disruptions
-            ):
-                new_disruptions.append(
-                    self._make_disruption(train, "DELAY_CASCADE", "MEDIUM")
-                )
+            elif current_delay > 20 and not any(d.get("train_no") == train_no for d in disruptions):
+                new_disruptions.append(self._make_disruption(train, "DELAY_CASCADE", "MEDIUM"))
 
             # Check 3: Position velocity (impossible jump)
-            jump_km = _position_jump_km(
-                prev.get("current_station"), current_station
-            )
+            jump_km = _position_jump_km(prev.get("current_station"), current_station)
             if jump_km > _MAX_POSITION_JUMP_KM:
                 self.log(
                     f"POSITION ANOMALY: {train_no} jumped {jump_km:.1f}km in one poll cycle. "
@@ -142,10 +156,14 @@ class MonitorAgent(BaseAgent):
         )
 
         self.log(reasoning)
-        return {
-            "trains": live_trains,
-            "disruptions": combined_disruptions,
-        }, confidence, reasoning
+        return (
+            {
+                "trains": live_trains,
+                "disruptions": combined_disruptions,
+            },
+            confidence,
+            reasoning,
+        )
 
     async def _fetch_live_trains(self, fallback: List[Dict]) -> List[Dict]:
         """

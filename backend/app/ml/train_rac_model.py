@@ -14,9 +14,7 @@ def generate_synthetic_data(num_rows: int = 5000) -> pd.DataFrame:
     days_to_journey = np.random.randint(1, 60, size=num_rows)
     current_waitlist_position = np.random.randint(1, 150, size=num_rows)
     current_rac_count = np.random.randint(0, 50, size=num_rows)
-    quota = np.random.choice(
-        ["GN", "TQ", "LD", "DF"], size=num_rows, p=[0.7, 0.15, 0.1, 0.05]
-    )
+    quota = np.random.choice(["GN", "TQ", "LD", "DF"], size=num_rows, p=[0.7, 0.15, 0.1, 0.05])
 
     # Calculate underlying probability
     # waitlist position decreases confirmation probability

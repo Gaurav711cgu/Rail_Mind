@@ -89,9 +89,7 @@ async def verify_audit_chain(db: AsyncSession = Depends(get_db)):
     timestamps_valid = True
 
     # 1. Verify genesis block prev_hash
-    genesis_expected = (
-        "0000000000000000000000000000000000000000000000000000000000000000"
-    )
+    genesis_expected = "0000000000000000000000000000000000000000000000000000000000000000"
     if db_entries[0].prev_hash != genesis_expected:
         corrupted.append(str(db_entries[0].id))
         genesis_valid = False

@@ -17,7 +17,7 @@ from app.agents.base_agent import BaseAgent
 
 logger = logging.getLogger(__name__)
 
-GENESIS_HASH = "0" * 64   # The known first prev_hash in the chain
+GENESIS_HASH = "0" * 64  # The known first prev_hash in the chain
 
 
 def _compute_entry_hash(
@@ -29,15 +29,17 @@ def _compute_entry_hash(
     confidence: float,
     timestamp: str,
 ) -> str:
-    payload = "|".join([
-        prev_hash,
-        agent_name,
-        action_type,
-        target,
-        reasoning[:500],                         # cap to avoid unbounded input
-        f"{confidence:.6f}",
-        timestamp,
-    ])
+    payload = "|".join(
+        [
+            prev_hash,
+            agent_name,
+            action_type,
+            target,
+            reasoning[:500],  # cap to avoid unbounded input
+            f"{confidence:.6f}",
+            timestamp,
+        ]
+    )
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
@@ -63,9 +65,10 @@ def verify_chain(audit_entries: List[Dict]) -> Tuple[bool, int, str]:
         )
         stored = entry.get("hash", "")
         if stored != expected:
-            return False, i, (
-                f"Hash mismatch at entry {i}: "
-                f"expected={expected[:16]}… stored={stored[:16]}…"
+            return (
+                False,
+                i,
+                (f"Hash mismatch at entry {i}: expected={expected[:16]}… stored={stored[:16]}…"),
             )
         prev_hash = stored
 
@@ -76,9 +79,7 @@ class AuditAgent(BaseAgent):
     def __init__(self):
         super().__init__("AuditAgent")
 
-    async def process(
-        self, state: Dict[str, Any]
-    ) -> Tuple[Dict[str, Any], float, str]:
+    async def process(self, state: Dict[str, Any]) -> Tuple[Dict[str, Any], float, str]:
         self.log("Sealing agent decisions into audit chain...")
 
         audit_chain: List[Dict] = state.get("audit_chain", [])
@@ -173,7 +174,8 @@ class AuditAgent(BaseAgent):
         if not chain_valid:
             logger.error(
                 "[AuditAgent] CHAIN INTEGRITY FAILURE at entry %d: %s",
-                fail_idx, err_msg,
+                fail_idx,
+                err_msg,
             )
 
         tail_hash = new_chain[-1]["hash"] if new_chain else GENESIS_HASH
@@ -185,8 +187,12 @@ class AuditAgent(BaseAgent):
         )
         self.log(reasoning)
 
-        return {
-            "audit_chain": new_chain,
-            "audit_entries": new_entries,
-            "audit_chain_valid": chain_valid,
-        }, 1.0, reasoning
+        return (
+            {
+                "audit_chain": new_chain,
+                "audit_entries": new_entries,
+                "audit_chain_valid": chain_valid,
+            },
+            1.0,
+            reasoning,
+        )

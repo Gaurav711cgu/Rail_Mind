@@ -63,8 +63,7 @@ class StreamService:
         except Exception as exc:
             self._redis_available = False
             logger.warning(
-                "[StreamService] Redis unavailable (%s). "
-                "Using in-memory fallback queues.",
+                "[StreamService] Redis unavailable (%s). Using in-memory fallback queues.",
                 exc,
             )
 
@@ -87,7 +86,7 @@ class StreamService:
                 entry_id: str = await self._client.xadd(
                     stream,
                     serialised,
-                    maxlen=1000,          # cap stream length to avoid unbounded growth
+                    maxlen=1000,  # cap stream length to avoid unbounded growth
                     approximate=True,
                 )
                 return entry_id
@@ -149,7 +148,7 @@ class StreamService:
         if self._redis_available and self._client:
             try:
                 raw = await self._client.xread(
-                    {stream: "$"},      # "$" = only new messages
+                    {stream: "$"},  # "$" = only new messages
                     count=1,
                     block=block_ms,
                 )
@@ -186,9 +185,7 @@ class StreamService:
         """
         if self._redis_available and self._client is not None:
             try:
-                result = await self._client.xread(
-                    {stream: last_id}, count=count, block=block
-                )
+                result = await self._client.xread({stream: last_id}, count=count, block=block)
                 if result:
                     # xread returns: [[stream_name, [(entry_id, fields), ...]]]
                     parsed_entries = []
@@ -215,7 +212,7 @@ class StreamService:
         elif last_id == "$":
             start_idx = len(history)
 
-        events = history[start_idx:start_idx + count]
+        events = history[start_idx : start_idx + count]
         return [(ev["id"], ev) for ev in events]
 
     async def start_consumer(
@@ -230,9 +227,7 @@ class StreamService:
 
         while True:
             try:
-                events = await self.read_stream(
-                    stream, count=10, block=5000, last_id=last_id
-                )
+                events = await self.read_stream(stream, count=10, block=5000, last_id=last_id)
                 if events:
                     await callback(events)
                     last_id = events[-1][0]

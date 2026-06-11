@@ -54,9 +54,7 @@ async def list_rerouting_suggestions(
 
 
 @router.post("/suggest", response_model=ReroutingSuggestion)
-async def suggest_reroute(
-    payload: ReroutingRequest, db: AsyncSession = Depends(get_db)
-):
+async def suggest_reroute(payload: ReroutingRequest, db: AsyncSession = Depends(get_db)):
     """
     Computes optimal rerouting suggestions using NetworkX shortest path with delay weights.
     """
@@ -98,9 +96,7 @@ async def suggest_reroute(
 
         if not G.has_node(payload.from_station) or not G.has_node(payload.to_station):
             # If stations are not found, search with default fallback stations NDLS/ALJN
-            origin = (
-                payload.from_station if G.has_node(payload.from_station) else "NDLS"
-            )
+            origin = payload.from_station if G.has_node(payload.from_station) else "NDLS"
             dest = payload.to_station if G.has_node(payload.to_station) else "ALJN"
         else:
             origin = payload.from_station
@@ -108,9 +104,7 @@ async def suggest_reroute(
 
         try:
             path = nx.shortest_path(G, source=origin, target=dest, weight="weight")
-            total_distance = sum(
-                G[path[i]][path[i + 1]]["distance"] for i in range(len(path) - 1)
-            )
+            total_distance = sum(G[path[i]][path[i + 1]]["distance"] for i in range(len(path) - 1))
         except (nx.NetworkXNoPath, nx.NodeNotFound):
             path = [origin, "GZB", dest]
             total_distance = 125.0
@@ -184,9 +178,7 @@ async def get_network_state(db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/{disruption_id}", response_model=ReroutingSuggestion)
-async def get_routing_for_disruption(
-    disruption_id: str, db: AsyncSession = Depends(get_db)
-):
+async def get_routing_for_disruption(disruption_id: str, db: AsyncSession = Depends(get_db)):
     suggestions = await list_rerouting_suggestions(disruption_id=disruption_id, db=db)
     if not suggestions:
         raise HTTPException(

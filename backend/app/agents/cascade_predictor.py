@@ -29,32 +29,32 @@ logger = logging.getLogger(__name__)
 # --------------------------------------------------------------------------- #
 _CORRIDOR_EDGES = [
     # Delhi–Howrah trunk
-    ("NDLS", "GZB",  {"distance": 25,   "capacity": 12, "speed": 110}),
-    ("GZB",  "ALJN", {"distance": 100,  "capacity": 10, "speed": 130}),
-    ("ALJN", "CNB",  {"distance": 210,  "capacity": 8,  "speed": 130}),
-    ("CNB",  "PRYJ", {"distance": 190,  "capacity": 15, "speed": 130}),
-    ("PRYJ", "BSB",  {"distance": 120,  "capacity": 15, "speed": 110}),
-    ("BSB",  "MGS",  {"distance": 55,   "capacity": 12, "speed": 110}),
-    ("MGS",  "DDU",  {"distance": 30,   "capacity": 10, "speed": 110}),
-    ("DDU",  "HWH",  {"distance": 550,  "capacity": 8,  "speed": 100}),
+    ("NDLS", "GZB", {"distance": 25, "capacity": 12, "speed": 110}),
+    ("GZB", "ALJN", {"distance": 100, "capacity": 10, "speed": 130}),
+    ("ALJN", "CNB", {"distance": 210, "capacity": 8, "speed": 130}),
+    ("CNB", "PRYJ", {"distance": 190, "capacity": 15, "speed": 130}),
+    ("PRYJ", "BSB", {"distance": 120, "capacity": 15, "speed": 110}),
+    ("BSB", "MGS", {"distance": 55, "capacity": 12, "speed": 110}),
+    ("MGS", "DDU", {"distance": 30, "capacity": 10, "speed": 110}),
+    ("DDU", "HWH", {"distance": 550, "capacity": 8, "speed": 100}),
     # Delhi–Mumbai trunk (WR)
-    ("NDLS", "KOTA", {"distance": 459,  "capacity": 10, "speed": 130}),
-    ("KOTA", "RTM",  {"distance": 134,  "capacity": 8,  "speed": 110}),
-    ("RTM",  "BRC",  {"distance": 185,  "capacity": 10, "speed": 130}),
-    ("BRC",  "ST",   {"distance": 100,  "capacity": 12, "speed": 130}),
-    ("ST",   "BVI",  {"distance": 260,  "capacity": 12, "speed": 130}),
-    ("BVI",  "MMCT", {"distance": 25,   "capacity": 14, "speed": 110}),
+    ("NDLS", "KOTA", {"distance": 459, "capacity": 10, "speed": 130}),
+    ("KOTA", "RTM", {"distance": 134, "capacity": 8, "speed": 110}),
+    ("RTM", "BRC", {"distance": 185, "capacity": 10, "speed": 130}),
+    ("BRC", "ST", {"distance": 100, "capacity": 12, "speed": 130}),
+    ("ST", "BVI", {"distance": 260, "capacity": 12, "speed": 130}),
+    ("BVI", "MMCT", {"distance": 25, "capacity": 14, "speed": 110}),
     # Delhi–Chennai trunk (SCR/CR)
-    ("NDLS", "AGC",  {"distance": 200,  "capacity": 10, "speed": 130}),
-    ("AGC",  "JHS",  {"distance": 220,  "capacity": 8,  "speed": 110}),
-    ("JHS",  "BPL",  {"distance": 290,  "capacity": 10, "speed": 130}),
-    ("BPL",  "NGP",  {"distance": 340,  "capacity": 8,  "speed": 130}),
-    ("NGP",  "SC",   {"distance": 250,  "capacity": 8,  "speed": 110}),
-    ("SC",   "MAS",  {"distance": 668,  "capacity": 10, "speed": 130}),
+    ("NDLS", "AGC", {"distance": 200, "capacity": 10, "speed": 130}),
+    ("AGC", "JHS", {"distance": 220, "capacity": 8, "speed": 110}),
+    ("JHS", "BPL", {"distance": 290, "capacity": 10, "speed": 130}),
+    ("BPL", "NGP", {"distance": 340, "capacity": 8, "speed": 130}),
+    ("NGP", "SC", {"distance": 250, "capacity": 8, "speed": 110}),
+    ("SC", "MAS", {"distance": 668, "capacity": 10, "speed": 130}),
     # Bengaluru corridor
-    ("MAS",  "JTJ",  {"distance": 220,  "capacity": 8,  "speed": 110}),
-    ("JTJ",  "BWT",  {"distance": 130,  "capacity": 6,  "speed": 100}),
-    ("BWT",  "SBC",  {"distance": 60,   "distance2": 60, "capacity": 10, "speed": 110}),
+    ("MAS", "JTJ", {"distance": 220, "capacity": 8, "speed": 110}),
+    ("JTJ", "BWT", {"distance": 130, "capacity": 6, "speed": 100}),
+    ("BWT", "SBC", {"distance": 60, "distance2": 60, "capacity": 10, "speed": 110}),
 ]
 
 # Average passengers per delayed train (from IR annual report)
@@ -107,9 +107,7 @@ class CascadePredictor(BaseAgent):
     def __init__(self):
         super().__init__("CascadePredictor")
 
-    async def process(
-        self, state: Dict[str, Any]
-    ) -> Tuple[Dict[str, Any], float, str]:
+    async def process(self, state: Dict[str, Any]) -> Tuple[Dict[str, Any], float, str]:
         disruptions: List[Dict] = state.get("disruptions", [])
         trains: List[Dict] = state.get("trains", [])
 
@@ -122,9 +120,7 @@ class CascadePredictor(BaseAgent):
 
         # Validate start node exists in graph
         if start_node not in _RAILWAY_GRAPH:
-            logger.warning(
-                "[CascadePredictor] Station %s not in graph. Skipping BFS.", start_node
-            )
+            logger.warning("[CascadePredictor] Station %s not in graph. Skipping BFS.", start_node)
             return {}, 0.50, f"Station {start_node} not in network graph."
 
         # ------------------------------------------------------------------ #
@@ -138,17 +134,16 @@ class CascadePredictor(BaseAgent):
             bfs_tree = nx.bfs_tree(_RAILWAY_GRAPH, source=start_node, depth_limit=5)
             bfs_nodes = list(bfs_tree.nodes())
 
-            active_count_on_section = len([
-                t for t in trains
-                if t.get("current_station") == start_node
-            ])
+            active_count_on_section = len(
+                [t for t in trains if t.get("current_station") == start_node]
+            )
 
             for depth, node in enumerate(bfs_nodes[1:], start=1):  # skip root
                 # Delay propagated to this hop
                 edge_data = _RAILWAY_GRAPH.get_edge_data(start_node, node) or {}
                 capacity = edge_data.get("capacity", 10)
                 congestion = _congestion_multiplier(capacity, active_count_on_section)
-                delay_at_node = upstream_delay * (_TRANSFER_FACTOR ** depth) * congestion
+                delay_at_node = upstream_delay * (_TRANSFER_FACTOR**depth) * congestion
 
                 if delay_at_node < 5:
                     # Less than 5 min — not operationally significant
@@ -156,32 +151,36 @@ class CascadePredictor(BaseAgent):
 
                 # Find trains scheduled through this node
                 trains_here = [
-                    t for t in trains
-                    if t.get("current_station") == node
-                    or node in t.get("route_stations", [])
+                    t
+                    for t in trains
+                    if t.get("current_station") == node or node in t.get("route_stations", [])
                 ]
 
                 for train in trains_here:
                     train_no = train.get("train_no", "UNK")
                     passengers = _estimate_passengers(train_no, trains)
                     total_passengers += passengers
-                    affected_trains.append({
-                        "train_no": train_no,
-                        "station": node,
-                        "delay_added_minutes": round(delay_at_node),
-                        "confidence": round(0.95 - depth * 0.05, 2),
-                        "passengers_affected": passengers,
-                    })
+                    affected_trains.append(
+                        {
+                            "train_no": train_no,
+                            "station": node,
+                            "delay_added_minutes": round(delay_at_node),
+                            "confidence": round(0.95 - depth * 0.05, 2),
+                            "passengers_affected": passengers,
+                        }
+                    )
 
                 if not trains_here:
                     # Still add node as potentially affected even without matched trains
-                    affected_trains.append({
-                        "train_no": "UNSCHEDULED",
-                        "station": node,
-                        "delay_added_minutes": round(delay_at_node),
-                        "confidence": round(0.75 - depth * 0.05, 2),
-                        "passengers_affected": 0,
-                    })
+                    affected_trains.append(
+                        {
+                            "train_no": "UNSCHEDULED",
+                            "station": node,
+                            "delay_added_minutes": round(delay_at_node),
+                            "confidence": round(0.75 - depth * 0.05, 2),
+                            "passengers_affected": 0,
+                        }
+                    )
 
                 cascade_depth = max(cascade_depth, depth)
 
@@ -207,10 +206,14 @@ class CascadePredictor(BaseAgent):
         )
 
         self.log(reasoning)
-        return {
-            "disruptions": updated_disruptions,
-            "cascade_affected_trains": affected_trains,
-        }, confidence, reasoning
+        return (
+            {
+                "disruptions": updated_disruptions,
+                "cascade_affected_trains": affected_trains,
+            },
+            confidence,
+            reasoning,
+        )
 
 
 def _severity_from_cascade(depth: int, passengers: int, disruption: Dict) -> str:

@@ -87,9 +87,7 @@ class LiveRailDataService:
         )
 
     async def train_schedule(self, train_no: str) -> Dict[str, Any]:
-        return await rapidapi_irctc.get(
-            "/api/v1/getTrainSchedule", {"trainNo": train_no}
-        )
+        return await rapidapi_irctc.get("/api/v1/getTrainSchedule", {"trainNo": train_no})
 
     def normalize_train_status(
         self,
@@ -101,9 +99,7 @@ class LiveRailDataService:
         dicts = _walk_dicts(data)
         merged: Dict[str, Any] = {}
         for item in dicts:
-            merged.update(
-                {key: value for key, value in item.items() if value not in (None, "")}
-            )
+            merged.update({key: value for key, value in item.items() if value not in (None, "")})
 
         fallback = fallback or {}
         station_hint = _first_present(
@@ -121,9 +117,7 @@ class LiveRailDataService:
             ],
         )
         current_station = (
-            _station_code_from_text(station_hint)
-            or fallback.get("current_station")
-            or "UNKNOWN"
+            _station_code_from_text(station_hint) or fallback.get("current_station") or "UNKNOWN"
         )
         coords = STATION_COORDINATES.get(current_station, {})
         fallback_lat = fallback.get("latitude", 0.0)
@@ -131,9 +125,7 @@ class LiveRailDataService:
 
         return {
             "train_no": str(
-                _first_present(
-                    merged, ["train_no", "trainNo", "train_number", "trainNumber"]
-                )
+                _first_present(merged, ["train_no", "trainNo", "train_number", "trainNumber"])
                 or train_no
             ),
             "train_name": str(
@@ -166,9 +158,7 @@ class LiveRailDataService:
             ).upper(),
             "latitude": float(coords.get("latitude", fallback_lat)),
             "longitude": float(coords.get("longitude", fallback_lng)),
-            "data_source": provider_payload.get(
-                "provider", settings.LIVE_DATA_PROVIDER
-            ),
+            "data_source": provider_payload.get("provider", settings.LIVE_DATA_PROVIDER),
             "data_quality": 0.95 if current_station != "UNKNOWN" else 0.65,
             "recorded_at": datetime.now(timezone.utc).isoformat(),
             "raw_provider_path": provider_payload.get("path"),
@@ -196,9 +186,7 @@ class LiveRailDataService:
             for train in fallback_trains or []
             if train.get("train_no")
         }
-        train_numbers = list(
-            dict.fromkeys([*fallback_by_train.keys(), *self.watchlist()])
-        )
+        train_numbers = list(dict.fromkeys([*fallback_by_train.keys(), *self.watchlist()]))
         live_trains: List[Dict[str, Any]] = []
         failures: List[str] = []
 

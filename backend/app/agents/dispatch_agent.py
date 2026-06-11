@@ -35,9 +35,7 @@ def _is_safety_critical(disruption: Dict) -> bool:
     return disruption.get("disruption_type", "") in _SAFETY_CRITICAL_TYPES
 
 
-def _deterministic_recommendation(
-    disruption: Dict, trains: List[Dict]
-) -> Tuple[str, str, float]:
+def _deterministic_recommendation(disruption: Dict, trains: List[Dict]) -> Tuple[str, str, float]:
     """
     Returns (rec_type, reasoning, confidence) using hard rules.
     Called when LLM is unavailable or as pre-filter before LLM.
@@ -50,9 +48,7 @@ def _deterministic_recommendation(
             0.60,  # below threshold → always Tier 2
         )
 
-    affected_trains = [
-        t for t in trains if t.get("current_delay", 0) > 20
-    ]
+    affected_trains = [t for t in trains if t.get("current_delay", 0) > 20]
     freight = [t for t in affected_trains if t.get("train_type") == "FREIGHT"]
     passenger = [t for t in affected_trains if t.get("train_type") != "FREIGHT"]
 
@@ -91,12 +87,12 @@ def _build_dispatch_prompt(disruption: Dict, trains: List[Dict], cascade_info: s
     return f"""You are RailMind's Dispatch Agent — an autonomous AI section controller for Indian Railways.
 
 ACTIVE DISRUPTION:
-  ID: {disruption.get('id', 'N/A')}
-  Train: {disruption.get('train_no', 'N/A')}
-  Section: {disruption.get('section_from', '?')} → {disruption.get('section_to', '?')}
-  Type: {disruption.get('disruption_type', 'UNKNOWN')}
-  Severity: {disruption.get('severity', 'UNKNOWN')}
-  Cascade depth: {disruption.get('cascade_depth', 0)}
+  ID: {disruption.get("id", "N/A")}
+  Train: {disruption.get("train_no", "N/A")}
+  Section: {disruption.get("section_from", "?")} → {disruption.get("section_to", "?")}
+  Type: {disruption.get("disruption_type", "UNKNOWN")}
+  Severity: {disruption.get("severity", "UNKNOWN")}
+  Cascade depth: {disruption.get("cascade_depth", 0)}
 
 AFFECTED TRAINS:
 {train_summary if train_summary else "  None identified"}
@@ -137,9 +133,8 @@ class DispatchAgent(BaseAgent):
         if self._anthropic_client is None and settings.ANTHROPIC_API_KEY:
             try:
                 from anthropic import AsyncAnthropic
-                self._anthropic_client = AsyncAnthropic(
-                    api_key=settings.ANTHROPIC_API_KEY
-                )
+
+                self._anthropic_client = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
             except ImportError:
                 logger.warning("[DispatchAgent] anthropic package not installed")
         return self._anthropic_client
@@ -180,9 +175,7 @@ class DispatchAgent(BaseAgent):
             int(data.get("estimated_delay_saving_minutes", 0)),
         )
 
-    async def process(
-        self, state: Dict[str, Any]
-    ) -> Tuple[Dict[str, Any], float, str]:
+    async def process(self, state: Dict[str, Any]) -> Tuple[Dict[str, Any], float, str]:
         disruptions: List[Dict] = state.get("disruptions", [])
         trains: List[Dict] = state.get("trains", [])
         recommendations: List[Dict] = state.get("recommendations", [])
@@ -217,21 +210,26 @@ class DispatchAgent(BaseAgent):
         delay_saving = 0
 
         try:
-            action, reasoning, confidence, crew_alert, delay_saving = \
-                await self._llm_recommend(active, trains, cascade_info)
+            action, reasoning, confidence, crew_alert, delay_saving = await self._llm_recommend(
+                active, trains, cascade_info
+            )
             self.log(f"LLM recommendation: {action} (conf={confidence:.2f})")
         except Exception as exc:
             logger.warning("[DispatchAgent] LLM failed: %s — using deterministic rules", exc)
             action, reasoning, confidence = _deterministic_recommendation(active, trains)
 
-        rec = self._build_rec(active, action, reasoning, confidence, trains, crew_alert, delay_saving)
+        rec = self._build_rec(
+            active, action, reasoning, confidence, trains, crew_alert, delay_saving
+        )
         tier = 1 if confidence >= self._threshold else 2
         rec["tier"] = tier
 
         updates: Dict[str, Any] = {"recommendations": recommendations + [rec]}
         if tier == 2:
             updates["escalated"] = True
-            self.log(f"Confidence {confidence:.2f} < threshold {self._threshold} → Tier 2 escalation")
+            self.log(
+                f"Confidence {confidence:.2f} < threshold {self._threshold} → Tier 2 escalation"
+            )
 
         return updates, confidence, reasoning
 
@@ -246,6 +244,7 @@ class DispatchAgent(BaseAgent):
         delay_saving: int,
     ) -> Dict[str, Any]:
         import datetime
+
         tier = 1 if confidence >= self._threshold else 2
 
         # Pick target train: first delayed train in affected list, fallback to disruption train

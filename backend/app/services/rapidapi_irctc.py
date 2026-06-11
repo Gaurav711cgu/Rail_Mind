@@ -54,16 +54,12 @@ class RapidAPIIrctcClient:
             "X-RapidAPI-Key": self.api_key,
         }
 
-    async def get(
-        self, path: str, params: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+    async def get(self, path: str, params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         self.capper.record_and_check()
         url = f"{self.base_url}{path}"
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
-                response = await client.get(
-                    url, headers=self._headers(), params=params or {}
-                )
+                response = await client.get(url, headers=self._headers(), params=params or {})
                 response.raise_for_status()
         except httpx.HTTPStatusError as exc:
             detail: Any
@@ -71,9 +67,7 @@ class RapidAPIIrctcClient:
                 detail = exc.response.json()
             except ValueError:
                 detail = exc.response.text
-            raise HTTPException(
-                status_code=exc.response.status_code, detail=detail
-            ) from exc
+            raise HTTPException(status_code=exc.response.status_code, detail=detail) from exc
         except httpx.RequestError as exc:
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,

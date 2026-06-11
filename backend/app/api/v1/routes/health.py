@@ -32,9 +32,7 @@ async def health_system(db: AsyncSession = Depends(get_db)):
 
     total_agents = len(orchestrator.pipeline)
     healthy_agents = sum(
-        1
-        for a in orchestrator.agent_health.values()
-        if a["status"] in ("healthy", "running")
+        1 for a in orchestrator.agent_health.values() if a["status"] in ("healthy", "running")
     )
 
     is_operational = db_status == "connected" and healthy_agents == total_agents

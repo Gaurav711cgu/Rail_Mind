@@ -20,9 +20,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     try:
-        return bcrypt.checkpw(
-            plain_password.encode("utf-8"), hashed_password.encode("utf-8")
-        )
+        return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
     except Exception:
         return False
 
@@ -72,9 +70,7 @@ async def get_current_user(
     except JWTError:
         raise credentials_exception
 
-    result = await db.execute(
-        select(DBUser).where(DBUser.username == token_data.username)
-    )
+    result = await db.execute(select(DBUser).where(DBUser.username == token_data.username))
     user = result.scalars().first()
     if user is None:
         raise credentials_exception
@@ -214,18 +210,14 @@ class RefreshTokenPayload(BaseModel):
 
 
 @router.post("/refresh", response_model=Token)
-async def refresh_token(
-    payload: RefreshTokenPayload, db: AsyncSession = Depends(get_db)
-):
+async def refresh_token(payload: RefreshTokenPayload, db: AsyncSession = Depends(get_db)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate refresh token",
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        token_payload = jwt.decode(
-            payload.refresh_token, settings.SECRET_KEY, algorithms=["HS256"]
-        )
+        token_payload = jwt.decode(payload.refresh_token, settings.SECRET_KEY, algorithms=["HS256"])
         username: str = token_payload.get("sub")
         if username is None or token_payload.get("type") != "refresh":
             raise credentials_exception

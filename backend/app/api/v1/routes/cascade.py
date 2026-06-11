@@ -21,9 +21,7 @@ async def sync_scenario_step_to_db(db: AsyncSession, state: dict):
     # 1. Sync Disruptions
     for d in state["disruptions"]:
         # Check if already exists
-        result = await db.execute(
-            select(DBDisruption).where(DBDisruption.id == d["id"])
-        )
+        result = await db.execute(select(DBDisruption).where(DBDisruption.id == d["id"]))
         existing = result.scalars().first()
         if not existing:
             db_disp = DBDisruption(
@@ -143,9 +141,7 @@ async def simulate_cascade(disruption_id: str, db: AsyncSession = Depends(get_db
                 disruption = d
                 break
         if not disruption:
-            raise HTTPException(
-                status_code=404, detail="Disruption not found in scenario context"
-            )
+            raise HTTPException(status_code=404, detail="Disruption not found in scenario context")
 
         # Run graph network model using NetworkX to identify affected trains downstream
         G = nx.DiGraph()
@@ -192,9 +188,7 @@ async def simulate_cascade(disruption_id: str, db: AsyncSession = Depends(get_db
             root_disruption_id=disruption_id,
             cascade_depth=len(cascade_events),
             affected_trains=cascade_events,
-            total_passengers_affected=4820
-            if disruption["severity"] == "CRITICAL"
-            else 140,
+            total_passengers_affected=4820 if disruption["severity"] == "CRITICAL" else 140,
             weather_factor=1.0,
             agent_confidence=confidence_factor,
             reasoning=f"BFS propagation tree starting from {start_node} identifies {len(cascade_events)} downstream conflicts.",
@@ -224,9 +218,7 @@ async def approve_recommendation(
                 break
 
         # Also update DB representation
-        result = await db.execute(
-            select(DBRecommendation).where(DBRecommendation.id == rec_id)
-        )
+        result = await db.execute(select(DBRecommendation).where(DBRecommendation.id == rec_id))
         db_rec = result.scalars().first()
         if db_rec:
             db_rec.is_approved = True
@@ -243,9 +235,7 @@ async def approve_recommendation(
             reasoning="Approved hold recommendation manually via Controller Override Console.",
             confidence=1.0,
             timestamp=datetime.utcnow(),
-            prev_hash=state["audit_entries"][-1]["hash"]
-            if state["audit_entries"]
-            else "0",
+            prev_hash=state["audit_entries"][-1]["hash"] if state["audit_entries"] else "0",
             current_hash=scenario_engine._hash(f"approved-{rec_id}"),
         )
         db.add(db_audit)
@@ -267,9 +257,7 @@ async def approve_recommendation(
             is_approved=True,
         )
     else:
-        result = await db.execute(
-            select(DBRecommendation).where(DBRecommendation.id == rec_id)
-        )
+        result = await db.execute(select(DBRecommendation).where(DBRecommendation.id == rec_id))
         db_rec = result.scalars().first()
         if not db_rec:
             raise HTTPException(status_code=404, detail="Recommendation not found")
@@ -308,9 +296,7 @@ async def override_recommendation(
                 found = True
                 break
 
-        result = await db.execute(
-            select(DBRecommendation).where(DBRecommendation.id == rec_id)
-        )
+        result = await db.execute(select(DBRecommendation).where(DBRecommendation.id == rec_id))
         db_rec = result.scalars().first()
         if db_rec:
             db_rec.is_approved = False
@@ -328,9 +314,7 @@ async def override_recommendation(
             reasoning=f"Overridden: {override_reason}",
             confidence=1.0,
             timestamp=datetime.utcnow(),
-            prev_hash=state["audit_entries"][-1]["hash"]
-            if state["audit_entries"]
-            else "0",
+            prev_hash=state["audit_entries"][-1]["hash"] if state["audit_entries"] else "0",
             current_hash=scenario_engine._hash(f"override-{rec_id}"),
         )
         db.add(db_audit)
@@ -352,9 +336,7 @@ async def override_recommendation(
             override_reason=override_reason,
         )
     else:
-        result = await db.execute(
-            select(DBRecommendation).where(DBRecommendation.id == rec_id)
-        )
+        result = await db.execute(select(DBRecommendation).where(DBRecommendation.id == rec_id))
         db_rec = result.scalars().first()
         if not db_rec:
             raise HTTPException(status_code=404, detail="Recommendation not found")
@@ -478,11 +460,7 @@ async def get_disruption_details(disruption_id: str):
         else "0xCASC_TIMEOUT_99"
     )
     clear_time = (
-        45
-        if disruption["severity"] == "MEDIUM"
-        else 90
-        if disruption["severity"] == "HIGH"
-        else 15
+        45 if disruption["severity"] == "MEDIUM" else 90 if disruption["severity"] == "HIGH" else 15
     )
     passengers = 4820 if disruption["severity"] == "CRITICAL" else 140
 
@@ -530,9 +508,7 @@ async def demo_run_full_scenario(db: AsyncSession = Depends(get_db)):
         await _asyncio.sleep(0.05)  # Brief pause between steps
 
     # Get final state
-    final_state = await live_rail_data.hydrate_scenario_state(
-        scenario_engine.get_state()
-    )
+    final_state = await live_rail_data.hydrate_scenario_state(scenario_engine.get_state())
 
     return {
         "status": "demo_complete",
@@ -541,9 +517,7 @@ async def demo_run_full_scenario(db: AsyncSession = Depends(get_db)):
         "final_state": final_state,
         "summary": {
             "total_disruptions_detected": len(final_state.get("disruptions", [])),
-            "total_recommendations_generated": len(
-                final_state.get("recommendations", [])
-            ),
+            "total_recommendations_generated": len(final_state.get("recommendations", [])),
             "audit_entries_sealed": len(final_state.get("audit_entries", [])),
             "pipeline_agents_executed": 6,
             "ai_dispatch_confidence": 0.78,
@@ -599,21 +573,18 @@ async def get_impact_summary():
         "with_railmind": optimised,
         "improvement": {
             "delay_reduction_percent": round(
-                (1 - optimised["avg_delay_minutes"] / baseline["avg_delay_minutes"])
-                * 100,
+                (1 - optimised["avg_delay_minutes"] / baseline["avg_delay_minutes"]) * 100,
                 1,
             ),
             "cascade_reduction_percent": round(
                 (1 - optimised["cascade_depth"] / baseline["cascade_depth"]) * 100, 1
             ),
             "passenger_impact_reduction_percent": round(
-                (1 - optimised["passengers_impacted"] / baseline["passengers_impacted"])
-                * 100,
+                (1 - optimised["passengers_impacted"] / baseline["passengers_impacted"]) * 100,
                 1,
             ),
             "resolution_speedup_x": round(
-                baseline["resolution_time_minutes"]
-                / max(optimised["resolution_time_minutes"], 1),
+                baseline["resolution_time_minutes"] / max(optimised["resolution_time_minutes"], 1),
                 1,
             ),
         },

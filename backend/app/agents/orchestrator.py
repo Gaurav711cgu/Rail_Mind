@@ -59,13 +59,16 @@ _audit = AuditAgent()
 
 def _update_health(agent_name: str, status: str, confidence: float = 1.0, error: str = None):
     import datetime
+
     try:
-        orchestrator.agent_health[agent_name].update({
-            "last_run": datetime.datetime.utcnow().isoformat(),
-            "last_confidence": confidence,
-            "status": status,
-            "last_error": error,
-        })
+        orchestrator.agent_health[agent_name].update(
+            {
+                "last_run": datetime.datetime.utcnow().isoformat(),
+                "last_confidence": confidence,
+                "status": status,
+                "last_error": error,
+            }
+        )
     except Exception:
         pass
 
@@ -76,10 +79,15 @@ async def _node_monitor(state: AgentState) -> Dict[str, Any]:
         updates, confidence, reasoning = await _monitor.process(state)
         _update_health("MonitorAgent", "healthy", confidence)
         log = f"[MonitorAgent] conf={confidence:.2f} | {reasoning}"
-        await stream_service.publish(settings.REDIS_STREAM_POSITIONS, {
-            "agent": "MonitorAgent", "confidence": confidence, "reasoning": reasoning,
-            **{k: v for k, v in updates.items() if k != "trains"},
-        })
+        await stream_service.publish(
+            settings.REDIS_STREAM_POSITIONS,
+            {
+                "agent": "MonitorAgent",
+                "confidence": confidence,
+                "reasoning": reasoning,
+                **{k: v for k, v in updates.items() if k != "trains"},
+            },
+        )
         return {**updates, "logs": [log]}
     except Exception as exc:
         _update_health("MonitorAgent", "degraded", error=str(exc))
@@ -93,11 +101,14 @@ async def _node_conflict(state: AgentState) -> Dict[str, Any]:
         _update_health("ConflictDetector", "healthy", confidence)
         log = f"[ConflictDetector] conf={confidence:.2f} | {reasoning}"
         if updates.get("disruptions"):
-            await stream_service.publish(settings.REDIS_STREAM_DISRUPTIONS, {
-                "agent": "ConflictDetector",
-                "disruptions": updates["disruptions"],
-                "confidence": confidence,
-            })
+            await stream_service.publish(
+                settings.REDIS_STREAM_DISRUPTIONS,
+                {
+                    "agent": "ConflictDetector",
+                    "disruptions": updates["disruptions"],
+                    "confidence": confidence,
+                },
+            )
         return {**updates, "logs": [log]}
     except Exception as exc:
         _update_health("ConflictDetector", "degraded", error=str(exc))
@@ -123,11 +134,14 @@ async def _node_dispatch(state: AgentState) -> Dict[str, Any]:
         _update_health("DispatchAgent", "healthy", confidence)
         log = f"[DispatchAgent] conf={confidence:.2f} | {reasoning}"
         if updates.get("recommendations"):
-            await stream_service.publish(settings.REDIS_STREAM_RECOMMENDATIONS, {
-                "agent": "DispatchAgent",
-                "recommendations": updates.get("recommendations", []),
-                "confidence": confidence,
-            })
+            await stream_service.publish(
+                settings.REDIS_STREAM_RECOMMENDATIONS,
+                {
+                    "agent": "DispatchAgent",
+                    "recommendations": updates.get("recommendations", []),
+                    "confidence": confidence,
+                },
+            )
         return {**updates, "logs": [log]}
     except Exception as exc:
         _update_health("DispatchAgent", "degraded", error=str(exc))
@@ -153,10 +167,13 @@ async def _node_audit(state: AgentState) -> Dict[str, Any]:
         _update_health("AuditAgent", "healthy", confidence)
         log = f"[AuditAgent] conf={confidence:.2f} | {reasoning}"
         if updates.get("audit_entries"):
-            await stream_service.publish(settings.REDIS_STREAM_AUDIT, {
-                "agent": "AuditAgent",
-                "entries_added": len(updates.get("audit_entries", [])),
-            })
+            await stream_service.publish(
+                settings.REDIS_STREAM_AUDIT,
+                {
+                    "agent": "AuditAgent",
+                    "entries_added": len(updates.get("audit_entries", [])),
+                },
+            )
         return {**updates, "logs": [log]}
     except Exception as exc:
         _update_health("AuditAgent", "degraded", error=str(exc))

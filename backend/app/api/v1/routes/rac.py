@@ -20,22 +20,19 @@ async def predict_rac(query: RACQuery):
             "waitlist_position": query.current_waitlist_position,
             "rac_count": query.current_rac_count,
             "days_to_journey": query.days_to_journey,
-            "booking_hour": 12,               # Default; extend query model if needed
-            "train_type": "EXPRESS",          # Default; extend if train_no lookup added
-            "route_distance_km": 500,         # Default; extend with station DB lookup
+            "booking_hour": 12,  # Default; extend query model if needed
+            "train_type": "EXPRESS",  # Default; extend if train_no lookup added
+            "route_distance_km": 500,  # Default; extend with station DB lookup
             "quota": query.quota,
-            "coach_class": "SL",              # Default; extend query model
+            "coach_class": "SL",  # Default; extend query model
             "cancellation_rate_route": 0.12,  # Average IR cancellation rate
-            "recent_cancellations_24h": 5,    # Conservative average
-            "day_of_week": 2,                 # Wednesday default
+            "recent_cancellations_24h": 5,  # Conservative average
+            "day_of_week": 2,  # Wednesday default
         }
 
         prob, ci, impacts = rac_predictor.predict(feature_dict)
 
-        factors = [
-            FactorImpact(factor=imp["factor"], impact=imp["impact"])
-            for imp in impacts
-        ]
+        factors = [FactorImpact(factor=imp["factor"], impact=imp["impact"]) for imp in impacts]
 
         return RACPrediction(
             confirmation_probability=round(prob, 3),
@@ -64,12 +61,15 @@ async def get_historical_trends(train_no: str):
     In demo: seeded from realistic train-type baselines.
     """
     import hashlib
+
     seed = int(hashlib.md5(train_no.encode()).hexdigest(), 16) % 1000
     import random
+
     rng = random.Random(seed)
 
-    base_rate = 0.82 if train_no in ("22415", "12301") else \
-                0.71 if train_no in ("12002", "12952") else 0.58
+    base_rate = (
+        0.82 if train_no in ("22415", "12301") else 0.71 if train_no in ("12002", "12952") else 0.58
+    )
 
     months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
     return [
@@ -142,19 +142,23 @@ async def get_quota_heatmap(train_no: str, waitlist_pos: int):
     ]
     results = []
     for code, label in quotas:
-        prob, _, _ = rac_predictor.predict({
-            "waitlist_position": waitlist_pos,
-            "rac_count": 15,
-            "days_to_journey": 3,
-            "quota": code,
-            "cancellation_rate_route": 0.12,
-            "recent_cancellations_24h": 5,
-        })
-        results.append({
-            "quota": f"{code} ({label})",
-            "probability": round(prob, 3),
-            "description": label,
-        })
+        prob, _, _ = rac_predictor.predict(
+            {
+                "waitlist_position": waitlist_pos,
+                "rac_count": 15,
+                "days_to_journey": 3,
+                "quota": code,
+                "cancellation_rate_route": 0.12,
+                "recent_cancellations_24h": 5,
+            }
+        )
+        results.append(
+            {
+                "quota": f"{code} ({label})",
+                "probability": round(prob, 3),
+                "description": label,
+            }
+        )
     return results
 
 

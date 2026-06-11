@@ -274,9 +274,7 @@ async def rapidapi_seat_availability(
     to_station_code: str = Query(..., min_length=2, max_length=10),
     class_type: str = Query(..., min_length=2, max_length=4),
     quota: str = Query("GN", min_length=2, max_length=4),
-    date: Optional[str] = Query(
-        None, description="Optional provider journey date parameter"
-    ),
+    date: Optional[str] = Query(None, description="Optional provider journey date parameter"),
 ):
     return await rapidapi_irctc.get(
         "/api/v1/checkSeatAvailability",
@@ -300,9 +298,7 @@ async def rapidapi_seat_availability_v2(
     to_station_code: str = Query(..., min_length=2, max_length=10),
     class_type: str = Query(..., min_length=2, max_length=4),
     quota: str = Query("GN", min_length=2, max_length=4),
-    date: Optional[str] = Query(
-        None, description="Optional provider journey date parameter"
-    ),
+    date: Optional[str] = Query(None, description="Optional provider journey date parameter"),
 ):
     return await rapidapi_irctc.get(
         "/api/v2/checkSeatAvailability",
@@ -396,9 +392,7 @@ async def get_train_status(train_no: str, db: AsyncSession = Depends(get_db)):
     if settings.RAPIDAPI_IRCTC_KEY:
         try:
             live_train = await live_rail_data.live_train_snapshot(train_no)
-            route_nodes = get_mock_route_for_train(
-                train_no, live_train["current_delay"]
-            )
+            route_nodes = get_mock_route_for_train(train_no, live_train["current_delay"])
             return TrainStatus(
                 train_no=live_train["train_no"],
                 train_name=live_train["train_name"],

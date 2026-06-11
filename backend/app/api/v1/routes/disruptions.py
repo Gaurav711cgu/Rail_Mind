@@ -83,19 +83,13 @@ async def get_disruption(disruption_id: str, db: AsyncSession = Depends(get_db))
             disruption_type=disruption_data["disruption_type"],
             severity=disruption_data["severity"],
             cascade_depth=disruption_data["cascade_depth"],
-            trains_affected=[
-                t["train_no"] for t in state["trains"] if t["current_delay"] > 0
-            ],
-            passengers_affected=4820
-            if disruption_data["severity"] == "CRITICAL"
-            else 140,
+            trains_affected=[t["train_no"] for t in state["trains"] if t["current_delay"] > 0],
+            passengers_affected=4820 if disruption_data["severity"] == "CRITICAL" else 140,
             status=disruption_data["status"],
             detected_at=datetime.utcnow(),
         )
     else:
-        result = await db.execute(
-            select(DBDisruption).where(DBDisruption.id == disruption_id)
-        )
+        result = await db.execute(select(DBDisruption).where(DBDisruption.id == disruption_id))
         d = result.scalars().first()
         if not d:
             raise HTTPException(

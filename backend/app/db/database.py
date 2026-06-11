@@ -1,18 +1,14 @@
 from datetime import datetime
 from typing import AsyncGenerator
 
-from sqlalchemy import (
-    Boolean, DateTime, Float, Integer, String, Text,
-    event, DDL, CheckConstraint
-)
-from sqlalchemy.ext.asyncio import (
-    AsyncSession, async_sessionmaker, create_async_engine
-)
+from sqlalchemy import Boolean, DateTime, Float, Integer, String, Text, event, DDL, CheckConstraint
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import declarative_base, Mapped, mapped_column
 
 from app.config import settings
 
 Base = declarative_base()
+
 
 # ------------------------------------------------------------------ #
 #  Engine — asyncpg for PostgreSQL, aiosqlite fallback for tests      #
@@ -22,13 +18,18 @@ def _make_engine(url: str):
     return create_async_engine(
         url,
         echo=False,
-        pool_pre_ping=True,                        # detect stale connections
-        **({} if is_sqlite else {
-            "pool_size": 10,
-            "max_overflow": 20,
-            "pool_timeout": 30,
-        })
+        pool_pre_ping=True,  # detect stale connections
+        **(
+            {}
+            if is_sqlite
+            else {
+                "pool_size": 10,
+                "max_overflow": 20,
+                "pool_timeout": 30,
+            }
+        ),
     )
+
 
 engine = _make_engine(settings.DATABASE_URL)
 
@@ -55,6 +56,7 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 #  ORM Models                                                          #
 # ------------------------------------------------------------------ #
 
+
 class DBUser(Base):
     __tablename__ = "users"
 
@@ -63,7 +65,8 @@ class DBUser(Base):
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[str] = mapped_column(
-        String(50), default="PASSENGER",
+        String(50),
+        default="PASSENGER",
         # Valid roles enforced at DB level
     )
     zone: Mapped[str] = mapped_column(String(10), nullable=True)
@@ -156,6 +159,7 @@ class DBAuditEntry(Base):
       3. PostgreSQL row-level security (applied via DDL below after table creation)
       4. Separate INSERT-only DB role in production Supabase setup
     """
+
     __tablename__ = "audit_log"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -207,6 +211,7 @@ class DBTrainPosition(Base):
     Time-series table. On PostgreSQL + TimescaleDB, converted to a
     hypertable via the DDL listener below.
     """
+
     __tablename__ = "train_positions"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
