@@ -44,6 +44,12 @@ async def health_system(db: AsyncSession = Depends(get_db)):
         "status": system_status,
         "uptime_seconds": round(uptime, 1),
         "version": settings.VERSION,
+        "agents_healthy": healthy_agents,
+        "agents_total": total_agents,
+        "ml_status": ml_status,
+        "ml_model": ml_status,
+        "total_requests": _request_metrics["total_requests"],
+        "avg_latency_ms": _request_metrics["avg_latency_ms"],
         "components": {
             "database": db_status,
             "redis": redis_status,
