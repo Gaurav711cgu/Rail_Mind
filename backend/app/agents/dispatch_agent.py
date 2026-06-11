@@ -175,7 +175,7 @@ class DispatchAgent(BaseAgent):
             int(data.get("estimated_delay_saving_minutes", 0)),
         )
 
-    async def process(self, state: Dict[str, Any]) -> Tuple[Dict[str, Any], float, str]:
+    async def process(self, state: Any) -> Tuple[Dict[str, Any], float, str]:
         disruptions: List[Dict] = state.get("disruptions", [])
         trains: List[Dict] = state.get("trains", [])
         recommendations: List[Dict] = state.get("recommendations", [])
@@ -196,9 +196,12 @@ class DispatchAgent(BaseAgent):
         if _is_safety_critical(active):
             rec_type, reasoning, confidence = _deterministic_recommendation(active, trains)
             rec = self._build_rec(active, rec_type, reasoning, confidence, trains, False, 0)
-            updates = {"recommendations": recommendations + [rec], "escalated": True}
+            safety_updates: Dict[str, Any] = {
+                "recommendations": recommendations + [rec],
+                "escalated": True,
+            }
             self.log(f"Safety-critical disruption → auto-escalated. Reason: {reasoning}")
-            return updates, confidence, reasoning
+            return safety_updates, confidence, reasoning
 
         # ------------------------------------------------------------------ #
         #  Try LLM first, fall back to deterministic                         #
@@ -224,7 +227,7 @@ class DispatchAgent(BaseAgent):
         tier = 1 if confidence >= self._threshold else 2
         rec["tier"] = tier
 
-        updates: Dict[str, Any] = {"recommendations": recommendations + [rec]}
+        updates = {"recommendations": recommendations + [rec]}  # type: Dict[str, Any]
         if tier == 2:
             updates["escalated"] = True
             self.log(

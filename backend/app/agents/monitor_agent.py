@@ -87,7 +87,7 @@ class MonitorAgent(BaseAgent):
         super().__init__("MonitorAgent")
         self._prev_positions: Dict[str, Dict] = {}  # train_no → last known state
 
-    async def process(self, state: Dict[str, Any]) -> Tuple[Dict[str, Any], float, str]:
+    async def process(self, state: Any) -> Tuple[Dict[str, Any], float, str]:
         self.log("Polling live train telemetry...")
 
         trains = state.get("trains", [])

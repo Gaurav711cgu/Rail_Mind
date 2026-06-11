@@ -248,7 +248,7 @@ class AgentOrchestrator:
             for agent in self.pipeline
         }
 
-    async def run_pipeline(self, initial_state: Dict[str, Any]) -> Dict[str, Any]:
+    async def run_pipeline(self, initial_state: Any) -> Dict[str, Any]:
         """Run the full agent graph once and return the final state."""
         import datetime
 

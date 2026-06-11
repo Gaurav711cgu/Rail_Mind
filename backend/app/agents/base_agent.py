@@ -1,5 +1,5 @@
 import uuid
-from typing import Dict, Any, Tuple
+from typing import Any, Dict, Tuple
 from abc import ABC, abstractmethod
 
 
@@ -13,7 +13,7 @@ class BaseAgent(ABC):
         self.agent_name = agent_name
 
     @abstractmethod
-    async def process(self, state: Dict[str, Any]) -> Tuple[Dict[str, Any], float, str]:
+    async def process(self, state: Any) -> Tuple[Dict[str, Any], float, str]:
         """
         Processes the current network state and returns:
         1. A dict of state modifications.

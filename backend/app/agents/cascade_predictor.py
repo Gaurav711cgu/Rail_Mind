@@ -107,7 +107,7 @@ class CascadePredictor(BaseAgent):
     def __init__(self):
         super().__init__("CascadePredictor")
 
-    async def process(self, state: Dict[str, Any]) -> Tuple[Dict[str, Any], float, str]:
+    async def process(self, state: Any) -> Tuple[Dict[str, Any], float, str]:
         disruptions: List[Dict] = state.get("disruptions", [])
         trains: List[Dict] = state.get("trains", [])
 

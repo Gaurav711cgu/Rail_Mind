@@ -1,4 +1,4 @@
-from typing import Dict, Any, Tuple
+from typing import Any, Dict, Tuple
 from app.agents.base_agent import BaseAgent
 
 
@@ -11,7 +11,7 @@ class ConflictDetector(BaseAgent):
     def __init__(self):
         super().__init__("ConflictDetector")
 
-    async def process(self, state: Dict[str, Any]) -> Tuple[Dict[str, Any], float, str]:
+    async def process(self, state: Any) -> Tuple[Dict[str, Any], float, str]:
         disruptions = state.get("disruptions", [])
         if not disruptions:
             return {}, 1.0, "No active disruptions. Path conflicts nominal."

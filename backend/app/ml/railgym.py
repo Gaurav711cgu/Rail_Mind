@@ -81,7 +81,7 @@ class RailGym(gym.Env):
         # Action space: one discrete action (0-3) for each of the 8 sections
         self.action_space = spaces.MultiDiscrete([self.N_ACTIONS_PER_SECTION] * self.N_SECTIONS)
 
-        self._state = None
+        self._state: Dict[str, Any] = {}
         self._step_count = 0
         self._max_steps = 60  # 60 minutes per episode
         self.np_random = np.random.default_rng()
@@ -126,7 +126,7 @@ class RailGym(gym.Env):
         return np.array(obs, dtype=np.float32)
 
     def _generate_initial_state(self) -> Dict[str, Any]:
-        scenarios = {
+        scenarios: Dict[str, Dict[str, Any]] = {
             "normal": {"base_delay": 5.0, "disruption_prob": 0.1},
             "moderate": {"base_delay": 20.0, "disruption_prob": 0.3},
             "severe": {"base_delay": 60.0, "disruption_prob": 0.6},

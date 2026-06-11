@@ -1,4 +1,4 @@
-from typing import Dict, Any, Tuple
+from typing import Any, Dict, Tuple
 from app.agents.base_agent import BaseAgent
 
 
@@ -11,7 +11,7 @@ class NotificationAgent(BaseAgent):
     def __init__(self):
         super().__init__("NotificationAgent")
 
-    async def process(self, state: Dict[str, Any]) -> Tuple[Dict[str, Any], float, str]:
+    async def process(self, state: Any) -> Tuple[Dict[str, Any], float, str]:
         disruptions = state.get("disruptions", [])
         recommendations = state.get("recommendations", [])
 

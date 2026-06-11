@@ -21,7 +21,7 @@ try:
 except ImportError:
     HAS_PYG = False
 
-    class SAGEConv(nn.Module):
+    class SAGEConv(nn.Module):  # type: ignore[no-redef]
         """Native PyTorch fallback for SAGEConv."""
 
         def __init__(self, in_channels: int, out_channels: int):
@@ -45,7 +45,7 @@ except ImportError:
             aggregated = adj_sum / deg
             return self.act(self.lin_l(x) + self.lin_r(aggregated))
 
-    class GATConv(nn.Module):
+    class GATConv(nn.Module):  # type: ignore[no-redef]
         """Native PyTorch fallback for GATConv."""
 
         def __init__(

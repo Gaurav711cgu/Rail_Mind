@@ -79,7 +79,7 @@ class AuditAgent(BaseAgent):
     def __init__(self):
         super().__init__("AuditAgent")
 
-    async def process(self, state: Dict[str, Any]) -> Tuple[Dict[str, Any], float, str]:
+    async def process(self, state: Any) -> Tuple[Dict[str, Any], float, str]:
         self.log("Sealing agent decisions into audit chain...")
 
         audit_chain: List[Dict] = state.get("audit_chain", [])
