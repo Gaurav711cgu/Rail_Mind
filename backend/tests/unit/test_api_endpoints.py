@@ -772,25 +772,48 @@ async def test_auth_edge_cases_rbac(unit_client, unit_session):
 
         role_checker = require_roles("CONTROLLER", "ADMIN")
 
+        class MockRequest:
+            def __init__(self, headers):
+                self.headers = headers
+
+        # Bypassed when ENFORCE_RBAC is False
+        settings.ENFORCE_RBAC = False
+        mock_req = MockRequest(headers={})
+        assert await role_checker(mock_req, db=unit_session) is None
+        settings.ENFORCE_RBAC = True
+
+        # Passenger is forbidden (raises 403)
+        passenger_token = create_access_token(data={"sub": "passenger_usr", "role": "PASSENGER"})
         passenger_user = DBUser(
             username="passenger_usr",
             email="passenger@test.com",
+            password_hash=get_password_hash("password"),
             role="PASSENGER",
             is_active=True,
         )
+        unit_session.add(passenger_user)
+        await unit_session.commit()
+
+        mock_req_p = MockRequest(headers={"Authorization": f"Bearer {passenger_token}"})
+        with pytest.raises(HTTPException) as exc_info:
+            await role_checker(mock_req_p, db=unit_session)
+        assert exc_info.value.status_code == 403
+
+        # Controller is allowed
+        controller_token = create_access_token(data={"sub": "controller_usr", "role": "CONTROLLER"})
         controller_user = DBUser(
             username="controller_usr",
+            email="controller@test.com",
+            password_hash=get_password_hash("password"),
             role="CONTROLLER",
             is_active=True,
         )
+        unit_session.add(controller_user)
+        await unit_session.commit()
 
-        # Controller is allowed
-        assert await role_checker(controller_user) == controller_user
-
-        # Passenger is forbidden (raises 403)
-        with pytest.raises(HTTPException) as exc_info:
-            await role_checker(passenger_user)
-        assert exc_info.value.status_code == 403
+        mock_req_c = MockRequest(headers={"Authorization": f"Bearer {controller_token}"})
+        res_user = await role_checker(mock_req_c, db=unit_session)
+        assert res_user.username == "controller_usr"
 
         # 5. bad refresh token missing "type": "refresh"
         bad_ref = create_access_token(data={"sub": "passenger_usr"})

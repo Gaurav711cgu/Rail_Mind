@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from pydantic import BaseModel
 from fastapi.security import OAuth2PasswordBearer
 import bcrypt
@@ -86,22 +86,49 @@ async def get_current_active_user(
 
 
 def require_roles(*allowed_roles: str):
-    if not settings.ENFORCE_RBAC:
-
-        async def bypass_role_check():
+    async def role_check(
+        request: Request,
+        db: AsyncSession = Depends(get_db),
+    ) -> Optional[DBUser]:
+        if not settings.ENFORCE_RBAC:
             return None
 
-        return bypass_role_check
+        authorization: Optional[str] = request.headers.get("Authorization")
+        if not authorization or not authorization.startswith("Bearer "):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Not authenticated",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        token = authorization.split(" ")[1]
 
-    async def role_check(
-        current_user: DBUser = Depends(get_current_active_user),
-    ) -> DBUser:
-        if current_user.role not in allowed_roles:
+        credentials_exception = HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+        try:
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+            username: str = payload.get("sub")
+            if username is None:
+                raise credentials_exception
+        except JWTError:
+            raise credentials_exception
+
+        result = await db.execute(select(DBUser).where(DBUser.username == username))
+        user = result.scalars().first()
+        if user is None:
+            raise credentials_exception
+
+        if not user.is_active:
+            raise HTTPException(status_code=400, detail="Inactive user")
+
+        if user.role not in allowed_roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Role '{current_user.role}' is not allowed for this action",
+                detail=f"Role '{user.role}' is not allowed for this action",
             )
-        return current_user
+        return user
 
     return role_check
 
