@@ -1,18 +1,31 @@
-name: Deploy to HuggingFace Spaces
+name: Deploy
 
 on:
   push:
     branches: [main]
     paths:
-      - "backend/**"          # Only deploy when backend changes
-  workflow_dispatch:          # Manual trigger from GitHub Actions UI
+      - "backend/**"
+      - "frontend/**"
+  workflow_dispatch:         # Manual trigger from GitHub Actions UI
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Required repository secrets (Settings > Secrets and variables > Actions):
+#
+#   HF_TOKEN          — HuggingFace write token (hf_...)
+#   HF_SPACE_ID       — Space repo id, e.g. "Gaurav711/Rail_Mind"
+#   VERCEL_TOKEN      — Vercel personal access token
+#   VERCEL_ORG_ID     — Vercel team/org id (from vercel.json or dashboard)
+#   VERCEL_PROJECT_ID — Vercel project id (from vercel.json or dashboard)
+#   VITE_API_BASE_URL — Public HuggingFace Spaces URL for the backend API
+# ─────────────────────────────────────────────────────────────────────────────
 
 jobs:
+  # ───────────────────────────────────────────────────────────────────────────
   deploy-backend:
-    name: Deploy Backend → HuggingFace Spaces
+    name: Deploy Backend to HuggingFace Spaces
     runs-on: ubuntu-latest
-    # Only deploy after CI passes
-    needs: []
+    # Skip the entire job when the required secrets are absent
+    if: ${{ secrets.HF_TOKEN != '' && secrets.HF_SPACE_ID != '' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -20,19 +33,40 @@ jobs:
           fetch-depth: 0
           lfs: true
 
-      - name: Configure Git for HuggingFace
+      - name: Validate secrets are set
+        run: |
+          if [ -z "$HF_TOKEN" ]; then
+            echo "ERROR: HF_TOKEN secret is not set."
+            echo "Go to: Settings > Secrets and variables > Actions > New repository secret"
+            exit 1
+          fi
+          if [ -z "$HF_SPACE" ]; then
+            echo "ERROR: HF_SPACE_ID secret is not set."
+            echo "Example value: Gaurav711/Rail_Mind"
+            exit 1
+          fi
+          echo "Secrets present. Deploying to HuggingFace Space: $HF_SPACE"
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_SPACE: ${{ secrets.HF_SPACE_ID }}
+
+      - name: Configure Git
         run: |
           git config --global user.email "deploy-bot@railmind.ai"
           git config --global user.name "RailMind Deploy Bot"
 
-      - name: Install HuggingFace Hub CLI
-        run: pip install huggingface_hub --quiet
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
 
-      - name: Train and cache RAC model artifact
+      - name: Install dependencies
         working-directory: backend
-        run: |
-          pip install xgboost scikit-learn numpy pandas joblib --quiet
-          python -m app.ml.train_rac_model
+        run: pip install huggingface_hub xgboost scikit-learn numpy pandas joblib --quiet
+
+      - name: Train RAC model artifact
+        working-directory: backend
+        run: python -m app.ml.train_rac_model
         env:
           PYTHONPATH: .
 
@@ -40,21 +74,26 @@ jobs:
         working-directory: backend
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          HF_SPACE: ${{ secrets.HF_SPACE_ID }}   # e.g. "your-username/railmind-backend"
+          HF_SPACE: ${{ secrets.HF_SPACE_ID }}
         run: |
-          python - <<'EOF'
+          python - <<'PYEOF'
           from huggingface_hub import HfApi
           import os
 
-          api = HfApi(token=os.environ["HF_TOKEN"])
+          token    = os.environ["HF_TOKEN"]
           space_id = os.environ["HF_SPACE"]
 
-          # Upload entire backend directory to the Space
+          if not token:
+              raise SystemExit("HF_TOKEN is empty — add it under repo Settings > Secrets.")
+          if not space_id:
+              raise SystemExit("HF_SPACE_ID is empty — add it under repo Settings > Secrets.")
+
+          api = HfApi(token=token)
           api.upload_folder(
               folder_path=".",
               repo_id=space_id,
               repo_type="space",
-              commit_message=f"Deploy: {os.environ.get('GITHUB_SHA', 'manual')[:8]}",
+              commit_message=f"deploy: {os.environ.get('GITHUB_SHA', 'manual')[:8]}",
               ignore_patterns=[
                   ".git*",
                   "__pycache__",
@@ -63,24 +102,33 @@ jobs:
                   ".env",
                   "railmind_local.db",
                   "test_railmind.db",
+                  "scratch/",
+                  ".venv/",
               ],
           )
-          print(f"✓ Deployed to https://huggingface.co/spaces/{space_id}")
-          EOF
+          print(f"Deployed to https://huggingface.co/spaces/{space_id}")
+          PYEOF
 
       - name: Verify deployment health
         env:
           HF_SPACE: ${{ secrets.HF_SPACE_ID }}
         run: |
-          # Wait for Space to rebuild (typically 60-120s)
+          # Wait for Space to rebuild (typically 60-120 s)
+          echo "Waiting 90 s for Space rebuild..."
           sleep 90
-          SPACE_URL="https://$(echo $HF_SPACE | tr '/' '-').hf.space"
-          echo "Checking health at $SPACE_URL/health"
-          curl --fail --retry 5 --retry-delay 15 "$SPACE_URL/health" || echo "Health check failed — Space may still be building"
+          SPACE_URL="https://$(echo "$HF_SPACE" | tr '/' '-').hf.space"
+          echo "Checking health at ${SPACE_URL}/api/v1/health"
+          curl --fail --silent --show-error \
+               --retry 5 --retry-delay 15 --retry-connrefused \
+               "${SPACE_URL}/api/v1/health" \
+            || echo "Health check timed out — Space may still be building. Check the HuggingFace dashboard."
 
+  # ───────────────────────────────────────────────────────────────────────────
   deploy-frontend:
-    name: Deploy Frontend → Vercel
+    name: Deploy Frontend to Vercel
     runs-on: ubuntu-latest
+    # Skip the entire job when the required secrets are absent
+    if: ${{ secrets.VERCEL_TOKEN != '' && secrets.VERCEL_PROJECT_ID != '' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -91,22 +139,41 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
+      - name: Validate secrets are set
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "ERROR: VERCEL_TOKEN secret is not set."
+            echo "Get it from: https://vercel.com/account/tokens"
+            exit 1
+          fi
+          if [ -z "$VERCEL_PROJECT_ID" ]; then
+            echo "ERROR: VERCEL_PROJECT_ID secret is not set."
+            echo "Find it in your Vercel project settings or vercel.json."
+            exit 1
+          fi
+          echo "Secrets present. Deploying frontend to Vercel."
+        env:
+          VERCEL_TOKEN:      ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
       - name: Install dependencies
         working-directory: frontend
         run: npm ci
 
       - name: Build
         working-directory: frontend
-        env:
-          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}   # HF Spaces URL
         run: npm run build
+        env:
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
 
       - name: Deploy to Vercel
         working-directory: frontend
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
           npm install -g vercel --quiet
-          vercel deploy --prod --token=$VERCEL_TOKEN
+          vercel deploy --prod \
+            --token "$VERCEL_TOKEN" \
+            --yes
+        env:
+          VERCEL_TOKEN:      ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID:     ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}

@@ -81,7 +81,6 @@ class AuditAgent(BaseAgent):
     ) -> Tuple[Dict[str, Any], float, str]:
         self.log("Sealing agent decisions into audit chain...")
 
-        logs: List[str] = state.get("logs", [])
         audit_chain: List[Dict] = state.get("audit_chain", [])
         recommendations: List[Dict] = state.get("recommendations", [])
         disruptions: List[Dict] = state.get("disruptions", [])

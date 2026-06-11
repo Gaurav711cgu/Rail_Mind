@@ -7,7 +7,6 @@ from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import StandardScaler
 import torch
 import torch.nn as nn
-from typing import Tuple
 
 
 class NTESAnomalyDetector:

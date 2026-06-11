@@ -4,6 +4,10 @@ conftest.py — shared pytest fixtures for RailMind test suite.
 Test database: SQLite in-memory (aiosqlite) — no Postgres required locally.
 Redis: uses the in-memory fallback in stream_service.py automatically.
 LLM: Anthropic calls are monkeypatched so no API key is needed in CI.
+
+NOTE: The async DB fixtures (setup_test_db, db_session, client) are defined
+here but are NOT autouse — they must be explicitly requested by integration tests.
+Unit tests in tests/unit/ do NOT trigger any DB or app startup.
 """
 
 import asyncio
@@ -12,21 +16,13 @@ import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
-from app.main import app
-from app.db.database import Base, get_db
-from app.config import settings
 
-# Force test DB settings before anything imports them
-settings.DATABASE_URL = "sqlite+aiosqlite:///./test_railmind.db"
-settings.REDIS_URL = "redis://localhost:6379/0"    # falls back to in-memory if not running
-settings.SCENARIO_MODE = True
-settings.ENFORCE_RBAC = True
-settings.ANTHROPIC_API_KEY = ""                    # LLM disabled in tests
+# ─────────────────────────────────────────────────────────────────────────────
+#  Test DB constants (used by integration tests only)
+# ─────────────────────────────────────────────────────────────────────────────
+TEST_DB_URL = "sqlite+aiosqlite:///./test_railmind.db"
 
-TEST_ENGINE = create_async_engine(
-    "sqlite+aiosqlite:///./test_railmind.db",
-    echo=False,
-)
+TEST_ENGINE = create_async_engine(TEST_DB_URL, echo=False)
 TestSessionLocal = async_sessionmaker(
     bind=TEST_ENGINE,
     class_=AsyncSession,
@@ -42,9 +38,22 @@ def event_loop():
     loop.close()
 
 
-@pytest_asyncio.fixture(scope="session", autouse=True)
+# ─────────────────────────────────────────────────────────────────────────────
+#  DB fixtures — only used by integration tests (NOT autouse)
+# ─────────────────────────────────────────────────────────────────────────────
+
+@pytest_asyncio.fixture(scope="session")
 async def setup_test_db():
-    """Create all tables once per session, drop after."""
+    """Create all tables once per session, drop after. Must be explicitly requested."""
+    # Late import so unit tests never trigger app startup
+    from app.config import settings
+    settings.DATABASE_URL = TEST_DB_URL
+    settings.REDIS_URL = "redis://localhost:6379/0"
+    settings.SCENARIO_MODE = True
+    settings.ENFORCE_RBAC = True
+    settings.ANTHROPIC_API_KEY = ""
+
+    from app.db.database import Base
     async with TEST_ENGINE.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield
@@ -54,7 +63,7 @@ async def setup_test_db():
 
 
 @pytest_asyncio.fixture
-async def db_session():
+async def db_session(setup_test_db):
     """Yields a fresh DB session, rolled back after each test."""
     async with TestSessionLocal() as session:
         yield session
@@ -64,6 +73,9 @@ async def db_session():
 @pytest_asyncio.fixture
 async def client(db_session):
     """Async HTTP client wired to the FastAPI app with the test DB."""
+    # Late import so unit tests never trigger app startup
+    from app.main import app
+    from app.db.database import get_db
 
     async def override_get_db():
         yield db_session
@@ -79,9 +91,9 @@ async def client(db_session):
     app.dependency_overrides.clear()
 
 
-# --------------------------------------------------------------------------- #
-#  Shared test data factories                                                  #
-# --------------------------------------------------------------------------- #
+# ─────────────────────────────────────────────────────────────────────────────
+#  Shared test data factories
+# ─────────────────────────────────────────────────────────────────────────────
 
 def make_train(
     train_no: str = "12002",

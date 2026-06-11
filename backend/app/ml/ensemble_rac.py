@@ -146,7 +146,7 @@ class SequentialStackingClassifier(BaseEstimator, ClassifierMixin):
         
         for train_idx, val_idx in kf.split(X_np):
             X_tr, X_val = X_np[train_idx], X_np[val_idx]
-            y_tr, y_val = y_np[train_idx], y_np[val_idx]
+            y_tr, _ = y_np[train_idx], y_np[val_idx]
             
             for j, (name, est) in enumerate(self.estimators):
                 fold_est = clone(est).fit(X_tr, y_tr)
@@ -186,13 +186,9 @@ class EnsembleRACPredictor:
             cv=5,
         )
         # Wrap in calibration model (Isotonic)
-        try:
-            from sklearn.frozen import FrozenEstimator
-            self.calibrated_clf = None
-        except ImportError:
-            self.calibrated_clf = CalibratedClassifierCV(
-                self.stacking_clf, method="isotonic", cv="prefit"
-            )
+        self.calibrated_clf = CalibratedClassifierCV(
+            self.stacking_clf, method="isotonic", cv="prefit"
+        )
         self._is_fitted = False
         
     def fit(self, X: pd.DataFrame, y: np.ndarray):

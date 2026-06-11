@@ -6,7 +6,7 @@ Includes PyTorch Geometric SAGEConv/GATConv implementations with robust native P
 import math
 import torch
 import torch.nn as nn
-from typing import Dict, Any
+from typing import Dict
 
 # Try to import torch_geometric; define fallback classes if unavailable
 import sys
