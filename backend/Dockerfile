@@ -12,8 +12,8 @@ COPY ./scripts /code/scripts
 # Expose Hugging Face Space default port
 EXPOSE 7860
 
-# Make /code writable for Hugging Face Space (UID 1000)
-RUN chmod -R 777 /code
+# Make /code owned by the app user (UID 1000) for security and writability
+RUN chown -R 1000:1000 /code
 
 # Seed database and run uvicorn server
 CMD python scripts/seed_railway_graph.py && uvicorn app.main:app --host 0.0.0.0 --port 7860
