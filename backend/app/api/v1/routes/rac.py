@@ -198,4 +198,3 @@ async def get_drift_report():
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Drift detection failed: {str(e)}",
         )
-

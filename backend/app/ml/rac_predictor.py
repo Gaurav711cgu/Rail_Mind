@@ -49,7 +49,9 @@ class RACPredictor:
         # Log query features for dynamic data drift monitoring
         try:
             if isinstance(query, dict):
-                wl_pos = float(query.get("waitlist_position", query.get("current_waitlist_position", 0)))
+                wl_pos = float(
+                    query.get("waitlist_position", query.get("current_waitlist_position", 0))
+                )
                 rac_cnt = float(query.get("rac_count", query.get("current_rac_count", 0)))
                 days = float(query.get("days_to_journey", 0))
                 q = str(query.get("quota", "GN"))
@@ -59,12 +61,14 @@ class RACPredictor:
                 days = float(getattr(query, "days_to_journey", 0))
                 q = str(getattr(query, "quota", "GN"))
 
-            self._query_log.append({
-                "days_to_journey": days,
-                "current_waitlist_position": wl_pos,
-                "current_rac_count": rac_cnt,
-                "quota": q
-            })
+            self._query_log.append(
+                {
+                    "days_to_journey": days,
+                    "current_waitlist_position": wl_pos,
+                    "current_rac_count": rac_cnt,
+                    "quota": q,
+                }
+            )
             if len(self._query_log) > 1000:
                 self._query_log.pop(0)
         except Exception as log_ex:
@@ -220,12 +224,16 @@ class RACPredictor:
         random_state = random.Random(42)
         ref_data = []
         for _ in range(100):
-            ref_data.append({
-                "days_to_journey": max(1.0, float(int(random_state.normalvariate(5, 2)))),
-                "current_waitlist_position": max(1.0, float(int(random_state.normalvariate(20, 10)))),
-                "current_rac_count": max(0.0, float(int(random_state.normalvariate(10, 5)))),
-                "quota": random_state.choice(["GN"] * 80 + ["TQ"] * 10 + ["LD"] * 10)
-            })
+            ref_data.append(
+                {
+                    "days_to_journey": max(1.0, float(int(random_state.normalvariate(5, 2)))),
+                    "current_waitlist_position": max(
+                        1.0, float(int(random_state.normalvariate(20, 10)))
+                    ),
+                    "current_rac_count": max(0.0, float(int(random_state.normalvariate(10, 5)))),
+                    "quota": random_state.choice(["GN"] * 80 + ["TQ"] * 10 + ["LD"] * 10),
+                }
+            )
         ref_df = pd.DataFrame(ref_data)
 
         current_data = list(self._query_log)
@@ -233,20 +241,25 @@ class RACPredictor:
             # Seed with drifted (holiday season high demand) current data for demonstration
             random_curr = random.Random(99)
             for _ in range(50):
-                current_data.append({
-                    "days_to_journey": max(1.0, float(int(random_curr.normalvariate(4, 2)))),
-                    "current_waitlist_position": max(1.0, float(int(random_curr.normalvariate(35, 12)))), # Shifted mean
-                    "current_rac_count": max(0.0, float(int(random_curr.normalvariate(8, 4)))),
-                    "quota": random_curr.choice(["GN"] * 70 + ["TQ"] * 25 + ["LD"] * 5)
-                })
+                current_data.append(
+                    {
+                        "days_to_journey": max(1.0, float(int(random_curr.normalvariate(4, 2)))),
+                        "current_waitlist_position": max(
+                            1.0, float(int(random_curr.normalvariate(35, 12)))
+                        ),  # Shifted mean
+                        "current_rac_count": max(0.0, float(int(random_curr.normalvariate(8, 4)))),
+                        "quota": random_curr.choice(["GN"] * 70 + ["TQ"] * 25 + ["LD"] * 5),
+                    }
+                )
         curr_df = pd.DataFrame(current_data)
 
         report = Report(metrics=[DataDriftPreset()])
         report.run(reference_data=ref_df, current_data=curr_df)
-        
+
         import json
+
         report_json = json.loads(report.json())
-        
+
         dataset_drift_metric = {}
         data_drift_table = {}
         for m in report_json.get("metrics", []):
@@ -263,16 +276,19 @@ class RACPredictor:
                 "drift_detected": bool(val.get("drift_detected", False)),
                 "test_name": str(val.get("stattest_name", val.get("test_name", "unknown"))),
             }
-        
+
         return {
             "dataset_drift": bool(dataset_drift_metric.get("dataset_drift", False)),
             "number_of_columns": int(dataset_drift_metric.get("number_of_columns", 0)),
-            "number_of_drifted_columns": int(dataset_drift_metric.get("number_of_drifted_columns", 0)),
-            "share_of_drifted_columns": float(dataset_drift_metric.get("share_of_drifted_columns", 0.0)),
+            "number_of_drifted_columns": int(
+                dataset_drift_metric.get("number_of_drifted_columns", 0)
+            ),
+            "share_of_drifted_columns": float(
+                dataset_drift_metric.get("share_of_drifted_columns", 0.0)
+            ),
             "drift_by_columns": drift_by_columns,
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
-
 
 
 rac_predictor = RACPredictor()
