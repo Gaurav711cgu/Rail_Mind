@@ -81,6 +81,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Verify model artifacts are not LFS pointers
+        run: |
+          for f in app/ml/artifacts/*.joblib; do
+            if [ -f "$f" ]; then
+              if head -c 20 "$f" | grep -q "version https"; then
+                echo "::error::$f is a Git LFS pointer, not a real artifact"
+                exit 1
+              fi
+            fi
+          done
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"

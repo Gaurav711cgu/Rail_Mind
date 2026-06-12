@@ -75,6 +75,7 @@ class Settings(BaseSettings):
     RAC_PIPELINE_PATH: str = str(
         Path(__file__).parent / "ml" / "artifacts" / "feature_pipeline.joblib"
     )
+    RAC_MODEL_VERSION: str = "XGBoost-v1.2"
 
     # ------------------------------------------------------------------ #
     #  Agent settings                                                      #

@@ -273,3 +273,18 @@ def test_train_rac_model():
         train_and_save_model()
         mock_mkdir.assert_called()
         assert mock_dump.call_count == 2
+
+
+def test_ensemble_predict_proba_no_frozen_estimator_error():
+    """
+    Regression test: CalibratedClassifierCV(cv='prefit') on a StackingClassifier
+    raised 'FrozenEstimator should be a classifier' on sklearn>=1.6.
+    Fix: calibrate base estimators individually, stack without post-hoc calibration.
+    """
+    from app.ml.ensemble_rac import EnsembleRACPredictor
+    X, y = _make_rac_dataset(100)
+    predictor = EnsembleRACPredictor()
+    predictor.fit(X, y)
+    probs = predictor.predict_proba(X.iloc[:10])
+    assert probs.shape == (10,)
+    assert (probs >= 0.0).all() and (probs <= 1.0).all()

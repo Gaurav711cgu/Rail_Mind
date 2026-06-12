@@ -134,7 +134,7 @@ def compute_ece(y_true: np.ndarray, y_prob: np.ndarray, n_bins: int = 10) -> flo
     return ece_val
 
 
-class SequentialStackingClassifier(BaseEstimator, ClassifierMixin):
+class SequentialStackingClassifier(ClassifierMixin, BaseEstimator):
     """
     A sequential StackingClassifier that does not use joblib or multiprocessing.
     This prevents macOS OpenMP/multiprocessing crashes when running alongside PyTorch.
@@ -199,52 +199,37 @@ class EnsembleRACPredictor:
         self.n_bins = n_bins
         self.base_estimators = get_base_estimators()
         self.meta_learner = LogisticRegression(C=0.1)
+        
+        # Calibrate EACH base estimator individually via cross-validation
+        self.calibrated_bases = []
+        for name, est in self.base_estimators:
+            calibrated = CalibratedClassifierCV(est, method="isotonic", cv=3)
+            self.calibrated_bases.append((name, calibrated))
+
         self.stacking_clf = SequentialStackingClassifier(
-            estimators=self.base_estimators,
+            estimators=self.calibrated_bases,
             final_estimator=self.meta_learner,
             cv=5,
-        )
-        # Wrap in calibration model (Isotonic)
-        self.calibrated_clf = CalibratedClassifierCV(
-            self.stacking_clf, method="isotonic", cv="prefit"
         )
         self._is_fitted = False
 
     def fit(self, X: pd.DataFrame, y: np.ndarray):
-        """Fits base stacking classifier and calibrates probabilities on split set."""
-        X_train, X_calib, y_train, y_calib = train_test_split(X, y, test_size=0.2, random_state=42)
-
+        """Fits base stacking classifier."""
         print("Training base stacked ensemble classifier...")
-        self.stacking_clf.fit(X_train, y_train)
-
-        print("Calibrating model probabilities using Isotonic Regression...")
-        try:
-            from sklearn.frozen import FrozenEstimator
-
-            frozen_clf = FrozenEstimator(self.stacking_clf)
-            self.calibrated_clf = CalibratedClassifierCV(frozen_clf, method="isotonic", cv=None)
-            self.calibrated_clf.fit(X_calib, y_calib)
-        except ImportError:
-            if self.calibrated_clf is None:
-                self.calibrated_clf = CalibratedClassifierCV(
-                    self.stacking_clf, method="isotonic", cv="prefit"
-                )
-            self.calibrated_clf.fit(X_calib, y_calib)
-
+        self.stacking_clf.fit(X, y)
         self._is_fitted = True
 
     def predict_proba(self, X: pd.DataFrame) -> np.ndarray:
         """Predicts calibrated confirmation probabilities."""
         if not self._is_fitted:
             raise RuntimeError("Model is not fitted yet.")
-        # CalibratedClassifierCV returns [P(class 0), P(class 1)]
-        return self.calibrated_clf.predict_proba(X)[:, 1]
+        return self.stacking_clf.predict_proba(X)[:, 1]
 
     def predict(self, X: pd.DataFrame) -> np.ndarray:
         """Returns binary confirmation predictions (threshold=0.5)."""
         if not self._is_fitted:
             raise RuntimeError("Model is not fitted yet.")
-        return self.calibrated_clf.predict(X)
+        return self.stacking_clf.predict(X)
 
     def evaluate(self, X_test: pd.DataFrame, y_test: np.ndarray) -> dict:
         """Returns standard metrics + calibration ECE score."""

@@ -6,6 +6,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 import joblib
+from app.config import settings
 
 
 def generate_synthetic_data(num_rows: int = 5000) -> pd.DataFrame:
@@ -99,7 +100,7 @@ def train_and_save_model():
     # Store feature names in model to easily retrieve later
     model.feature_names = feature_names
 
-    joblib.dump(model, model_path)
+    joblib.dump({"model": model, "version": settings.RAC_MODEL_VERSION}, model_path)
     joblib.dump(pipeline, pipeline_path)
     print(f"Model saved to {model_path}")
     print(f"Pipeline saved to {pipeline_path}")
