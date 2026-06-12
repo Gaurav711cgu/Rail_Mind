@@ -182,3 +182,20 @@ async def model_health():
         "training_samples": 60000,
         "fallback_active": not rac_predictor._loaded,
     }
+
+
+@router.get("/drift-report")
+async def get_drift_report():
+    """
+    Computes data drift metrics on current prediction requests
+    using Evidently AI comparing against training distributions.
+    """
+    try:
+        report = rac_predictor.get_drift_report()
+        return report
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Drift detection failed: {str(e)}",
+        )
+

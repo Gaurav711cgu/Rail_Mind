@@ -372,6 +372,18 @@ async def test_rac_extended_routes(unit_client):
     assert resp.status_code == 200
     assert isinstance(resp.json(), list)
 
+    # Model health
+    resp_health = await unit_client.get("/api/v1/rac/model-health")
+    assert resp_health.status_code == 200
+    assert "model_loaded" in resp_health.json()
+
+    # Drift report
+    resp_drift = await unit_client.get("/api/v1/rac/drift-report")
+    assert resp_drift.status_code == 200
+    assert "dataset_drift" in resp_drift.json()
+    assert "drift_by_columns" in resp_drift.json()
+
+
 
 @pytest.mark.asyncio
 async def test_recommendations_escalated_routes(unit_client):
