@@ -8,7 +8,6 @@ import pandas as pd
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.calibration import CalibratedClassifierCV
-from sklearn.model_selection import train_test_split
 from sklearn.base import BaseEstimator, ClassifierMixin, clone
 from sklearn.model_selection import KFold
 import sys
