@@ -122,6 +122,11 @@ For complex multi-train dispatching scenarios, RailMind includes a Gymnasium rei
 * **Spatial Outliers:** An `IsolationForest` pipeline detects abnormal telemetry coordinates indicative of sensor malfunctions or sudden blockages.
 * **Sequence Outliers:** An `LSTMAutoencoder` evaluates consecutive speed patterns, flagging operational deviations when reconstruction error exceeds a dynamic threshold.
 
+### 5. Dynamic Data Drift Monitoring (app/ml/rac_predictor.py)
+* **Observability:** Measures statistical drift on live query features (`days_to_journey`, `current_waitlist_position`, `current_rac_count`, `quota`) comparing them against historical training baseline distributions.
+* **Evidently AI:** Integrates Evidently AI's data drift metrics (`DataDriftPreset` and `DatasetDriftMetric`) dynamically inside the backend.
+* **Endpoint:** Exposes computed dataset drift status, share of drifted features, and column-level drift scores via the `/api/v1/rac/drift-report` endpoint.
+
 ---
 
 ## System Integrity and Security
