@@ -114,7 +114,7 @@ export default function App() {
       <div style={{ display:'flex', height:'100vh', alignItems:'center', justifyContent:'center' }}>
         <div className="glass-card" style={{ padding:'40px', textAlign:'center', border:'1px solid var(--color-danger)', maxWidth: 420 }}>
           <div style={{ fontSize:'0.65rem', letterSpacing:'3px', color:'var(--color-danger)', textTransform:'uppercase', marginBottom:12 }}>
-            ⚠ OPERATIONAL OUTAGE
+            WARNING: OPERATIONAL OUTAGE
           </div>
           <p style={{ color:'var(--color-text-muted)', fontSize:'0.85rem', marginBottom:20 }}>{error}</p>
           <button className="btn-secondary" onClick={fetchData}>Retry Connection</button>

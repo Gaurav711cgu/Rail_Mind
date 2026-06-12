@@ -250,9 +250,9 @@ export default function AuditLedger({ auditLogs }) {
               {item.value === null ? (
                 <span style={{ color: 'var(--color-text-dark)', fontWeight: 'bold' }}>PENDING</span>
               ) : item.value ? (
-                <span style={{ color: 'var(--color-accent)', fontWeight: 'bold' }}>VALID ✓</span>
+                <span style={{ color: 'var(--color-accent)', fontWeight: 'bold' }}>VALID</span>
               ) : (
-                <span style={{ color: 'var(--color-danger)', fontWeight: 'bold' }}>FAIL ✗</span>
+                <span style={{ color: 'var(--color-danger)', fontWeight: 'bold' }}>FAIL</span>
               )}
             </div>
           ))}

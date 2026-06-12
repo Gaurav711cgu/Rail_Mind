@@ -162,7 +162,7 @@ export default function OperatorProfile() {
               onClick={copyPublicKey}
               style={{ background: 'transparent', border: 'none', color: 'var(--color-primary)', fontSize: '0.65rem', cursor: 'pointer', outline: 'none' }}
             >
-              {copied ? 'Copied ✓' : 'Copy Key'}
+              {copied ? 'Copied' : 'Copy Key'}
             </button>
           </div>
           <div style={{

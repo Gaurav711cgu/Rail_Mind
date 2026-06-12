@@ -515,7 +515,7 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
         display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap',
       }}>
         <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-          🔍 Live Route
+          Live Route
         </span>
         <input
           value={fromInput}
@@ -562,10 +562,10 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
               borderRadius: '4px', color: 'var(--color-text-muted)', fontWeight: 700,
               fontSize: '0.65rem', padding: '5px 10px', cursor: 'pointer',
             }}
-          >✕ Clear</button>
+          >Clear</button>
         )}
         {routeError && (
-          <span style={{ fontSize: '0.65rem', color: 'var(--color-danger)' }}>⚠ {routeError}</span>
+          <span style={{ fontSize: '0.65rem', color: 'var(--color-danger)' }}>Warning: {routeError}</span>
         )}
         {/* Quick preset buttons */}
         <div style={{ display: 'flex', gap: '4px', marginLeft: 'auto' }}>
@@ -701,7 +701,6 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
             background: 'rgba(3,7,18,0.7)', zIndex: 500,
           }}>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '1.5rem', marginBottom: '8px' }}>⚡</div>
               <div style={{ fontSize: '0.75rem', color: 'var(--color-primary)', fontWeight: 700 }}>Fetching live trains…</div>
             </div>
           </div>
@@ -729,12 +728,12 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
             <>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h4 style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.5px', margin: 0 }}>
-                  📍 {stationBoard.code} Live Board
+                  {stationBoard.code} Live Board
                 </h4>
                 <button
                   onClick={() => setStationBoard(null)}
                   style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: '0.8rem' }}
-                >✕</button>
+                >X</button>
               </div>
               <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '4px' }} />
               {stationLoading && <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', textAlign: 'center', padding: '10px' }}>Loading…</div>}
@@ -764,7 +763,7 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', marginBottom: '3px' }}>
                   <span style={{ color: 'var(--color-text-muted)' }}>Visibility</span>
                   <span style={{ color: weatherState.visibility_meters < 500 ? 'var(--color-danger)' : 'var(--color-accent)', fontWeight: 700 }}>
-                    {weatherState.visibility_meters}m {weatherState.active_warning !== 'NONE' && '⚠️'}
+                    {weatherState.visibility_meters}m {weatherState.active_warning !== 'NONE' && ' WARNING'}
                   </span>
                 </div>
                 <input type="range" min="100" max="3000" step="100" value={weatherState.visibility_meters} onChange={handleVisibilitySlider}
@@ -846,7 +845,7 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
                   <button
                     onClick={() => setSelectedTrain(null)}
                     style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: '0.75rem' }}
-                  >✕</button>
+                  >X</button>
                 </div>
               </div>
 
@@ -865,7 +864,7 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
               {liveLoading && <div style={{ fontSize: '0.62rem', color: 'var(--color-text-muted)', textAlign: 'center' }}>Fetching live status…</div>}
               {liveStatus && !liveLoading && (
                 <div style={{ background: 'var(--color-primary-dim)', border: '1px solid rgba(227,26,34,0.15)', borderRadius: '4px', padding: '6px', fontSize: '0.62rem' }}>
-                  <div style={{ color: 'var(--color-primary)', fontWeight: 700, marginBottom: '3px' }}>⚡ Live Telemetry</div>
+                  <div style={{ color: 'var(--color-primary)', fontWeight: 700, marginBottom: '3px' }}>Live Telemetry</div>
                   {liveStatus.error ? (
                     <span style={{ color: 'var(--color-warning)' }}>Live status API unavailable</span>
                   ) : (

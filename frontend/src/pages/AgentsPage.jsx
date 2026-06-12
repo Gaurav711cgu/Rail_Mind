@@ -3,12 +3,12 @@ import useAgentStream from '../hooks/useAgentStream';
 
 // Agent display metadata
 const AGENT_META = {
-  MonitorAgent:     { icon: '🔍', label: 'Monitor',      desc: 'Z-score anomaly detection on live NTES telemetry' },
-  ConflictDetector: { icon: '⚠️',  label: 'Conflict',     desc: 'NetworkX DiGraph route conflict analysis' },
-  CascadePredictor: { icon: '📡', label: 'Cascade',      desc: 'BFS delay propagation across timetable graph' },
-  DispatchAgent:    { icon: '🚦', label: 'Dispatch',     desc: 'Automated dispatch resolution with heuristic fallback' },
-  NotificationAgent:{ icon: '📢', label: 'Notification', desc: 'Passenger advisory & alternate train ranking' },
-  AuditAgent:       { icon: '🔐', label: 'Audit',        desc: 'Append-only ECDSA cryptographic audit chain' },
+  MonitorAgent:     { icon: '', label: 'Monitor',      desc: 'Z-score anomaly detection on live NTES telemetry' },
+  ConflictDetector: { icon: '', label: 'Conflict',     desc: 'NetworkX DiGraph route conflict analysis' },
+  CascadePredictor: { icon: '', label: 'Cascade',      desc: 'BFS delay propagation across timetable graph' },
+  DispatchAgent:    { icon: '', label: 'Dispatch',     desc: 'Automated dispatch resolution with heuristic fallback' },
+  NotificationAgent:{ icon: '', label: 'Notification', desc: 'Passenger advisory & alternate train ranking' },
+  AuditAgent:       { icon: '', label: 'Audit',        desc: 'Append-only ECDSA cryptographic audit chain' },
 };
 
 function StatusBadge({ status }) {
@@ -126,7 +126,7 @@ export default function AgentsPage() {
 
       <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10 }}>
         {(hasData ? agentEntries : Object.keys(AGENT_META).map(k => [k, { status:'healthy', last_run:null, last_confidence:1.0, last_error:null }])).map(([name, info]) => {
-          const meta = AGENT_META[name] || { icon:'🤖', label:name, desc:'' };
+          const meta = AGENT_META[name] || { icon:'', label:name, desc:'' };
           return (
             <div key={name} className="glass-card" style={{ padding:'14px 16px', display:'flex', flexDirection:'column', gap:8 }}>
               {/* Header */}
@@ -164,7 +164,7 @@ export default function AgentsPage() {
               {info.last_error && (
                 <div style={{ fontSize:'0.6rem', color:'var(--color-danger)',
                   background:'rgba(239,68,68,0.05)', borderRadius:4, padding:'4px 8px' }}>
-                  ⚠ {info.last_error}
+                  Warning: {info.last_error}
                 </div>
               )}
             </div>

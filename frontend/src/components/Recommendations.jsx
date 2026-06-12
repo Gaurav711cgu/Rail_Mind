@@ -173,7 +173,7 @@ export default function Recommendations({ recommendations, onApprove, onOverride
                     gap: '8px'
                   }}>
                     <span style={{ color: rec.is_approved ? 'var(--color-accent)' : 'var(--color-danger)', fontWeight: 'bold' }}>
-                      {rec.is_approved ? '✓ APPROVED' : '✗ OVERRIDDEN'}
+                      {rec.is_approved ? 'APPROVED' : 'OVERRIDDEN'}
                     </span>
                     <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
                       {rec.is_approved 
