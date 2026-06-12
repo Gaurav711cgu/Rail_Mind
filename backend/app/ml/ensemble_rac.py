@@ -198,7 +198,7 @@ class EnsembleRACPredictor:
         self.n_bins = n_bins
         self.base_estimators = get_base_estimators()
         self.meta_learner = LogisticRegression(C=0.1)
-        
+
         # Calibrate EACH base estimator individually via cross-validation
         self.calibrated_bases = []
         for name, est in self.base_estimators:

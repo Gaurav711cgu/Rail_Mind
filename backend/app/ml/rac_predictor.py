@@ -54,7 +54,9 @@ class RACPredictor:
             self._pipeline = joblib.load(pipeline_path)
             self._explainer = shap.TreeExplainer(self._model)
             self._loaded = True
-            print(f"[RACPredictor] Successfully loaded XGBoost model and pipeline (version {self._model_version}).")
+            print(
+                f"[RACPredictor] Successfully loaded XGBoost model and pipeline (version {self._model_version})."
+            )
         except Exception as exc:
             print(f"[RACPredictor] Could not load model artifacts: {exc}")
 
@@ -62,7 +64,7 @@ class RACPredictor:
         """Detects Git LFS pointer files masquerading as real artifacts."""
         if not path.exists():
             return False
-        if path.stat().st_size < 1024:          # Real joblib models are >> 1KB
+        if path.stat().st_size < 1024:  # Real joblib models are >> 1KB
             return False
         try:
             with open(path, "rb") as f:
@@ -75,6 +77,7 @@ class RACPredictor:
 
     def _train_and_save(self) -> None:
         from app.ml.train_rac_model import train_and_save_model
+
         train_and_save_model()
 
     def predict(self, query) -> RACPredictionResult:
