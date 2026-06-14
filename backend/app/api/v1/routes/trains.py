@@ -247,6 +247,48 @@ async def rapidapi_live_train_status(
         0, ge=0, le=4, description="0=today, 1=yesterday, up to 4 for longer routes"
     ),
 ):
+    if not settings.RAPIDAPI_IRCTC_KEY:
+        delay = 0
+        station = "NDLS"
+        train_name = "Express Train"
+
+        if settings.SCENARIO_MODE:
+            state = scenario_engine.get_state()
+            for t in state.get("trains", []):
+                if t["train_no"] == train_no:
+                    delay = t.get("current_delay", 0)
+                    station = t.get("current_station", "NDLS")
+                    train_name = t.get("train_name", "Express Train")
+                    break
+        elif train_no in ["12002", "22415", "BOXN-902"]:
+            train_name = (
+                "NDLS-BCT Shatabdi Express" if train_no == "12002"
+                else "NDLS-BSB Vande Bharat" if train_no == "22415"
+                else "Coal Freight"
+            )
+            station = "GZB" if train_no == "BOXN-902" else "NDLS"
+
+        mock_data = {
+            "success": True,
+            "trainName": train_name,
+            "trainNo": train_no,
+            "delay": f"{delay}m",
+            "delayInArrival": f"{delay}m",
+            "currentStation": {
+                "stationCode": station,
+                "stationName": station,
+            },
+            "currentStatus": f"Delayed by {delay} min" if delay > 0 else "Running on time",
+            "lastUpdated": "Just now (Telemetry Link Mocked)"
+        }
+        return {
+            "provider": "rapidapi-irctc",
+            "host": settings.RAPIDAPI_IRCTC_HOST,
+            "path": "/api/v1/liveTrainStatus",
+            "params": {"trainNo": train_no, "startDay": start_day},
+            "data": mock_data,
+        }
+
     return await rapidapi_irctc.get(
         "/api/v1/liveTrainStatus",
         {"trainNo": train_no, "startDay": start_day},
