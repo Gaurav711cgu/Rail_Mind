@@ -112,11 +112,28 @@ export default function App() {
   if (error) {
     return (
       <div style={{ display:'flex', height:'100vh', alignItems:'center', justifyContent:'center' }}>
-        <div className="glass-card" style={{ padding:'40px', textAlign:'center', border:'1px solid var(--color-danger)', maxWidth: 420 }}>
-          <div style={{ fontSize:'0.65rem', letterSpacing:'3px', color:'var(--color-danger)', textTransform:'uppercase', marginBottom:12 }}>
+        <div style={{
+          padding:'40px',
+          textAlign:'center',
+          background: 'var(--surface-panel)',
+          border:'1px solid var(--border-accent)',
+          borderRadius: 'var(--rounded-md)',
+          maxWidth: 420
+        }}>
+          <div style={{
+            fontFamily: "'JetBrains Mono', monospace",
+            fontSize: '11px',
+            fontWeight: 700,
+            letterSpacing: '2px',
+            color: 'var(--accent)',
+            textTransform: 'uppercase',
+            marginBottom: 12
+          }}>
             WARNING: OPERATIONAL OUTAGE
           </div>
-          <p style={{ color:'var(--color-text-muted)', fontSize:'0.85rem', marginBottom:20 }}>{error}</p>
+          <p style={{ fontFamily: "'Inter', sans-serif", color: 'var(--ink-soft)', fontSize: '13px', marginBottom: 20 }}>
+            {error}
+          </p>
           <button className="btn-secondary" onClick={fetchData}>Retry Connection</button>
         </div>
       </div>
