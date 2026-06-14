@@ -536,7 +536,8 @@ nav {
   color: var(--ink-muted);
   overflow: hidden;
   white-space: nowrap;
-  flex-grow: 1;
+  flex: 1;
+  min-width: 0;
   text-align: center;
   max-width: 450px;
   margin: 0 auto;

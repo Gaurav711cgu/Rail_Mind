@@ -190,7 +190,7 @@ export default function App() {
       {/* ── CONTROL TOOLBAR ── */}
       {scenarioState && (
         <div className="control-toolbar">
-          <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:10, flexShrink:0 }}>
             <span style={{ fontFamily:"'Inter', sans-serif", fontSize:'16px', fontWeight:600, color:'var(--ink)', textTransform:'uppercase', whiteSpace:'nowrap' }}>
               {scenarioState.title} OPERATION — SECTOR NORTH
             </span>
