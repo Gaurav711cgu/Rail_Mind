@@ -2,6 +2,8 @@ backend/app/ml/artifacts/*.joblib filter=lfs diff=lfs merge=lfs -text
 frontend/*.jpg filter=lfs diff=lfs merge=lfs -text
 frontend/public/*.jpg filter=lfs diff=lfs merge=lfs -text
 frontend/public/*.png filter=lfs diff=lfs merge=lfs -text
+frontend/public/logo.jpg -filter -diff -merge
+frontend/public/train-bg.jpg -filter -diff -merge
 *.webm filter=lfs diff=lfs merge=lfs -text
 *.mp4 filter=lfs diff=lfs merge=lfs -text
 *.mov filter=lfs diff=lfs merge=lfs -text
