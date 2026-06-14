@@ -70,8 +70,8 @@ function coordsFor(code) {
 
 /* colour by delay */
 function trainColor(delay, isFreight) {
-  if (delay >= 10) return '#E31A22'; // Crimson Red for delays
-  return '#FFFFFF'; // Crisp White for on-time / freight
+  if (delay >= 10) return 'var(--accent)'; // Crimson Red for delays
+  return 'var(--ink)'; // Crisp White for on-time / freight
 }
 
 /* ─────────────────────────────────────────────────────────────────
@@ -444,20 +444,22 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
      RENDER
   ════════════════════════════════════════════ */
   return (
-    <div className="glass-card" style={{
+    <div style={{
       gridColumn: 'span 8', minHeight: '560px',
-      display: 'flex', flexDirection: 'column', padding: '20px',
+      display: 'flex', flexDirection: 'column', padding: '24px',
+      background: 'var(--surface-panel)', border: '1px solid var(--border)',
+      borderRadius: 'var(--rounded-lg)'
     }}>
 
       {/* ── Header ── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
         <div>
-          <h3 style={{ fontSize: '1.1rem', fontWeight: 800, letterSpacing: '0.5px', margin: 0 }}>
+          <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '16px', fontWeight: 600, color: 'var(--ink)', margin: 0 }}>
             {searchMode
               ? `Live Trains: ${fromCode} → ${toCode}`
               : ZONE_CONFIG[selectedZone].label + ' Live Telemetry'}
           </h3>
-          <p style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', margin: 0 }}>
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'var(--ink-soft)', margin: 0 }}>
             {searchMode
               ? `${routeTrains.length} trains found · click a marker for live status`
               : 'Kavach Interlocking Desk · Click station for live board'}
@@ -470,7 +472,17 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
             <select
               value={selectedZone}
               onChange={e => { setSelectedZone(e.target.value); if (e.target.value === 'ALL') setViewMode('geo'); }}
-              style={{ background: '#090d16', border: '1px solid var(--border-color)', borderRadius: '5px', color: 'var(--color-text-main)', fontSize: '0.65rem', fontWeight: 'bold', padding: '4px 8px', cursor: 'pointer', outline: 'none' }}
+              style={{
+                background: 'var(--surface-input)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--rounded-sm)',
+                color: 'var(--ink)',
+                fontSize: '11px',
+                fontFamily: "'JetBrains Mono', monospace",
+                padding: '4px 8px',
+                outline: 'none',
+                cursor: 'pointer'
+              }}
             >
               {Object.entries(ZONE_CONFIG).map(([k, v]) => (
                 <option key={k} value={k}>{v.label}</option>
@@ -479,29 +491,29 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
           )}
 
           {/* View toggle */}
-          <div style={{ display: 'flex', background: 'rgba(255,255,255,0.03)', padding: '2px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+          <div style={{ display: 'flex', background: 'var(--surface-input)', padding: '2px', borderRadius: 'var(--rounded-sm)', border: '1px solid var(--border)' }}>
             <button
               onClick={() => setViewMode('schematic')}
               disabled={searchMode || selectedZone === 'ALL'}
               style={{
-                padding: '4px 10px', fontSize: '0.62rem', fontWeight: 'bold', border: 'none', borderRadius: '4px', cursor: 'pointer', transition: 'all 0.2s',
-                background: viewMode === 'schematic' ? 'var(--color-primary)' : 'transparent',
-                color: viewMode === 'schematic' ? 'black' : 'var(--color-text-muted)',
+                padding: '4px 10px', fontSize: '11px', fontFamily: "'Inter', sans-serif", fontWeight: '700', border: 'none', borderRadius: 'var(--rounded-xs)', cursor: 'pointer', transition: 'all 0.15s',
+                background: viewMode === 'schematic' ? 'var(--accent)' : 'transparent',
+                color: viewMode === 'schematic' ? 'var(--ink-on-red)' : 'var(--ink-soft)',
                 opacity: (searchMode || selectedZone === 'ALL') ? 0.4 : 1,
               }}
             >SCHEMATIC</button>
             <button
               onClick={() => setViewMode('geo')}
               style={{
-                padding: '4px 10px', fontSize: '0.62rem', fontWeight: 'bold', border: 'none', borderRadius: '4px', cursor: 'pointer', transition: 'all 0.2s',
-                background: viewMode === 'geo' ? 'var(--color-primary)' : 'transparent',
-                color: viewMode === 'geo' ? 'black' : 'var(--color-text-muted)',
+                padding: '4px 10px', fontSize: '11px', fontFamily: "'Inter', sans-serif", fontWeight: '700', border: 'none', borderRadius: 'var(--rounded-xs)', cursor: 'pointer', transition: 'all 0.15s',
+                background: viewMode === 'geo' ? 'var(--accent)' : 'transparent',
+                color: viewMode === 'geo' ? 'var(--ink-on-red)' : 'var(--ink-soft)',
               }}
             >GEO MAP</button>
           </div>
 
           {/* KAVACH indicator */}
-          <span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.68rem', fontWeight: 600, color: 'var(--color-accent)' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.68rem', fontWeight: 600, color: 'var(--accent)' }}>
             <span className="led-indicator active" style={{ width: '7px', height: '7px' }} />
             KAVACH LIVE
           </span>
@@ -510,8 +522,8 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
 
       {/* ── Route Search Bar ── */}
       <div style={{
-        background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)',
-        borderRadius: '8px', padding: '10px 14px', marginBottom: '12px',
+        background: 'var(--surface-input)', border: '1px solid var(--border)',
+        borderRadius: 'var(--rounded-sm)', padding: '10px 14px', marginBottom: '12px',
         display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap',
       }}>
         <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
@@ -523,9 +535,9 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
           placeholder="FROM (e.g. NDLS)"
           maxLength={6}
           style={{
-            width: '90px', background: '#0a0e1a', border: '1px solid var(--border-color)',
-            borderRadius: '4px', color: 'var(--color-primary)', fontSize: '0.75rem',
-            fontWeight: 700, padding: '5px 8px', outline: 'none', fontFamily: 'monospace',
+            width: '90px', background: 'var(--surface-input)', border: '1px solid var(--border)',
+            borderRadius: 'var(--rounded-sm)', color: 'var(--accent)', fontSize: '13px',
+            fontWeight: 700, padding: '6px 10px', outline: 'none', fontFamily: "'JetBrains Mono', monospace",
             textTransform: 'uppercase',
           }}
         />
@@ -537,7 +549,7 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
           maxLength={6}
           style={{
             width: '90px', background: '#0a0e1a', border: '1px solid var(--border-color)',
-            borderRadius: '4px', color: 'var(--color-accent)', fontSize: '0.75rem',
+            borderRadius: '4px', color: 'var(--accent)', fontSize: '0.75rem',
             fontWeight: 700, padding: '5px 8px', outline: 'none', fontFamily: 'monospace',
             textTransform: 'uppercase',
           }}
@@ -545,11 +557,11 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
         <button
           onClick={searchRoute}
           disabled={routeLoading}
+          className="btn-primary"
           style={{
-            background: 'var(--color-primary)',
-            border: 'none', borderRadius: '4px', color: 'white', fontWeight: 800,
-            fontSize: '0.65rem', padding: '6px 14px', cursor: 'pointer', letterSpacing: '0.5px',
-            opacity: routeLoading ? 0.6 : 1,
+            height: '32px',
+            padding: '0 16px',
+            fontSize: '11px'
           }}
         >
           {routeLoading ? '...' : 'SEARCH'}
@@ -613,16 +625,16 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
             <style>{`
               .sch-glow { stroke-width:8; stroke-linecap:round; opacity:0.12; }
               .sch-core { stroke-width:2.5; stroke-linecap:round; stroke-dasharray:6 5; }
-              .up   { stroke:var(--color-primary); }
-              .down { stroke:var(--color-secondary); }
-              .disrupted.sch-glow { stroke:var(--color-warning); opacity:.35; animation:pulse-glow 1.5s infinite; }
-              .disrupted.sch-core { stroke:var(--color-warning); opacity:.8; animation:blink-y 1.5s infinite; }
+              .up   { stroke:var(--accent); }
+              .down { stroke:var(--ink-soft); }
+              .disrupted.sch-glow { stroke:var(--status-warn); opacity:.35; animation:pulse-glow 1.5s infinite; }
+              .disrupted.sch-core { stroke:var(--status-warn); opacity:.8; animation:blink-y 1.5s infinite; }
               .stn-out { fill:#030712; stroke:rgba(255,255,255,.12); stroke-width:1.5; cursor:pointer; }
-              .stn-out.act { stroke:var(--color-primary); }
-              .stn-out.danger { stroke:var(--color-danger); filter:url(#neon-glow); }
+              .stn-out.act { stroke:var(--accent); }
+              .stn-out.danger { stroke:var(--status-fail); filter:url(#neon-glow); }
               .stn-in { fill:rgba(255,255,255,.15); }
-              .stn-in.act { fill:var(--color-primary); }
-              .stn-in.danger { fill:var(--color-danger); }
+              .stn-in.act { fill:var(--accent); }
+              .stn-in.danger { fill:var(--status-fail); }
               .train-node { transition:all .8s cubic-bezier(.25,1,.5,1); cursor:pointer; }
               .train-node:hover { filter:drop-shadow(0 0 8px var(--color-primary)); }
               @keyframes pulse-glow { 0%,100%{opacity:.15} 50%{opacity:.4} }
@@ -720,14 +732,17 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
       </div>
 
       {/* ── Three bottom panels ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1.6fr 1.3fr', gap: '12px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1.6fr 1.3fr', gap: '16px' }}>
 
         {/* Panel 1: Sensors & Kavach / Station Board */}
-        <div className="glass-card" style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px', boxShadow: 'none' }}>
+        <div style={{
+          background: 'var(--surface-panel)', border: '1px solid var(--border)',
+          borderRadius: 'var(--rounded-md)', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px'
+        }}>
           {stationBoard ? (
             <>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h4 style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.5px', margin: 0 }}>
+                <h4 style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 600, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.5px', margin: 0 }}>
                   {stationBoard.code} Live Board
                 </h4>
                 <button
@@ -748,14 +763,14 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
                     <span style={{ color: 'var(--color-text-muted)' }} title={t.train_name || t.trainName}>
                       {(t.train_name || t.trainName || '').substring(0, 14)}
                     </span>
-                    <span style={{ color: 'var(--color-accent)', fontWeight: 700 }}>{t.expected_arrival || t.arrival || '--'}</span>
+                    <span style={{ color: 'var(--accent)', fontWeight: 700 }}>{t.expected_arrival || t.arrival || '--'}</span>
                   </div>
                 ))}
               </div>
             </>
           ) : (
             <>
-              <h4 style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border-color)', paddingBottom: '5px', margin: 0 }}>
+              <h4 style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 600, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border-color)', paddingBottom: '5px', margin: 0 }}>
                 Sensors & Kavach
               </h4>
               {/* Visibility slider */}
@@ -785,8 +800,11 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
         </div>
 
         {/* Panel 2: Telemetry Inspector */}
-        <div className="glass-card" style={{ padding: '12px', display: 'flex', flexDirection: 'column', boxShadow: 'none' }}>
-          <h4 style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border-color)', paddingBottom: '5px', marginBottom: '8px', marginTop: 0 }}>
+        <div style={{
+          background: 'var(--surface-panel)', border: '1px solid var(--border)',
+          borderRadius: 'var(--rounded-md)', padding: '16px', display: 'flex', flexDirection: 'column'
+        }}>
+          <h4 style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 600, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border-color)', paddingBottom: '5px', marginBottom: '8px', marginTop: 0 }}>
             Telemetry Inspector
           </h4>
 
@@ -820,7 +838,7 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
                   >
                     <span style={{ fontWeight: 700, color: 'white', minWidth: '50px' }}>{no}</span>
                     <span style={{ color: 'var(--color-text-muted)', flex: 1, marginLeft: '6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
-                    <span style={{ color: 'var(--color-accent)', fontWeight: 700, marginLeft: '6px', whiteSpace: 'nowrap' }}>{dep}→{arr}</span>
+                    <span style={{ color: 'var(--accent)', fontWeight: 700, marginLeft: '6px', whiteSpace: 'nowrap' }}>{dep}→{arr}</span>
                     <span style={{ color: 'var(--color-text-dark)', marginLeft: '6px' }}>{dur}</span>
                   </div>
                 );
@@ -841,7 +859,7 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontWeight: 800, color: 'white' }}>{selectedTrain.train_name}</span>
                 <div style={{ display: 'flex', gap: '5px' }}>
-                  <span style={{ color: 'var(--color-accent)', fontWeight: 700, fontFamily: 'monospace' }}>{selectedTrain.train_no}</span>
+                  <span style={{ color: 'var(--accent)', fontWeight: 700, fontFamily: 'monospace' }}>{selectedTrain.train_no}</span>
                   <button
                     onClick={() => setSelectedTrain(null)}
                     style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: '0.75rem' }}
@@ -899,21 +917,24 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
         </div>
 
         {/* Panel 3: System Core Metrics & Autoplay */}
-        <div className="glass-card" style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px', boxShadow: 'none' }}>
-          <h4 style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border-color)', paddingBottom: '5px', margin: 0 }}>
+        <div style={{
+          background: 'var(--surface-panel)', border: '1px solid var(--border)',
+          borderRadius: 'var(--rounded-md)', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px'
+        }}>
+          <h4 style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 600, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border-color)', paddingBottom: '5px', margin: 0 }}>
             System Metrics
           </h4>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px', fontSize: '0.65rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
             {[
-              ['LINE EFF', `${metrics.efficiency_score}%`, 'var(--color-secondary)'],
-              ['CAPACITY', `${metrics.capacity_load}%`, 'var(--color-primary)'],
-              ['AVG SPEED', `${metrics.average_speed} km/h`, 'var(--color-secondary)'],
-              ['SAFETY IDX', `${metrics.safety_index}%`, 'var(--color-secondary)'],
+              ['LINE EFF', `${metrics.efficiency_score}%`, 'var(--ink)'],
+              ['CAPACITY', `${metrics.capacity_load}%`, 'var(--accent)'],
+              ['AVG SPEED', `${metrics.average_speed} km/h`, 'var(--ink)'],
+              ['SAFETY IDX', `${metrics.safety_index}%`, 'var(--ink)'],
             ].map(([label, val, color]) => (
-              <div key={label} style={{ background: 'rgba(0,0,0,0.15)', padding: '5px', borderRadius: '4px', textAlign: 'center' }}>
-                <div style={{ color: 'var(--color-text-muted)', fontSize: '0.52rem' }}>{label}</div>
-                <div style={{ fontWeight: 800, color, fontSize: '0.85rem' }}>{val}</div>
+              <div key={label} style={{ background: 'var(--surface-elevated)', padding: '6px', border: '1px solid var(--border)', borderRadius: 'var(--rounded-xs)', textAlign: 'center' }}>
+                <div style={{ color: 'var(--ink-muted)', fontSize: '10px', fontFamily: "'Inter', sans-serif", fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase' }}>{label}</div>
+                <div style={{ fontWeight: 700, color, fontSize: '14px', fontFamily: "'JetBrains Mono', monospace", marginTop: '4px' }}>{val}</div>
               </div>
             ))}
           </div>
@@ -931,7 +952,7 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', background: 'rgba(0,0,0,0.1)', padding: '5px 8px', borderRadius: '4px' }}>
             <span style={{ color: 'var(--color-text-muted)' }}>Data Source</span>
-            <span style={{ fontWeight: 700, color: 'var(--color-accent)', fontSize: '0.58rem' }}>
+            <span style={{ fontWeight: 700, color: 'var(--accent)', fontSize: '0.58rem' }}>
               {searchMode ? 'RapidAPI IRCTC' : 'SCENARIO+LIVE'}
             </span>
           </div>
@@ -942,10 +963,10 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
               className={autoplay ? 'btn-secondary' : 'btn-primary'}
               onClick={() => setAutoplay(!autoplay)}
               style={{
-                width: '100%', padding: '6px', fontSize: '0.68rem',
-                background: autoplay ? 'transparent' : 'linear-gradient(135deg, var(--color-primary), rgba(0,240,255,0.4))',
-                borderColor: autoplay ? 'var(--color-danger)' : '',
-                color: autoplay ? 'var(--color-danger)' : 'black',
+                width: '100%',
+                height: '36px',
+                padding: '0 20px',
+                fontSize: '12px'
               }}
             >{autoplay ? 'PAUSE AUTOPLAY' : 'START AUTOPLAY'}</button>
             {autoplay && (

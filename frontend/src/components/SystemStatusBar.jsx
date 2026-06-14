@@ -47,10 +47,10 @@ export default function SystemStatusBar() {
     : false;
 
   const statusColor = error
-    ? '#E31A22'
+    ? 'var(--status-fail)'
     : allHealthy
-      ? '#22c55e'
-      : '#E31A22';
+      ? 'var(--status-ok)'
+      : 'var(--status-fail)';
 
   const statusText = error
     ? 'OFFLINE'
@@ -63,20 +63,19 @@ export default function SystemStatusBar() {
     bottom: 0,
     left: 0,
     right: 0,
-    height: '24px',
+    height: '32px',
     zIndex: 200,
     display: 'flex',
     alignItems: 'center',
-    gap: '16px',
-    padding: '0 20px',
-    fontFamily: "'JetBrains Mono', monospace",
-    fontSize: '0.58rem',
+    gap: '12px',
+    padding: '0 24px',
+    fontFamily: "'JetBrains Mono', 'Courier New', monospace",
+    fontSize: '11px',
+    fontWeight: 400,
     letterSpacing: '0.5px',
-    color: 'var(--color-text-muted)',
-    background: 'rgba(2, 4, 10, 0.92)',
-    backdropFilter: 'blur(16px)',
-    WebkitBackdropFilter: 'blur(16px)',
-    borderTop: '1px solid var(--border-subtle)',
+    color: 'var(--ink-muted)',
+    background: 'var(--surface-base)',
+    borderTop: '1px solid var(--border)',
     userSelect: 'none',
   };
 
@@ -85,108 +84,101 @@ export default function SystemStatusBar() {
     height: '6px',
     borderRadius: '50%',
     backgroundColor: statusColor,
-    boxShadow: `0 0 6px ${statusColor}`,
     flexShrink: 0,
   };
 
   const labelStyle = {
-    color: 'var(--color-text-dark)',
-    marginRight: '4px',
-    textTransform: 'uppercase',
-    fontWeight: 700,
-    letterSpacing: '1px',
+    color: 'var(--ink-soft)',
+    marginRight: '6px',
+    fontWeight: 500,
   };
 
   const valueStyle = {
-    color: 'var(--color-text-label)',
+    color: 'var(--ink)',
   };
 
-  const separatorStyle = {
-    width: '1px',
-    height: '10px',
-    background: 'var(--border-color)',
-    flexShrink: 0,
+  const pipeStyle = {
+    color: 'var(--border)',
+    padding: '0 4px',
   };
 
   return (
     <div style={barStyle}>
       {/* Status dot + label */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
         <span style={dotStyle} />
         <span style={{
           fontWeight: 700,
-          letterSpacing: '1.5px',
+          letterSpacing: '1px',
           color: statusColor,
           textTransform: 'uppercase',
-          fontSize: '0.56rem',
+          fontSize: '11px',
         }}>
           {statusText}
         </span>
       </div>
 
-      <span style={separatorStyle} />
-
       {/* Metrics */}
-      {health && !error && (
+      {health && !error ? (
         <>
+          <span style={pipeStyle}>|</span>
           <span>
-            <span style={labelStyle}>Uptime:</span>
+            <span style={labelStyle}>UPTIME:</span>
             <span style={valueStyle}>{formatUptime(health.uptime_seconds)}</span>
           </span>
 
-          <span style={separatorStyle} />
-
+          <span style={pipeStyle}>|</span>
           <span>
-            <span style={labelStyle}>Requests:</span>
+            <span style={labelStyle}>REQUESTS:</span>
             <span style={valueStyle}>{formatNumber(health.total_requests)}</span>
           </span>
 
-          <span style={separatorStyle} />
-
+          <span style={pipeStyle}>|</span>
           <span>
-            <span style={labelStyle}>Latency:</span>
+            <span style={labelStyle}>LATENCY:</span>
             <span style={valueStyle}>{health.avg_latency_ms != null ? `${health.avg_latency_ms}ms` : '—'}</span>
           </span>
 
-          <span style={separatorStyle} />
-
+          <span style={pipeStyle}>|</span>
           <span>
-            <span style={labelStyle}>Agents:</span>
+            <span style={labelStyle}>AGENTS:</span>
             <span style={{
               ...valueStyle,
               color: health.agents_healthy === health.agents_total
-                ? 'var(--color-text-label)'
-                : '#E31A22',
+                ? 'var(--ink)'
+                : 'var(--accent)',
             }}>
               {health.agents_healthy ?? '?'}/{health.agents_total ?? '?'}
             </span>
           </span>
 
-          <span style={separatorStyle} />
-
+          <span style={pipeStyle}>|</span>
           <span>
             <span style={labelStyle}>ML:</span>
             <span style={{
               ...valueStyle,
-              color: health.ml_status === 'operational' ? 'var(--color-text-label)' : '#E31A22',
+              color: health.ml_status === 'operational' ? 'var(--ink)' : 'var(--accent)',
             }}>
               {health.ml_model || 'Unknown'}
             </span>
           </span>
         </>
-      )}
-
-      {error && (
-        <span style={{ color: 'var(--color-text-dark)' }}>
-          Unable to reach system health endpoint
-        </span>
+      ) : (
+        error && (
+          <>
+            <span style={pipeStyle}>|</span>
+            <span style={{ color: 'var(--accent)' }}>
+              UNABLE TO ESTABLISH TELEMETRY LINK
+            </span>
+          </>
+        )
       )}
 
       {/* Right-aligned timestamp */}
       <span style={{
         marginLeft: 'auto',
-        color: 'var(--color-text-dark)',
-        fontSize: '0.52rem',
+        color: 'var(--ink-muted)',
+        fontSize: '11px',
         flexShrink: 0,
       }}>
         RAILMIND v2.1

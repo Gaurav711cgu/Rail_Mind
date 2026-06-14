@@ -12,20 +12,15 @@ const AGENT_META = {
 };
 
 function StatusBadge({ status }) {
-  const map = {
-    healthy:  { bg: 'rgba(255,255,255,0.08)', border: 'rgba(255,255,255,0.2)', color: '#ffffff', dot: 'active',  text: 'HEALTHY' },
-    running:  { bg: 'rgba(255,255,255,0.08)', border: 'rgba(255,255,255,0.2)', color: '#ffffff', dot: 'warning', text: 'RUNNING' },
-    degraded: { bg: 'rgba(227,26,34,0.08)',   border: 'rgba(227,26,34,0.3)',   color: 'var(--color-primary)', dot: 'danger',  text: 'DEGRADED' },
+  const variantMap = {
+    healthy:  { badge: 'healthy', led: 'active', text: 'HEALTHY' },
+    running:  { badge: 'in-review', led: 'warning', text: 'RUNNING' },
+    degraded: { badge: 'failed', led: 'danger', text: 'DEGRADED' },
   };
-  const s = map[status] || map.healthy;
+  const s = variantMap[status] || variantMap.healthy;
   return (
-    <span style={{ display:'inline-flex', alignItems:'center', gap:5,
-      background: s.bg, border:`1px solid ${s.border}`,
-      borderRadius:12, padding:'2px 8px', fontSize:'0.6rem',
-      fontWeight:700, color: s.color, fontFamily:"'JetBrains Mono', monospace",
-      letterSpacing:'1px'
-    }}>
-      <span className={`led-indicator ${s.dot}`} style={{ width:5, height:5 }} />
+    <span className={`badge-status ${s.badge}`}>
+      <span className={`led-indicator ${s.led}`} style={{ width: 6, height: 6 }} />
       {s.text}
     </span>
   );
@@ -33,17 +28,35 @@ function StatusBadge({ status }) {
 
 function ConfidenceBar({ value }) {
   const pct = Math.round((value || 1.0) * 100);
-  const color = 'var(--color-primary)'; // Fixed color: Crimson Red
   return (
-    <div style={{ marginTop:6 }}>
-      <div style={{ display:'flex', justifyContent:'space-between', fontSize:'0.6rem',
-        color:'var(--color-text-muted)', marginBottom:3 }}>
-        <span>CONFIDENCE</span>
-        <span style={{ color: 'white', fontWeight:700 }}>{pct}%</span>
+    <div style={{ marginTop: '8px' }}>
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '4px'
+      }}>
+        <span style={{
+          fontFamily: "'Inter', sans-serif",
+          fontSize: '10px',
+          fontWeight: 500,
+          letterSpacing: '1.5px',
+          textTransform: 'uppercase',
+          color: 'var(--ink-soft)'
+        }}>
+          Confidence
+        </span>
+        <span style={{
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: '11px',
+          fontWeight: 700,
+          color: 'var(--ink)'
+        }}>
+          {pct}%
+        </span>
       </div>
-      <div style={{ height:3, background:'rgba(255,255,255,0.05)', borderRadius:2 }}>
-        <div style={{ width:`${pct}%`, height:'100%', background:color,
-          borderRadius:2, transition:'width 0.5s ease' }} />
+      <div style={{ height: '3px', background: 'var(--border)', borderRadius: 0 }}>
+        <div style={{ width: `${pct}%`, height: '100%', background: 'var(--accent)', borderRadius: 0 }} />
       </div>
     </div>
   );
@@ -62,37 +75,66 @@ export default function AgentsPage() {
     ? (agentEntries.reduce((s,[,v]) => s + (v.last_confidence || 1), 0) / agentEntries.length * 100).toFixed(1)
     : '—';
 
+  const summaryStats = [
+    { label: 'TOTAL AGENTS', value: agentEntries.length || 6, color: 'var(--ink)' },
+    { label: 'HEALTHY',      value: healthyCnt || '—',         color: 'var(--status-ok)' },
+    { label: 'RUNNING',      value: runningCnt || 0,           color: 'var(--status-warn)' },
+    { label: 'AVG CONFIDENCE',value: avgConf + (hasData ? '%' : ''), color: 'var(--ink)' },
+  ];
+
   return (
-    <div style={{ padding:'0 12px' }}>
+    <div style={{ padding: '0 24px' }}>
 
       {/* ── Top bar ── */}
-      <div className="glass-card" style={{ marginBottom:12, padding:'12px 16px',
-        display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+      <div style={{
+        marginBottom: '16px',
+        padding: '24px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        background: 'var(--surface-panel)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--rounded-md)'
+      }}>
         <div>
-          <h3 style={{ fontSize:'1rem', fontWeight:700, marginBottom:2 }}>
+          <h3 style={{
+            fontFamily: "'Inter', sans-serif",
+            fontSize: '16px',
+            fontWeight: 600,
+            color: 'var(--ink)',
+            margin: 0
+          }}>
             System Decision Flow Monitor
           </h3>
-          <p style={{ fontSize:'0.72rem', color:'var(--color-text-muted)' }}>
+          <p style={{
+            fontFamily: "'Inter', sans-serif",
+            fontSize: '13px',
+            color: 'var(--ink-soft)',
+            margin: '4px 0 0 0'
+          }}>
             Real-time SSE stream · Automated multi-step dispatch verification
           </p>
         </div>
 
-        <div style={{ display:'flex', gap:10, alignItems:'center' }}>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           {/* Connection indicator */}
-          <div style={{ display:'flex', alignItems:'center', gap:6,
-            background:'rgba(255,255,255,0.03)', border:`1px solid ${connected ? 'rgba(255,255,255,0.3)' : 'rgba(227,26,34,0.3)'}`,
-            borderRadius:16, padding:'4px 12px' }}>
-            <span className={`led-indicator ${connected ? 'active' : 'danger'}`} style={{ width:6, height:6 }} />
-            <span style={{ fontSize:'0.6rem', fontWeight:700,
-              color: connected ? '#ffffff' : 'var(--color-primary)',
-              fontFamily:"'JetBrains Mono', monospace", letterSpacing:'1px' }}>
+          <div className={`badge-status ${connected ? 'healthy' : 'failed'}`}>
+            <span className={`led-indicator ${connected ? 'active' : 'danger'}`} style={{ width: 6, height: 6 }} />
+            <span>
               {connected ? 'LIVE CONNECTION' : 'DISCONNECTED'}
             </span>
           </div>
 
           {!connected && (
-            <button className="btn-secondary" onClick={reconnect}
-              style={{ padding:'4px 10px', fontSize:'0.65rem' }}>
+            <button
+              className="btn-secondary"
+              onClick={reconnect}
+              style={{
+                height: '32px',
+                padding: '0 16px',
+                fontSize: '11px'
+              }}
+            >
               Reconnect
             </button>
           )}
@@ -100,50 +142,97 @@ export default function AgentsPage() {
       </div>
 
       {/* ── Summary pills ── */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8, marginBottom:12 }}>
-        {[
-          { label:'TOTAL AGENTS', value: agentEntries.length || 6, color:'var(--color-primary)' },
-          { label:'HEALTHY',      value: healthyCnt || '—',         color:'#22c55e' },
-          { label:'RUNNING',      value: runningCnt || 0,           color:'#3b82f6' },
-          { label:'AVG CONFIDENCE',value: avgConf + '%',            color:'var(--color-warning)' },
-        ].map(p => (
-          <div key={p.label} className="glass-card" style={{ padding:'10px 14px', textAlign:'center' }}>
-            <span style={{ fontSize:'0.55rem', color:'var(--color-text-muted)', display:'block',
-              textTransform:'uppercase', letterSpacing:'1px' }}>{p.label}</span>
-            <span style={{ fontSize:'1.1rem', fontWeight:800, color:p.color }}>{p.value}</span>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '16px' }}>
+        {summaryStats.map(p => (
+          <div key={p.label} style={{
+            background: 'var(--surface-panel)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--rounded-md)',
+            padding: '16px',
+            textAlign: 'center'
+          }}>
+            <span style={{
+              fontFamily: "'Inter', sans-serif",
+              fontSize: '10px',
+              fontWeight: 500,
+              letterSpacing: '1.5px',
+              textTransform: 'uppercase',
+              color: 'var(--ink-muted)',
+              display: 'block',
+              marginBottom: '4px'
+            }}>
+              {p.label}
+            </span>
+            <span style={{
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: '22px',
+              fontWeight: 700,
+              color: p.color
+            }}>
+              {p.value}
+            </span>
           </div>
         ))}
       </div>
 
       {/* ── Agent cards ── */}
       {error && !hasData && (
-        <div className="glass-card" style={{ padding:20, textAlign:'center',
-          border:'1px solid rgba(239,68,68,0.3)', color:'var(--color-danger)',
-          fontSize:'0.8rem', marginBottom:12 }}>
+        <div style={{
+          padding: '16px',
+          textAlign: 'center',
+          background: 'var(--accent-subtle)',
+          border: '1px solid var(--border-accent)',
+          borderRadius: 'var(--rounded-md)',
+          color: 'var(--accent)',
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: '13px',
+          marginBottom: '16px'
+        }}>
           {error}
         </div>
       )}
 
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10 }}>
-        {(hasData ? agentEntries : Object.keys(AGENT_META).map(k => [k, { status:'healthy', last_run:null, last_confidence:1.0, last_error:null }])).map(([name, info]) => {
-          const meta = AGENT_META[name] || { icon:'', label:name, desc:'' };
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+        {(hasData ? agentEntries : Object.keys(AGENT_META).map(k => [k, { status: 'healthy', last_run: null, last_confidence: 1.0, last_error: null }])).map(([name, info]) => {
+          const meta = AGENT_META[name] || { icon: '', label: name, desc: '' };
           return (
-            <div key={name} className="glass-card" style={{ padding:'14px 16px', display:'flex', flexDirection:'column', gap:8 }}>
+            <div key={name} style={{
+              background: 'var(--surface-elevated)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--rounded-md)',
+              padding: '16px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px'
+            }}>
               {/* Header */}
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
-                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                  <span style={{ fontSize:'1.1rem' }}>{meta.icon}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <div>
-                    <div style={{ fontSize:'0.8rem', fontWeight:700 }}>{meta.label}</div>
-                    <div style={{ fontSize:'0.6rem', color:'var(--color-text-muted)',
-                      fontFamily:"'JetBrains Mono', monospace" }}>{name}</div>
+                    <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '16px', fontWeight: 600, color: 'var(--ink)' }}>
+                      {meta.label}
+                    </div>
+                    <div style={{
+                      fontFamily: "'JetBrains Mono', monospace",
+                      fontSize: '11px',
+                      color: 'var(--ink-muted)',
+                      marginTop: '2px'
+                    }}>
+                      {name}
+                    </div>
                   </div>
                 </div>
                 <StatusBadge status={info.status} />
               </div>
 
               {/* Description */}
-              <p style={{ fontSize:'0.65rem', color:'var(--color-text-muted)', lineHeight:1.4 }}>
+              <p style={{
+                fontFamily: "'Inter', sans-serif",
+                fontSize: '13px',
+                color: 'var(--ink-soft)',
+                lineHeight: '1.4',
+                margin: 0
+              }}>
                 {meta.desc}
               </p>
 
@@ -151,19 +240,32 @@ export default function AgentsPage() {
               <ConfidenceBar value={info.last_confidence} />
 
               {/* Last run */}
-              <div style={{ fontSize:'0.6rem', color:'var(--color-text-dark)',
-                fontFamily:"'JetBrains Mono', monospace",
-                borderTop:'1px solid var(--border-color)', paddingTop:6, marginTop:2 }}>
+              <div style={{
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: '11px',
+                color: 'var(--ink-muted)',
+                borderTop: '1px solid var(--border-soft)',
+                paddingTop: '8px',
+                marginTop: '4px'
+              }}>
                 LAST RUN: {info.last_run
                   ? new Date(info.last_run).toLocaleTimeString()
-                  : <span style={{ color:'rgba(255,255,255,0.2)' }}>awaiting first cycle</span>
+                  : <span style={{ color: 'var(--ink-muted)', opacity: 0.4 }}>awaiting first cycle</span>
                 }
               </div>
 
               {/* Error */}
               {info.last_error && (
-                <div style={{ fontSize:'0.6rem', color:'var(--color-danger)',
-                  background:'rgba(239,68,68,0.05)', borderRadius:4, padding:'4px 8px' }}>
+                <div style={{
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: '11px',
+                  color: 'var(--accent)',
+                  background: 'var(--accent-subtle)',
+                  border: '1px solid var(--border-accent)',
+                  borderRadius: 'var(--rounded-xs)',
+                  padding: '6px 10px',
+                  marginTop: '4px'
+                }}>
                   Warning: {info.last_error}
                 </div>
               )}
@@ -174,8 +276,13 @@ export default function AgentsPage() {
 
       {/* ── Last updated ── */}
       {lastUpdate && (
-        <div style={{ textAlign:'center', marginTop:12, fontSize:'0.6rem',
-          color:'var(--color-text-dark)', fontFamily:"'JetBrains Mono', monospace" }}>
+        <div style={{
+          textAlign: 'center',
+          marginTop: '16px',
+          fontSize: '11px',
+          color: 'var(--ink-muted)',
+          fontFamily: "'JetBrains Mono', monospace"
+        }}>
           Last event: {new Date(lastUpdate).toLocaleTimeString()} · Polling every 5s
         </div>
       )}

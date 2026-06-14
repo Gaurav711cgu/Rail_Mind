@@ -30,7 +30,7 @@ export default function OperatorProfile() {
   });
 
   const operatorInfo = {
-    name: 'Controller North — Gaurav Kumar Nayak',
+    name: 'Controller Gaurav Kumar Nayak',
     role: 'Interlocking Section Dispatcher',
     status: 'ACTIVE_DUTY',
     dutyStation: 'New Delhi (NDLS) Sector North Control Grid',
@@ -86,35 +86,53 @@ export default function OperatorProfile() {
     }, 1000);
   };
 
+  const getSystemBadgeClass = (sys) => {
+    if (sys === 'KAVACH_ACTIVE') return 'healthy';
+    if (sys === 'ABS_BLOCK_SIGNAL') return 'pending';
+    return 'in-review';
+  };
+
   return (
-    <div className="bento-grid" style={{ padding: '20px' }}>
+    <div className="bento-grid" style={{ padding: '0 24px' }}>
       
       {/* Feature 1: Operator Badge and QR Code */}
-      <div className="glass-card" style={{ gridColumn: 'span 4', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '24px' }}>
+      <div style={{
+        gridColumn: 'span 4',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        textAlign: 'center',
+        padding: '24px',
+        background: 'var(--surface-panel)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--rounded-md)'
+      }}>
         <div style={{
           width: '70px',
           height: '70px',
-          borderRadius: '50%',
-          background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))',
+          borderRadius: 'var(--rounded-md)',
+          background: 'var(--surface-elevated)',
+          border: '1px solid var(--border-accent)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: '1.6rem',
-          fontWeight: 800,
-          color: 'white',
-          boxShadow: 'var(--shadow-neon-cyan)',
+          fontSize: '24px',
+          fontWeight: 700,
+          color: 'var(--accent)',
           marginBottom: '15px'
         }}>
           GN
         </div>
 
-        <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '4px' }}>{operatorInfo.name}</h3>
-        <p style={{ fontSize: '0.75rem', color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 600, marginBottom: '15px' }}>
+        <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '16px', fontWeight: 600, color: 'var(--ink)', margin: '0 0 4px 0' }}>
+          {operatorInfo.name}
+        </h3>
+        <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '11px', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 700, margin: '0 0 15px 0' }}>
           {operatorInfo.role}
         </p>
 
         {/* SVG QR Code Simulation */}
-        <div style={{ background: 'white', padding: '8px', borderRadius: '6px', marginBottom: '15px', display: 'inline-block' }}>
+        <div style={{ background: 'white', padding: '8px', borderRadius: 'var(--rounded-xs)', marginBottom: '15px', display: 'inline-block' }}>
           <svg width="80" height="80" viewBox="0 0 100 100">
             <rect x="0" y="0" width="100" height="100" fill="white" />
             <rect x="10" y="10" width="25" height="25" fill="black" />
@@ -134,68 +152,107 @@ export default function OperatorProfile() {
           <button 
             className="btn-primary" 
             onClick={() => setShowHandover(true)}
-            style={{ width: '100%', padding: '8px', fontSize: '0.75rem' }}
+            style={{ width: '100%', height: '36px', fontSize: '12px' }}
           >
             Generate Handover Report
           </button>
           <div style={{ display: 'flex', gap: '8px' }}>
-            <button className="btn-secondary" style={{ flex: 1, padding: '6px', fontSize: '0.7rem' }} onClick={() => alert("Terminal session locked.")}>
-              Lock Terminal
+            <button className="btn-secondary" style={{ flex: 1, height: '36px', fontSize: '12px' }} onClick={() => alert("Terminal session locked.")}>
+              Lock
             </button>
-            <button className="btn-secondary" style={{ flex: 1, padding: '6px', fontSize: '0.7rem' }} onClick={() => alert("Shift duration extended by 2 hours.")}>
-              Extend Session
+            <button className="btn-secondary" style={{ flex: 1, height: '36px', fontSize: '12px' }} onClick={() => alert("Shift duration extended by 2 hours.")}>
+              Extend
             </button>
           </div>
         </div>
       </div>
 
       {/* Feature 2: Cryptographic Identity & Key Display + Authority Badges */}
-      <div className="glass-card" style={{ gridColumn: 'span 8', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-        <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px' }}>
-          Cryptographic Identity Credentials
+      <div style={{
+        gridColumn: 'span 8',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '16px',
+        padding: '24px',
+        background: 'var(--surface-panel)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--rounded-md)'
+      }}>
+        <h4 style={{
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: '13px',
+          fontWeight: 700,
+          letterSpacing: '2px',
+          textTransform: 'uppercase',
+          color: 'var(--accent)',
+          borderBottom: '1px solid var(--border-soft)',
+          paddingBottom: '8px',
+          margin: 0
+        }}>
+          Identity Credentials
         </h4>
 
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-            <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>ECDSA Public Signature Key (secp256k1)</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+            <span style={{ fontSize: '11px', fontFamily: "'Inter', sans-serif", color: 'var(--ink-soft)' }}>
+              ECDSA Public Signature Key (secp256k1)
+            </span>
             <button 
               onClick={copyPublicKey}
-              style={{ background: 'transparent', border: 'none', color: 'var(--color-primary)', fontSize: '0.65rem', cursor: 'pointer', outline: 'none' }}
+              style={{ background: 'transparent', border: 'none', color: 'var(--accent)', fontSize: '11px', fontWeight: 600, cursor: 'pointer', outline: 'none' }}
             >
               {copied ? 'Copied' : 'Copy Key'}
             </button>
           </div>
           <div style={{
-            background: 'var(--bg-terminal)',
-            borderRadius: '6px',
-            padding: '10px 14px',
+            background: 'var(--surface-input)',
+            borderRadius: 'var(--rounded-sm)',
+            padding: '12px',
             fontFamily: "'JetBrains Mono', monospace",
-            fontSize: '0.62rem',
-            color: 'var(--color-text-muted)',
+            fontSize: '11px',
+            color: 'var(--ink-soft)',
             wordBreak: 'break-all',
-            border: '1px solid var(--border-color)',
-            lineHeight: '1.4'
+            border: '1px solid var(--border)',
+            lineHeight: '1.5'
           }}>
             {operatorInfo.credentials.ecdsaPublicKey}
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '15px', fontSize: '0.75rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '16px' }}>
           <div>
-            <span style={{ color: 'var(--color-text-muted)', display: 'block', fontSize: '0.65rem' }}>User Authority Level</span>
-            <span style={{ fontWeight: 700, display: 'block', marginTop: '2px', color: 'white' }}>{operatorInfo.credentials.clearanceLevel}</span>
+            <span style={{ color: 'var(--ink-muted)', display: 'block', fontSize: '10px', fontFamily: "'Inter', sans-serif", fontWeight: 500, letterSpacing: '1px', textTransform: 'uppercase' }}>
+              Clearance Level
+            </span>
+            <span style={{ fontWeight: 600, fontSize: '13px', display: 'block', marginTop: '4px', color: 'var(--ink)' }}>
+              {operatorInfo.credentials.clearanceLevel}
+            </span>
           </div>
           <div>
-            <span style={{ color: 'var(--color-text-muted)', display: 'block', fontSize: '0.65rem' }}>Hardware Token Status</span>
-            <span style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px', color: 'var(--color-accent)' }}>
+            <span style={{ color: 'var(--ink-muted)', display: 'block', fontSize: '10px', fontFamily: "'Inter', sans-serif", fontWeight: 500, letterSpacing: '1px', textTransform: 'uppercase' }}>
+              Token Status
+            </span>
+            <span style={{ fontWeight: 600, fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px', color: 'var(--accent)' }}>
               <span className="led-indicator active" style={{ width: '6px', height: '6px' }}></span> {tokenStatus}
             </span>
           </div>
           <div>
-            <span style={{ color: 'var(--color-text-muted)', display: 'block', fontSize: '0.65rem' }}>Token Diagnostic</span>
+            <span style={{ color: 'var(--ink-muted)', display: 'block', fontSize: '10px', fontFamily: "'Inter', sans-serif", fontWeight: 500, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '4px' }}>
+              Diagnostics
+            </span>
             <button 
               onClick={handleTestToken}
-              style={{ background: 'transparent', border: '1px solid var(--border-color)', borderRadius: '4px', color: 'white', padding: '2px 8px', fontSize: '0.6rem', cursor: 'pointer', marginTop: '2px' }}
+              style={{
+                background: 'transparent',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--rounded-sm)',
+                color: 'var(--ink)',
+                padding: '4px 10px',
+                fontSize: '11px',
+                fontFamily: "'Inter', sans-serif",
+                cursor: 'pointer',
+                outline: 'none'
+              }}
             >
               {tokenStatus === 'TESTING' ? 'Testing...' : 'Test Sync'}
             </button>
@@ -203,21 +260,13 @@ export default function OperatorProfile() {
         </div>
 
         {/* Feature: Authority Level Badge indicators */}
-        <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '10px' }}>
-          <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>
-            Active Controller Safety Authorizations
+        <div style={{ borderTop: '1px solid var(--border-soft)', paddingTop: '16px' }}>
+          <span style={{ fontSize: '10px', fontFamily: "'Inter', sans-serif", color: 'var(--ink-muted)', fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', display: 'block', marginBottom: '8px' }}>
+            Active controller safety authorizations
           </span>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {['EXECUTE_DIVERSION', 'SPEED_LOCK_OVERRIDE', 'EMERGENCY_BRAKE_BROADCAST', 'KAVACH_PARAM_LOCK'].map(auth => (
-              <span key={auth} style={{
-                fontSize: '0.6rem',
-                padding: '3px 8px',
-                borderRadius: '4px',
-                background: 'rgba(0, 240, 255, 0.05)',
-                color: 'var(--color-primary)',
-                border: '1px solid rgba(0, 240, 255, 0.15)',
-                fontWeight: 'bold'
-              }}>
+              <span key={auth} className="badge-status pending">
                 {auth}
               </span>
             ))}
@@ -226,9 +275,28 @@ export default function OperatorProfile() {
       </div>
 
       {/* Feature 3: Shift Tasks/Checklist (Interactive TODO list) */}
-      <div className="glass-card" style={{ gridColumn: 'span 5', minHeight: '280px', display: 'flex', flexDirection: 'column' }}>
-        <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px', marginBottom: '12px' }}>
-          Shift Operations Tasks
+      <div style={{
+        gridColumn: 'span 5',
+        minHeight: '280px',
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '24px',
+        background: 'var(--surface-panel)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--rounded-md)'
+      }}>
+        <h4 style={{
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: '13px',
+          fontWeight: 700,
+          letterSpacing: '2px',
+          textTransform: 'uppercase',
+          color: 'var(--accent)',
+          borderBottom: '1px solid var(--border-soft)',
+          paddingBottom: '8px',
+          margin: '0 0 15px 0'
+        }}>
+          Shift Tasks Checklist
         </h4>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flexGrow: 1, justifyContent: 'center' }}>
           {tasks.map(t => (
@@ -238,21 +306,22 @@ export default function OperatorProfile() {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '10px',
-                fontSize: '0.75rem',
-                background: 'rgba(255,255,255,0.01)',
-                border: '1px solid var(--border-color)',
+                fontSize: '13px',
+                fontFamily: "'Inter', sans-serif",
+                background: 'var(--surface-elevated)',
+                border: '1px solid var(--border)',
                 padding: '8px 12px',
-                borderRadius: '6px',
+                borderRadius: 'var(--rounded-xs)',
                 cursor: 'pointer',
                 textDecoration: t.checked ? 'line-through' : 'none',
-                color: t.checked ? 'var(--color-text-dark)' : 'var(--color-text-main)'
+                color: t.checked ? 'var(--ink-muted)' : 'var(--ink)'
               }}
             >
               <input 
                 type="checkbox" 
                 checked={t.checked} 
                 onChange={() => handleTaskToggle(t.id)}
-                style={{ accentColor: 'var(--color-primary)' }}
+                style={{ accentColor: 'var(--accent)', cursor: 'pointer' }}
               />
               {t.text}
             </label>
@@ -261,88 +330,120 @@ export default function OperatorProfile() {
       </div>
 
       {/* Feature 4: Operator Performance Dials */}
-      <div className="glass-card" style={{ gridColumn: 'span 7', minHeight: '280px', display: 'flex', flexDirection: 'column' }}>
-        <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px', marginBottom: '15px' }}>
-          Performance Metrics Dashboard
+      <div style={{
+        gridColumn: 'span 7',
+        minHeight: '280px',
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '24px',
+        background: 'var(--surface-panel)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--rounded-md)'
+      }}>
+        <h4 style={{
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: '13px',
+          fontWeight: 700,
+          letterSpacing: '2px',
+          textTransform: 'uppercase',
+          color: 'var(--accent)',
+          borderBottom: '1px solid var(--border-soft)',
+          paddingBottom: '8px',
+          margin: '0 0 15px 0'
+        }}>
+          Performance Metrics
         </h4>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', flexGrow: 1, alignItems: 'center' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', flexGrow: 1, alignItems: 'center' }}>
           {/* Handled Alerts count */}
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'rgba(0, 240, 255, 0.05)', border: '1px solid var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: 'var(--color-primary)', fontSize: '1rem' }}>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', background: 'var(--surface-elevated)', border: '1px solid var(--border)', padding: '12px', borderRadius: 'var(--rounded-xs)' }}>
+            <div style={{ width: '42px', height: '42px', borderRadius: 'var(--rounded-xs)', background: 'var(--surface-input)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: 'var(--accent)', fontSize: '16px', fontFamily: "'JetBrains Mono', monospace" }}>
               {perfStats.handled_alerts_count}
             </div>
             <div>
-              <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', display: 'block' }}>ALERTERS SOLVED</span>
-              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'white' }}>Variance Within Limit</span>
+              <span style={{ fontSize: '10px', fontFamily: "'Inter', sans-serif", color: 'var(--ink-muted)', display: 'block', textTransform: 'uppercase' }}>ALERTS SOLVED</span>
+              <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--ink)', fontFamily: "'Inter', sans-serif" }}>Variance Nominal</span>
             </div>
           </div>
 
           {/* Reaction time */}
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'rgba(168, 85, 247, 0.05)', border: '1px solid var(--color-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: 'var(--color-secondary)', fontSize: '1rem' }}>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', background: 'var(--surface-elevated)', border: '1px solid var(--border)', padding: '12px', borderRadius: 'var(--rounded-xs)' }}>
+            <div style={{ width: '42px', height: '42px', borderRadius: 'var(--rounded-xs)', background: 'var(--surface-input)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: 'var(--ink)', fontSize: '16px', fontFamily: "'JetBrains Mono', monospace" }}>
               {perfStats.average_reaction_time_seconds}s
             </div>
             <div>
-              <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', display: 'block' }}>REACTION LATENCY</span>
-              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'white' }}>Optimal Threshold</span>
+              <span style={{ fontSize: '10px', fontFamily: "'Inter', sans-serif", color: 'var(--ink-muted)', display: 'block', textTransform: 'uppercase' }}>REACTION LATENCY</span>
+              <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--ink)', fontFamily: "'Inter', sans-serif" }}>Optimal Threshold</span>
             </div>
           </div>
 
           {/* Compliance rate */}
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'rgba(34, 197, 94, 0.05)', border: '1px solid var(--color-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: 'var(--color-accent)', fontSize: '1rem' }}>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', background: 'var(--surface-elevated)', border: '1px solid var(--border)', padding: '12px', borderRadius: 'var(--rounded-xs)' }}>
+            <div style={{ width: '42px', height: '42px', borderRadius: 'var(--rounded-xs)', background: 'var(--surface-input)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: 'var(--accent)', fontSize: '16px', fontFamily: "'JetBrains Mono', monospace" }}>
               {Math.round(perfStats.safety_compliance_rate)}%
             </div>
             <div>
-              <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', display: 'block' }}>SAFETY COMPLIANCE</span>
-              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'white' }}>Perfect Rating</span>
+              <span style={{ fontSize: '10px', fontFamily: "'Inter', sans-serif", color: 'var(--ink-muted)', display: 'block', textTransform: 'uppercase' }}>SAFETY COMPLIANCE</span>
+              <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--ink)', fontFamily: "'Inter', sans-serif" }}>Perfect Rating</span>
             </div>
           </div>
 
           {/* Handled overrides */}
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'rgba(234, 179, 8, 0.05)', border: '1px solid var(--color-warning)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: 'var(--color-warning)', fontSize: '1.1rem' }}>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', background: 'var(--surface-elevated)', border: '1px solid var(--border)', padding: '12px', borderRadius: 'var(--rounded-xs)' }}>
+            <div style={{ width: '42px', height: '42px', borderRadius: 'var(--rounded-xs)', background: 'var(--surface-input)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: 'var(--ink)', fontSize: '16px', fontFamily: "'JetBrains Mono', monospace" }}>
               {perfStats.handled_overrides_count || 8}
             </div>
             <div>
-              <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', display: 'block' }}>DISPATCH OVERRIDES</span>
-              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'white' }}>Audited Decisional Logs</span>
+              <span style={{ fontSize: '10px', fontFamily: "'Inter', sans-serif", color: 'var(--ink-muted)', display: 'block', textTransform: 'uppercase' }}>DISPATCH OVERRIDES</span>
+              <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--ink)', fontFamily: "'Inter', sans-serif" }}>Audited Decisional Logs</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Feature 5: Assigned Sector list and Shift handover logs */}
-      <div className="glass-card" style={{ gridColumn: 'span 12' }}>
-        <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px', marginBottom: '15px' }}>
+      <div style={{
+        gridColumn: 'span 12',
+        padding: '24px',
+        background: 'var(--surface-panel)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--rounded-md)',
+        marginBottom: '16px'
+      }}>
+        <h4 style={{
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: '13px',
+          fontWeight: 700,
+          letterSpacing: '2px',
+          textTransform: 'uppercase',
+          color: 'var(--accent)',
+          borderBottom: '1px solid var(--border-soft)',
+          paddingBottom: '8px',
+          margin: '0 0 15px 0'
+        }}>
           Assigned Railway Sectors & Active Blocks
         </h4>
         
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
           {operatorInfo.corridors.map((c, i) => (
             <div key={i} style={{
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              background: 'rgba(255, 255, 255, 0.01)',
+              background: 'var(--surface-elevated)',
               padding: '12px 18px',
-              borderRadius: '8px',
-              border: '1px solid var(--border-color)'
+              borderRadius: 'var(--rounded-xs)',
+              border: '1px solid var(--border)'
             }}>
               <div>
-                <span style={{ fontSize: '0.82rem', fontWeight: 700, display: 'block', color: 'white' }}>{c.name}</span>
-                <span style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)' }}>Code: {c.code} · Blocks: {c.blocks}</span>
+                <span style={{ fontSize: '13px', fontFamily: "'Inter', sans-serif", fontWeight: 600, display: 'block', color: 'var(--ink)' }}>
+                  {c.name}
+                </span>
+                <span style={{ fontSize: '11px', fontFamily: "'JetBrains Mono', monospace", color: 'var(--ink-soft)', marginTop: '2px', display: 'block' }}>
+                  Code: {c.code} · Blocks: {c.blocks}
+                </span>
               </div>
-              <span style={{
-                fontSize: '0.65rem',
-                padding: '3px 8px',
-                borderRadius: '4px',
-                background: c.system.includes('ACTIVE') ? 'rgba(34, 197, 94, 0.1)' : 'rgba(255, 255, 255, 0.03)',
-                color: c.system.includes('ACTIVE') ? 'var(--color-accent)' : 'var(--color-text-muted)',
-                border: `1px solid ${c.system.includes('ACTIVE') ? 'rgba(34, 197, 94, 0.2)' : 'var(--border-color)'}`,
-                fontWeight: 'bold'
-              }}>
+              <span className={`badge-status ${getSystemBadgeClass(c.system)}`}>
                 {c.system}
               </span>
             </div>
@@ -358,17 +459,39 @@ export default function OperatorProfile() {
           left: 0,
           width: '100%',
           height: '100%',
-          background: 'rgba(0,0,0,0.85)',
+          background: 'rgba(13, 13, 11, 0.95)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          zIndex: 1000,
-          backdropFilter: 'blur(8px)'
+          zIndex: 1000
         }}>
-          <div className="glass-card" style={{ maxWidth: '500px', width: '90%', padding: '24px', border: '1px solid var(--color-primary)' }}>
-            <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--color-primary)', marginBottom: '15px' }}>Shift Handover Summary Report</h3>
+          <div style={{
+            maxWidth: '500px',
+            width: '90%',
+            padding: '24px',
+            background: 'var(--surface-panel)',
+            border: '1px solid var(--border-accent)',
+            borderRadius: 'var(--rounded-md)',
+            boxSizing: 'border-box'
+          }}>
+            <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '16px', fontWeight: 600, color: 'var(--accent)', margin: '0 0 15px 0' }}>
+              Shift Handover Summary Report
+            </h3>
             
-            <div style={{ background: 'var(--bg-terminal)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '15px', fontSize: '0.7rem', fontFamily: 'monospace', color: 'var(--color-text-muted)', display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '250px', overflowY: 'auto' }}>
+            <div style={{
+              background: 'var(--surface-input)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--rounded-sm)',
+              padding: '16px',
+              fontSize: '11px',
+              fontFamily: "'JetBrains Mono', monospace",
+              color: 'var(--ink-soft)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
+              maxHeight: '250px',
+              overflowY: 'auto'
+            }}>
               <div><strong>OPERATOR ID:</strong> {operatorInfo.credentials.userId}</div>
               <div><strong>DUTY SECTOR:</strong> Sector North Control Desk</div>
               <div><strong>SHIFT LENGTH:</strong> {perfStats.active_duty_hours} Hours</div>
@@ -376,27 +499,28 @@ export default function OperatorProfile() {
               <div><strong>DISPATCH OVERRIDES:</strong> {perfStats.handled_overrides_count}</div>
               <div><strong>COMPLIANCE SCORE:</strong> {perfStats.safety_compliance_rate}%</div>
               
-              <div style={{ borderTop: '1px dashed var(--border-color)', paddingTop: '8px', color: 'var(--color-accent)', fontSize: '0.62rem', wordBreak: 'break-all' }}>
+              <div style={{ borderTop: '1px dashed var(--border)', paddingTop: '8px', color: 'var(--accent)', fontSize: '10px', wordBreak: 'break-all' }}>
                 <strong>ECDSA SHA-256 SIGNATURE:</strong>
                 <br />
                 0x04a89d3c5f21ea1893ef2d31c4fbe567a18f9e2b10a9c8
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+            <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
               <button 
                 className="btn-primary" 
                 onClick={() => {
                   alert("Handover report cryptographically sealed and dispatched to Chief Operations Manager.");
                   setShowHandover(false);
                 }}
-                style={{ flexGrow: 1 }}
+                style={{ flexGrow: 1, height: '36px', fontSize: '12px' }}
               >
                 Sign & Send Handover
               </button>
               <button 
                 className="btn-secondary" 
                 onClick={() => setShowHandover(false)}
+                style={{ height: '36px', fontSize: '12px' }}
               >
                 Cancel
               </button>

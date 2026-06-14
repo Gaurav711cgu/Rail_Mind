@@ -106,23 +106,50 @@ export default function RACPredictor() {
   };
 
   return (
-    <div className="bento-grid" style={{ padding: 0 }}>
+    <div className="bento-grid" style={{ padding: '0 24px' }}>
       
       {/* Feature 1: XGBoost Confirmation Predictor & Tuner */}
-      <div className="glass-card" style={{ gridColumn: 'span 5', minHeight: '380px', display: 'flex', flexDirection: 'column' }}>
-        <div className="card-header" style={{ marginBottom: '15px' }}>
-          <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>ML RAC Waitlist Predictor</h3>
-          <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>XGBoost Classifier with adjustable feature weights</p>
+      <div style={{
+        gridColumn: 'span 5',
+        minHeight: '380px',
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '24px',
+        background: 'var(--surface-panel)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--rounded-md)',
+        boxSizing: 'border-box'
+      }}>
+        <div style={{ marginBottom: '15px' }}>
+          <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '16px', fontWeight: 600, color: 'var(--ink)', margin: 0 }}>
+            ML RAC Waitlist Predictor
+          </h3>
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'var(--ink-soft)', margin: '4px 0 0 0' }}>
+            XGBoost Classifier with adjustable feature weights
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '10px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '16px' }}>
             <div>
-              <label style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '3px' }}>Select Train</label>
+              <label style={{ fontSize: '10px', fontFamily: "'Inter', sans-serif", fontWeight: 500, letterSpacing: '1px', textTransform: 'uppercase', color: 'var(--ink-soft)', display: 'block', marginBottom: '4px' }}>Select Train</label>
               <select
                 value={query.train_no}
                 onChange={e => setQuery({ ...query, train_no: e.target.value })}
-                style={{ width: '100%', background: 'var(--bg-terminal)', color: 'white', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '8px', fontSize: '0.75rem', outline: 'none' }}
+                style={{
+                  width: '100%',
+                  background: 'var(--surface-input)',
+                  color: 'var(--ink)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--rounded-sm)',
+                  padding: '8px 12px',
+                  height: '36px',
+                  fontSize: '13px',
+                  fontFamily: "'JetBrains Mono', monospace",
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                  cursor: 'pointer'
+                }}
               >
                 <option value="22415">22415 (Vande Bharat)</option>
                 <option value="12002">12002 (Shatabdi)</option>
@@ -130,11 +157,24 @@ export default function RACPredictor() {
               </select>
             </div>
             <div>
-              <label style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '3px' }}>Quota</label>
+              <label style={{ fontSize: '10px', fontFamily: "'Inter', sans-serif", fontWeight: 500, letterSpacing: '1px', textTransform: 'uppercase', color: 'var(--ink-soft)', display: 'block', marginBottom: '4px' }}>Quota</label>
               <select
                 value={query.quota}
                 onChange={e => setQuery({ ...query, quota: e.target.value })}
-                style={{ width: '100%', background: 'var(--bg-terminal)', color: 'white', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '8px', fontSize: '0.75rem', outline: 'none' }}
+                style={{
+                  width: '100%',
+                  background: 'var(--surface-input)',
+                  color: 'var(--ink)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--rounded-sm)',
+                  padding: '8px 12px',
+                  height: '36px',
+                  fontSize: '13px',
+                  fontFamily: "'JetBrains Mono', monospace",
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                  cursor: 'pointer'
+                }}
               >
                 <option value="GN">General (GN)</option>
                 <option value="TQ">Tatkal (TQ)</option>
@@ -143,93 +183,272 @@ export default function RACPredictor() {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
             <div>
-              <label style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '3px' }}>Waitlist Pos</label>
+              <label style={{ fontSize: '10px', fontFamily: "'Inter', sans-serif", fontWeight: 500, letterSpacing: '1px', textTransform: 'uppercase', color: 'var(--ink-soft)', display: 'block', marginBottom: '4px' }}>Waitlist Pos</label>
               <input
                 type="number"
                 value={query.current_waitlist_position}
                 onChange={e => setQuery({ ...query, current_waitlist_position: parseInt(e.target.value) || 0 })}
-                style={{ width: '100%', background: 'var(--bg-terminal)', color: 'white', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '8px', fontSize: '0.75rem', outline: 'none' }}
+                style={{
+                  width: '100%',
+                  background: 'var(--surface-input)',
+                  color: 'var(--ink)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--rounded-sm)',
+                  padding: '8px 12px',
+                  height: '36px',
+                  fontSize: '13px',
+                  fontFamily: "'JetBrains Mono', monospace",
+                  outline: 'none',
+                  boxSizing: 'border-box'
+                }}
               />
             </div>
             <div>
-              <label style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '3px' }}>RAC Size</label>
+              <label style={{ fontSize: '10px', fontFamily: "'Inter', sans-serif", fontWeight: 500, letterSpacing: '1px', textTransform: 'uppercase', color: 'var(--ink-soft)', display: 'block', marginBottom: '4px' }}>RAC Size</label>
               <input
                 type="number"
                 value={query.current_rac_count}
                 onChange={e => setQuery({ ...query, current_rac_count: parseInt(e.target.value) || 0 })}
-                style={{ width: '100%', background: 'var(--bg-terminal)', color: 'white', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '8px', fontSize: '0.75rem', outline: 'none' }}
+                style={{
+                  width: '100%',
+                  background: 'var(--surface-input)',
+                  color: 'var(--ink)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--rounded-sm)',
+                  padding: '8px 12px',
+                  height: '36px',
+                  fontSize: '13px',
+                  fontFamily: "'JetBrains Mono', monospace",
+                  outline: 'none',
+                  boxSizing: 'border-box'
+                }}
               />
             </div>
             <div>
-              <label style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '3px' }}>Days to Go</label>
+              <label style={{ fontSize: '10px', fontFamily: "'Inter', sans-serif", fontWeight: 500, letterSpacing: '1px', textTransform: 'uppercase', color: 'var(--ink-soft)', display: 'block', marginBottom: '4px' }}>Days to Go</label>
               <input
                 type="number"
                 value={query.days_to_journey}
                 onChange={e => setQuery({ ...query, days_to_journey: parseInt(e.target.value) || 0 })}
-                style={{ width: '100%', background: 'var(--bg-terminal)', color: 'white', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '8px', fontSize: '0.75rem', outline: 'none' }}
+                style={{
+                  width: '100%',
+                  background: 'var(--surface-input)',
+                  color: 'var(--ink)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--rounded-sm)',
+                  padding: '8px 12px',
+                  height: '36px',
+                  fontSize: '13px',
+                  fontFamily: "'JetBrains Mono', monospace",
+                  outline: 'none',
+                  boxSizing: 'border-box'
+                }}
               />
             </div>
           </div>
 
           {/* Feature: Model Parameter weight tuners */}
-          <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '10px' }}>
-            <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>
+          <div style={{ borderTop: '1px solid var(--border-soft)', paddingTop: '10px' }}>
+            <span style={{ fontSize: '10px', fontFamily: "'Inter', sans-serif", color: 'var(--ink-muted)', fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', display: 'block', marginBottom: '8px' }}>
               XGBoost Feature Importance Bias Tuners
             </span>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div>
-                <span style={{ fontSize: '0.6rem', color: 'var(--color-text-muted)', display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: '11px', fontFamily: "'Inter', sans-serif", color: 'var(--ink-soft)', display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                   <span>Journey Days Bias</span>
-                  <strong>{modelWeightTuner.journeyDaysWeight}x</strong>
+                  <strong style={{ fontFamily: "'JetBrains Mono', monospace" }}>{modelWeightTuner.journeyDaysWeight}x</strong>
                 </span>
                 <input 
                   type="range" min="0.5" max="2.0" step="0.1" 
                   value={modelWeightTuner.journeyDaysWeight} 
                   onChange={e => setModelWeightTuner({...modelWeightTuner, journeyDaysWeight: parseFloat(e.target.value)})}
-                  style={{ width: '100%', height: '2px', outline: 'none' }} 
+                  style={{ width: '100%', height: '2px', accentColor: 'var(--accent)', cursor: 'pointer' }} 
                 />
               </div>
               <div>
-                <span style={{ fontSize: '0.6rem', color: 'var(--color-text-muted)', display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: '11px', fontFamily: "'Inter', sans-serif", color: 'var(--ink-soft)', display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                   <span>Waitlist Weight Bias</span>
-                  <strong>{modelWeightTuner.waitlistWeight}x</strong>
+                  <strong style={{ fontFamily: "'JetBrains Mono', monospace" }}>{modelWeightTuner.waitlistWeight}x</strong>
                 </span>
                 <input 
                   type="range" min="0.5" max="2.0" step="0.1" 
                   value={modelWeightTuner.waitlistWeight} 
                   onChange={e => setModelWeightTuner({...modelWeightTuner, waitlistWeight: parseFloat(e.target.value)})}
-                  style={{ width: '100%', height: '2px', outline: 'none' }} 
+                  style={{ width: '100%', height: '2px', accentColor: 'var(--accent)', cursor: 'pointer' }} 
                 />
               </div>
             </div>
           </div>
 
-          <button type="submit" className="btn-primary" disabled={loading} style={{ width: '100%', padding: '10px', fontSize: '0.8rem', marginTop: '4px' }}>
+          <button type="submit" className="btn-primary" disabled={loading} style={{ width: '100%', height: '36px', fontSize: '12px', marginTop: '4px' }}>
             {loading ? 'Re-Running Classifier Inference...' : 'Calculate Confirmation Odds'}
           </button>
         </form>
       </div>
 
+      {/* Feature 2: Interactive SVG RAC Seat Split & Upgrade Analyzer */}
+      <div style={{
+        gridColumn: 'span 4',
+        minHeight: '380px',
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '24px',
+        background: 'var(--surface-panel)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--rounded-md)',
+        boxSizing: 'border-box'
+      }}>
+        <h4 style={{
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: '13px',
+          fontWeight: 700,
+          letterSpacing: '2px',
+          textTransform: 'uppercase',
+          color: 'var(--accent)',
+          borderBottom: '1px solid var(--border-soft)',
+          paddingBottom: '8px',
+          margin: '0 0 15px 0'
+        }}>
+          RAC Seat Split & Berths
+        </h4>
+
+        {/* RAC seat illustration */}
+        <div style={{ background: 'var(--surface-input)', padding: '10px', borderRadius: 'var(--rounded-sm)', border: '1px solid var(--border)', display: 'flex', justifyContent: 'center', marginBottom: '15px' }}>
+          <svg width="220" height="70" viewBox="0 0 220 70">
+            {/* Lower berth border */}
+            <rect x="10" y="10" width="200" height="50" rx="2" fill="none" stroke="var(--border)" strokeWidth="2" />
+            
+            {/* Passenger 1 partition */}
+            <rect x="15" y="15" width="90" height="40" rx="2" fill="var(--accent-subtle)" stroke="var(--accent)" strokeWidth="1" />
+            <text x="60" y="35" textAnchor="middle" fill="var(--ink)" fontSize="10px" fontFamily="Inter, sans-serif" fontWeight="bold">RAC Pax #1</text>
+            <text x="60" y="47" textAnchor="middle" fill="var(--ink-soft)" fontSize="8px" fontFamily="Inter, sans-serif">Side Lower A</text>
+
+            {/* Passenger 2 partition */}
+            <rect x="115" y="15" width="90" height="40" rx="2" fill="var(--surface-elevated)" stroke="var(--border)" strokeWidth="1" />
+            <text x="160" y="35" textAnchor="middle" fill="var(--ink)" fontSize="10px" fontFamily="Inter, sans-serif" fontWeight="bold">RAC Pax #2</text>
+            <text x="160" y="47" textAnchor="middle" fill="var(--ink-soft)" fontSize="8px" fontFamily="Inter, sans-serif">Side Lower B</text>
+          </svg>
+        </div>
+
+        {/* Upgrade Calculator */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: 'auto' }}>
+          <span style={{ fontSize: '10px', fontFamily: "'Inter', sans-serif", color: 'var(--ink-muted)', fontWeight: 500, letterSpacing: '1px', textTransform: 'uppercase' }}>Auto-Berth Upgrade Calculator:</span>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {['3AC', '2AC', '1AC'].map(cls => (
+              <button
+                key={cls}
+                onClick={() => handleUpgradeClassChange(cls)}
+                style={{
+                  flex: 1,
+                  background: upgradeClass === cls ? 'var(--accent)' : 'transparent',
+                  border: `1px solid ${upgradeClass === cls ? 'var(--accent)' : 'var(--border)'}`,
+                  borderRadius: 'var(--rounded-xs)',
+                  color: upgradeClass === cls ? 'var(--ink-on-red)' : 'var(--ink-soft)',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  height: '32px',
+                  cursor: 'pointer',
+                  outline: 'none',
+                  transition: 'all 0.1s'
+                }}
+              >
+                {cls}
+              </button>
+            ))}
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--surface-elevated)', padding: '12px 18px', borderRadius: 'var(--rounded-xs)', border: '1px solid var(--border)' }}>
+            <span style={{ fontSize: '13px', fontFamily: "'Inter', sans-serif", color: 'var(--ink)' }}>Auto-Upgrade Odds:</span>
+            <span style={{ fontSize: '16px', fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: 'var(--accent)' }}>{upgradeChances}%</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Feature 3: Quota Heatmap Matrix */}
+      <div style={{
+        gridColumn: 'span 3',
+        minHeight: '380px',
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '24px',
+        background: 'var(--surface-panel)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--rounded-md)',
+        boxSizing: 'border-box'
+      }}>
+        <h4 style={{
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: '13px',
+          fontWeight: 700,
+          letterSpacing: '2px',
+          textTransform: 'uppercase',
+          color: 'var(--accent)',
+          borderBottom: '1px solid var(--border-soft)',
+          paddingBottom: '8px',
+          margin: '0 0 15px 0'
+        }}>
+          Quota Heatmap
+        </h4>
+        
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flexGrow: 1, justifyContent: 'center' }}>
+          {quotaHeatmap.map(q => (
+            <div key={q.quota} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', fontFamily: "'Inter', sans-serif" }}>
+                <span style={{ fontWeight: 600, color: 'var(--ink)' }}>{q.quota}</span>
+                <span style={{ fontWeight: 700, color: 'var(--ink)' }}>
+                  {Math.round(q.probability * 100)}%
+                </span>
+              </div>
+              <div style={{ width: '100%', height: '4px', background: 'var(--border)', borderRadius: 0, overflow: 'hidden' }}>
+                <div style={{
+                  width: `${q.probability * 100}%`,
+                  height: '100%',
+                  background: 'var(--accent)',
+                  borderRadius: 0
+                }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* SHAP Feature Impact Bars */}
       {prediction && prediction.key_factors && prediction.key_factors.length > 0 && (
-        <div className="glass-card" style={{ gridColumn: 'span 12', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px', marginBottom: '16px' }}>
+        <div style={{
+          gridColumn: 'span 12',
+          display: 'flex',
+          flexDirection: 'column',
+          padding: '24px',
+          background: 'var(--surface-panel)',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--rounded-md)',
+          boxSizing: 'border-box'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-soft)', paddingBottom: '8px', marginBottom: '16px' }}>
             <div>
-              <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.5px', margin: 0 }}>
+              <h4 style={{
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: '13px',
+                fontWeight: 700,
+                letterSpacing: '2px',
+                textTransform: 'uppercase',
+                color: 'var(--accent)',
+                margin: 0
+              }}>
                 SHAP Feature Impact — Log-Odds Contributions
               </h4>
               {prediction.model_version && (
-                <span style={{ fontSize: '0.6rem', color: 'var(--color-text-muted)', marginTop: '4px', display: 'inline-block' }}>
+                <span style={{ fontSize: '11px', fontFamily: "'JetBrains Mono', monospace", color: 'var(--ink-soft)', marginTop: '4px', display: 'inline-block' }}>
                   Model: {prediction.model_version}
                 </span>
               )}
             </div>
             {prediction.confidence_interval && (
               <div style={{ textAlign: 'right' }}>
-                <span style={{ fontSize: '0.6rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', display: 'block' }}>95% Confidence Interval</span>
-                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'white' }}>
+                <span style={{ fontSize: '10px', fontFamily: "'Inter', sans-serif", color: 'var(--ink-muted)', textTransform: 'uppercase', display: 'block' }}>95% Confidence Interval</span>
+                <span style={{ fontSize: '13px', fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: 'var(--ink)' }}>
                   [{prediction.confidence_interval[0]?.toFixed(3)}, {prediction.confidence_interval[1]?.toFixed(3)}]
                 </span>
               </div>
@@ -243,41 +462,39 @@ export default function RACPredictor() {
                 const barWidthPct = (Math.abs(factor.impact) / maxAbsImpact) * 45;
                 const isPositive = factor.impact >= 0;
                 return (
-                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                     {/* Factor name */}
-                    <span style={{ flex: '0 0 160px', fontSize: '0.72rem', fontWeight: 600, color: 'var(--color-text-muted)', textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <span style={{ flex: '0 0 160px', fontSize: '13px', fontWeight: 600, color: 'var(--ink-soft)', textAlign: 'right', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {factor.factor}
                     </span>
 
                     {/* Bar container */}
-                    <div style={{ flex: 1, position: 'relative', height: '20px', background: 'rgba(255,255,255,0.02)', borderRadius: '3px', overflow: 'hidden' }}>
+                    <div style={{ flex: 1, position: 'relative', height: '16px', background: 'var(--surface-input)', border: '1px solid var(--border)', borderRadius: 0, overflow: 'hidden' }}>
                       {/* Center line */}
-                      <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: '1px', background: 'rgba(255,255,255,0.12)', zIndex: 1 }} />
+                      <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: '1px', background: 'var(--border)', zIndex: 1 }} />
 
                       {isPositive ? (
-                        /* Positive: bar extends right from center */
+                        /* Positive: bar extends right from center (uses ink-soft) */
                         <div style={{
                           position: 'absolute',
                           left: '50%',
                           top: '2px',
                           bottom: '2px',
                           width: `${barWidthPct}%`,
-                          background: 'var(--color-accent)',
-                          borderRadius: '0 3px 3px 0',
-                          opacity: 0.85,
+                          background: 'var(--ink-soft)',
+                          borderRadius: 0,
                           transition: 'width 0.4s ease'
                         }} />
                       ) : (
-                        /* Negative: bar extends left from center */
+                        /* Negative: bar extends left from center (uses accent red) */
                         <div style={{
                           position: 'absolute',
                           right: '50%',
                           top: '2px',
                           bottom: '2px',
                           width: `${barWidthPct}%`,
-                          background: 'var(--color-primary)',
-                          borderRadius: '3px 0 0 3px',
-                          opacity: 0.85,
+                          background: 'var(--accent)',
+                          borderRadius: 0,
                           transition: 'width 0.4s ease'
                         }} />
                       )}
@@ -286,11 +503,11 @@ export default function RACPredictor() {
                     {/* Impact value */}
                     <span style={{
                       flex: '0 0 60px',
-                      fontSize: '0.7rem',
+                      fontSize: '11px',
                       fontWeight: 700,
-                      fontFamily: 'monospace',
+                      fontFamily: "'JetBrains Mono', monospace",
                       textAlign: 'left',
-                      color: isPositive ? 'var(--color-accent)' : 'var(--color-primary)'
+                      color: isPositive ? 'var(--ink-soft)' : 'var(--accent)'
                     }}>
                       {isPositive ? '+' : ''}{factor.impact.toFixed(3)}
                     </span>
@@ -301,128 +518,58 @@ export default function RACPredictor() {
           </div>
 
           {prediction.disclaimer && (
-            <p style={{ fontSize: '0.6rem', color: 'var(--color-text-dark)', fontStyle: 'italic', marginTop: '14px', borderTop: '1px solid var(--border-color)', paddingTop: '8px' }}>
+            <p style={{ fontSize: '11px', fontFamily: "'Inter', sans-serif", color: 'var(--ink-muted)', fontStyle: 'italic', marginTop: '16px', borderTop: '1px solid var(--border-soft)', paddingTop: '8px', margin: '16px 0 0 0' }}>
               {prediction.disclaimer}
             </p>
           )}
         </div>
       )}
 
-      {/* Feature 2: Interactive SVG RAC Seat Split & Upgrade Analyzer */}
-      <div className="glass-card" style={{ gridColumn: 'span 4', minHeight: '380px', display: 'flex', flexDirection: 'column' }}>
-        <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px', marginBottom: '12px' }}>
-          RAC Seat Split & Berths
-        </h4>
-
-        {/* RAC seat illustration */}
-        <div style={{ background: 'var(--bg-terminal)', padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'center', marginBottom: '15px' }}>
-          <svg width="220" height="70" viewBox="0 0 220 70">
-            {/* Lower berth border */}
-            <rect x="10" y="10" width="200" height="50" rx="4" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="2" />
-            
-            {/* Passenger 1 partition */}
-            <rect x="15" y="15" width="90" height="40" rx="3" fill="rgba(227, 26, 34, 0.05)" stroke="var(--color-primary)" strokeWidth="1" />
-            <text x="60" y="35" textAnchor="middle" fill="white" fontSize="0.65rem" fontWeight="bold">RAC Pax #1</text>
-            <text x="60" y="47" textAnchor="middle" fill="var(--color-text-muted)" fontSize="0.5rem">Side Lower A</text>
-
-            {/* Passenger 2 partition */}
-            <rect x="115" y="15" width="90" height="40" rx="3" fill="rgba(255, 255, 255, 0.05)" stroke="var(--color-secondary)" strokeWidth="1" />
-            <text x="160" y="35" textAnchor="middle" fill="white" fontSize="0.65rem" fontWeight="bold">RAC Pax #2</text>
-            <text x="160" y="47" textAnchor="middle" fill="var(--color-text-muted)" fontSize="0.5rem">Side Lower B</text>
-          </svg>
-        </div>
-
-        {/* Upgrade Calculator */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: 'auto' }}>
-          <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Auto-Berth Upgrade Calculator:</span>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            {['3AC', '2AC', '1AC'].map(cls => (
-              <button
-                key={cls}
-                onClick={() => handleUpgradeClassChange(cls)}
-                style={{
-                  flex: 1,
-                  background: upgradeClass === cls ? 'var(--color-secondary)' : 'rgba(255,255,255,0.02)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '6px',
-                  color: 'white',
-                  fontSize: '0.7rem',
-                  fontWeight: 600,
-                  padding: '6px 0',
-                  cursor: 'pointer'
-                }}
-              >
-                {cls}
-              </button>
-            ))}
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.15)', padding: '10px 15px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
-            <span style={{ fontSize: '0.75rem' }}>Auto-Upgrade Odds:</span>
-            <span style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--color-accent)' }}>{upgradeChances}%</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Feature 3: Quota Heatmap Matrix */}
-      <div className="glass-card" style={{ gridColumn: 'span 3', minHeight: '380px', display: 'flex', flexDirection: 'column' }}>
-        <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px', marginBottom: '15px' }}>
-          Quota Heatmap
-        </h4>
-        
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', flexGrow: 1, justifyContent: 'center' }}>
-          {quotaHeatmap.map(q => (
-            <div key={q.quota} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem' }}>
-                <span style={{ fontWeight: 600, color: 'white' }}>{q.quota}</span>
-                <span style={{ fontWeight: 700, color: 'white' }}>
-                  {Math.round(q.probability * 100)}%
-                </span>
-              </div>
-              <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.03)', borderRadius: '2px', overflow: 'hidden' }}>
-                <div style={{
-                  width: `${q.probability * 100}%`,
-                  height: '100%',
-                  background: 'var(--color-primary)'
-                }} />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* Feature 4: SVG Historical Confirmation Trend Chart */}
-      <div className="glass-card" style={{ gridColumn: 'span 6', minHeight: '360px', display: 'flex', flexDirection: 'column' }}>
-        <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px', marginBottom: '15px' }}>
+      <div style={{
+        gridColumn: 'span 6',
+        minHeight: '360px',
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '24px',
+        background: 'var(--surface-panel)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--rounded-md)',
+        boxSizing: 'border-box'
+      }}>
+        <h4 style={{
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: '13px',
+          fontWeight: 700,
+          letterSpacing: '2px',
+          textTransform: 'uppercase',
+          color: 'var(--accent)',
+          borderBottom: '1px solid var(--border-soft)',
+          paddingBottom: '8px',
+          margin: '0 0 15px 0'
+        }}>
           Historical Confirmation Trends (6 Months)
         </h4>
         
-        <div style={{ flexGrow: 1, background: 'var(--bg-terminal)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '15px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        <div style={{ flexGrow: 1, background: 'var(--surface-input)', border: '1px solid var(--border)', borderRadius: 'var(--rounded-sm)', padding: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
           {historicalTrends.length === 0 ? (
-            <div style={{ textAlign: 'center', fontSize: '0.75rem', color: 'var(--color-text-dark)', fontStyle: 'italic' }}>
+            <div style={{ textAlign: 'center', fontSize: '13px', color: 'var(--ink-muted)', fontStyle: 'italic', fontFamily: "'Inter', sans-serif" }}>
               Generating historical odds analysis chart...
             </div>
           ) : (
             <div style={{ width: '100%' }}>
               {/* Dynamic SVG chart */}
               <svg viewBox="0 0 400 140" width="100%" height="130px">
-                <defs>
-                  <linearGradient id="chart-glow" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.25" />
-                    <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0.0" />
-                  </linearGradient>
-                </defs>
-
                 {/* Grid guidelines */}
-                <line x1="40" y1="20" x2="380" y2="20" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
-                <line x1="40" y1="60" x2="380" y2="60" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
-                <line x1="40" y1="100" x2="380" y2="100" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
-                <line x1="40" y1="120" x2="380" y2="120" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+                <line x1="40" y1="20" x2="380" y2="20" stroke="var(--border)" strokeWidth="1" strokeDasharray="2" />
+                <line x1="40" y1="60" x2="380" y2="60" stroke="var(--border)" strokeWidth="1" strokeDasharray="2" />
+                <line x1="40" y1="100" x2="380" y2="100" stroke="var(--border)" strokeWidth="1" strokeDasharray="2" />
+                <line x1="40" y1="120" x2="380" y2="120" stroke="var(--border)" strokeWidth="1" />
 
                 {/* Left Y Axis labels */}
-                <text x="15" y="24" fill="var(--color-text-dark)" fontSize="0.55rem">100%</text>
-                <text x="15" y="64" fill="var(--color-text-dark)" fontSize="0.55rem">50%</text>
-                <text x="15" y="104" fill="var(--color-text-dark)" fontSize="0.55rem">25%</text>
+                <text x="10" y="24" fill="var(--ink-muted)" fontSize="8px" fontFamily="'JetBrains Mono', monospace">100%</text>
+                <text x="10" y="64" fill="var(--ink-muted)" fontSize="8px" fontFamily="'JetBrains Mono', monospace">50%</text>
+                <text x="10" y="104" fill="var(--ink-muted)" fontSize="8px" fontFamily="'JetBrains Mono', monospace">25%</text>
 
                 {/* Chart Path and Points */}
                 {(() => {
@@ -430,22 +577,17 @@ export default function RACPredictor() {
                   const width = 300;
                   const stepX = width / (historicalTrends.length - 1);
                   let points = "";
-                  let fillPoints = `40,120 `;
                   
                   historicalTrends.forEach((t, idx) => {
                     const x = paddingLeft + idx * stepX;
                     const y = 120 - (t.rate * 100);
                     points += `${x},${y} `;
-                    fillPoints += `${x},${y} `;
                   });
-                  fillPoints += `360,120`;
 
                   return (
                     <g>
-                      {/* Gradient fill */}
-                      <polygon points={fillPoints} fill="url(#chart-glow)" />
-                      {/* Path line */}
-                      <polyline points={points} fill="none" stroke="var(--color-primary)" strokeWidth="2" filter="url(#svg-neon-glow)" />
+                      {/* Path line (flat stroke, no neon filters) */}
+                      <polyline points={points} fill="none" stroke="var(--accent)" strokeWidth="2" />
                       
                       {/* Points markers */}
                       {historicalTrends.map((t, idx) => {
@@ -453,9 +595,9 @@ export default function RACPredictor() {
                         const y = 120 - (t.rate * 100);
                         return (
                           <g key={idx}>
-                            <circle cx={x} cy={y} r="3" fill="#FFFFFF" stroke="var(--color-primary)" strokeWidth="1.5" />
-                            <text x={x} y="134" textAnchor="middle" fill="var(--color-text-muted)" fontSize="0.55rem">{t.month}</text>
-                            <text x={x} y={y - 8} textAnchor="middle" fill="var(--color-primary)" fontSize="0.5rem" fontWeight="bold">
+                            <circle cx={x} cy={y} r="3" fill="var(--surface-input)" stroke="var(--accent)" strokeWidth="1.5" />
+                            <text x={x} y="134" textAnchor="middle" fill="var(--ink-soft)" fontSize="8px" fontFamily="'JetBrains Mono', monospace">{t.month}</text>
+                            <text x={x} y={y - 8} textAnchor="middle" fill="var(--accent)" fontSize="8px" fontFamily="'JetBrains Mono', monospace" fontWeight="bold">
                               {Math.round(t.rate * 100)}%
                             </text>
                           </g>
@@ -471,31 +613,60 @@ export default function RACPredictor() {
       </div>
 
       {/* Feature 5: Alternative Route Suggestions & Parallel Comparison */}
-      <div className="glass-card" style={{ gridColumn: 'span 6', minHeight: '360px', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px', marginBottom: '15px' }}>
-          <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+      <div style={{
+        gridColumn: 'span 6',
+        minHeight: '360px',
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '24px',
+        background: 'var(--surface-panel)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--rounded-md)',
+        boxSizing: 'border-box',
+        marginBottom: '16px'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-soft)', paddingBottom: '6px', marginBottom: '15px' }}>
+          <h4 style={{
+            fontFamily: "'JetBrains Mono', monospace",
+            fontSize: '13px',
+            fontWeight: 700,
+            letterSpacing: '2px',
+            textTransform: 'uppercase',
+            color: 'var(--accent)',
+            margin: 0
+          }}>
             Protected Routing Alternatives
           </h4>
           
           {/* Multi-train comparative selection */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '0.6rem', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Compare:</span>
+            <span style={{ fontSize: '10px', fontFamily: "'Inter', sans-serif", color: 'var(--ink-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Compare:</span>
             <select
               value={comparisonTrain}
               onChange={e => handleComparisonChange(e.target.value)}
-              style={{ background: 'var(--bg-terminal)', color: 'white', border: '1px solid var(--border-color)', borderRadius: '4px', padding: '3px 8px', fontSize: '0.65rem', outline: 'none' }}
+              style={{
+                background: 'var(--surface-input)',
+                color: 'var(--ink)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--rounded-sm)',
+                padding: '4px 8px',
+                fontSize: '11px',
+                fontFamily: "'JetBrains Mono', monospace",
+                outline: 'none',
+                cursor: 'pointer'
+              }}
             >
               <option value="12002">12002 (Shatabdi)</option>
               <option value="22415">22415 (Vande Bharat)</option>
               <option value="12301">12301 (Rajdhani)</option>
             </select>
-            <span style={{ fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--color-accent)' }}>{Math.round(comparisonOdds*100)}%</span>
+            <span style={{ fontSize: '13px', fontFamily: "'JetBrains Mono', monospace", fontWeight: 'bold', color: 'var(--accent)' }}>{Math.round(comparisonOdds*100)}%</span>
           </div>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', flexGrow: 1 }}>
           {alternativeTrains.length === 0 ? (
-            <div style={{ textAlign: 'center', fontSize: '0.75rem', color: 'var(--color-text-dark)', fontStyle: 'italic', padding: '30px' }}>
+            <div style={{ textAlign: 'center', fontSize: '13px', color: 'var(--ink-muted)', fontStyle: 'italic', padding: '30px', fontFamily: "'Inter', sans-serif" }}>
               Finding alternative route options...
             </div>
           ) : (
@@ -503,9 +674,9 @@ export default function RACPredictor() {
               <div 
                 key={alt.train_no} 
                 style={{
-                  background: 'rgba(255,255,255,0.01)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '8px',
+                  background: 'var(--surface-elevated)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--rounded-xs)',
                   padding: '12px 15px',
                   display: 'flex',
                   justifyContent: 'space-between',
@@ -513,26 +684,17 @@ export default function RACPredictor() {
                 }}
               >
                 <div>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'white', display: 'block' }}>{alt.train_name}</span>
-                  <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)' }}>
+                  <span style={{ fontSize: '13px', fontFamily: "'Inter', sans-serif", fontWeight: 600, color: 'var(--ink)', display: 'block' }}>{alt.train_name}</span>
+                  <span style={{ fontSize: '11px', fontFamily: "'JetBrains Mono', monospace", color: 'var(--ink-soft)', display: 'block', marginTop: '2px' }}>
                     No: {alt.train_no} · Dept: {alt.departure} · Duration: {alt.duration}
                   </span>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <span style={{
-                    fontSize: '0.7rem',
-                    padding: '3px 8px',
-                    borderRadius: '4px',
-                    background: alt.status === 'RUNNING' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                    color: alt.status === 'RUNNING' ? 'var(--color-accent)' : 'var(--color-danger)',
-                    border: `1px solid ${alt.status === 'RUNNING' ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}`,
-                    display: 'inline-block',
-                    marginBottom: '4px'
-                  }}>
+                  <span className={`badge-status ${alt.status === 'RUNNING' ? 'healthy' : 'failed'}`} style={{ display: 'inline-block', marginBottom: '4px' }}>
                     {alt.status}
                   </span>
-                  <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)' }}>
-                    Conf odds: <strong style={{ color: 'var(--color-primary)' }}>{Math.round(alt.confirmation_probability * 100)}%</strong>
+                  <div style={{ fontSize: '11px', fontFamily: "'Inter', sans-serif", color: 'var(--ink-soft)' }}>
+                    Conf odds: <strong style={{ color: 'var(--accent)' }}>{Math.round(alt.confirmation_probability * 100)}%</strong>
                   </div>
                 </div>
               </div>

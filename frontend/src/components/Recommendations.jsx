@@ -14,10 +14,15 @@ export default function Recommendations({ recommendations, onApprove, onOverride
   };
 
   return (
-    <div className="glass-card" style={{ gridColumn: 'span 4', minHeight: '320px', display: 'flex', flexDirection: 'column' }}>
+    <div style={{
+      gridColumn: 'span 4', minHeight: '320px',
+      display: 'flex', flexDirection: 'column', padding: '24px',
+      background: 'var(--surface-panel)', border: '1px solid var(--border)',
+      borderRadius: 'var(--rounded-md)'
+    }}>
       <div className="card-header" style={{ marginBottom: '15px' }}>
-        <h3 style={{ fontSize: '1.1rem', fontWeight: 600 }}>Automated Dispatch Solutions</h3>
-        <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Confidence-gated hold/proceed resolutions</p>
+        <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '16px', fontWeight: 600, color: 'var(--ink)', margin: 0 }}>Automated Dispatch Solutions</h3>
+        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'var(--ink-soft)', margin: '4px 0 0 0' }}>Confidence-gated hold/proceed resolutions</p>
       </div>
 
       <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
@@ -54,7 +59,7 @@ export default function Recommendations({ recommendations, onApprove, onOverride
                         cy="35"
                         r={radius}
                         fill="transparent"
-                        stroke={rec.confidence < 0.85 ? 'var(--color-secondary)' : 'var(--color-primary)'}
+                        stroke={rec.confidence < 0.85 ? 'var(--ink-soft)' : 'var(--accent)'}
                         strokeWidth={strokeWidth}
                         strokeDasharray={circumference}
                         strokeDashoffset={strokeDashoffset}
@@ -75,7 +80,7 @@ export default function Recommendations({ recommendations, onApprove, onOverride
                       justifyContent: 'center',
                       fontSize: '0.85rem',
                       fontWeight: '700',
-                      color: 'var(--color-text-main)'
+                      color: 'var(--ink)'
                     }}>
                       {Math.round(rec.confidence * 100)}%
                     </div>
@@ -84,17 +89,10 @@ export default function Recommendations({ recommendations, onApprove, onOverride
                   {/* Recommendation description */}
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                      <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-primary)' }}>
+                      <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--accent)' }}>
                         {rec.type} {rec.target_train}
                       </span>
-                      <span style={{
-                        fontSize: '0.65rem',
-                        padding: '2px 6px',
-                        borderRadius: '4px',
-                        background: rec.tier === 2 ? 'rgba(227, 26, 34, 0.12)' : 'rgba(255, 255, 255, 0.12)',
-                        color: rec.tier === 2 ? 'var(--color-primary)' : 'var(--color-secondary)',
-                        border: `1px solid ${rec.tier === 2 ? 'rgba(227, 26, 34, 0.2)' : 'rgba(255, 255, 255, 0.2)'}`
-                      }}>
+                      <span className={`badge-status ${rec.tier === 2 ? 'failed' : 'pending'}`}>
                         {rec.tier === 2 ? 'Escalated' : 'System Auto'}
                       </span>
                     </div>
@@ -112,14 +110,14 @@ export default function Recommendations({ recommendations, onApprove, onOverride
                         <button
                           className="btn-primary"
                           onClick={() => onApprove(rec.id)}
-                          style={{ flexGrow: 1, padding: '8px 15px', fontSize: '0.8rem' }}
+                          style={{ flexGrow: 1, height: '36px', padding: '0 20px', fontSize: '12px' }}
                         >
                           Approve Hold Resolution
                         </button>
                         <button
                           className="btn-secondary"
                           onClick={() => setShowOverrideInput(true)}
-                          style={{ padding: '8px 15px', fontSize: '0.8rem' }}
+                          style={{ height: '36px', padding: '0 20px', fontSize: '12px' }}
                         >
                           Override
                         </button>
@@ -134,19 +132,21 @@ export default function Recommendations({ recommendations, onApprove, onOverride
                           required
                           style={{
                             flexGrow: 1,
-                            background: 'var(--bg-terminal)',
-                            border: '1px solid var(--border-color)',
-                            borderRadius: '6px',
-                            padding: '6px 12px',
-                            color: 'white',
-                            fontSize: '0.75rem',
+                            background: 'var(--surface-input)',
+                            border: '1px solid var(--border)',
+                            borderRadius: 'var(--rounded-sm)',
+                            padding: '8px 12px',
+                            height: '36px',
+                            color: 'var(--ink)',
+                            fontFamily: "'JetBrains Mono', monospace",
+                            fontSize: '13px',
                             outline: 'none'
                           }}
                         />
                         <button
                           type="submit"
                           className="btn-primary"
-                          style={{ background: 'var(--color-danger)', boxShadow: 'none', padding: '6px 12px', fontSize: '0.75rem' }}
+                          style={{ height: '36px', padding: '0 16px', fontSize: '12px' }}
                         >
                           Confirm
                         </button>
@@ -154,7 +154,7 @@ export default function Recommendations({ recommendations, onApprove, onOverride
                           type="button"
                           className="btn-secondary"
                           onClick={() => setShowOverrideInput(false)}
-                          style={{ padding: '6px 12px', fontSize: '0.75rem' }}
+                          style={{ height: '36px', padding: '0 16px', fontSize: '12px' }}
                         >
                           Cancel
                         </button>
@@ -163,16 +163,17 @@ export default function Recommendations({ recommendations, onApprove, onOverride
                   </div>
                 ) : (
                   <div style={{
-                    padding: '10px',
-                    borderRadius: '6px',
-                    background: rec.is_approved ? 'rgba(57, 255, 20, 0.05)' : 'rgba(255, 49, 49, 0.05)',
-                    border: `1px dashed ${rec.is_approved ? 'var(--color-accent)' : 'var(--color-danger)'}`,
-                    fontSize: '0.8rem',
+                    padding: '10px 14px',
+                    borderRadius: 'var(--rounded-sm)',
+                    background: rec.is_approved ? 'rgba(76, 175, 80, 0.15)' : 'var(--accent-subtle)',
+                    border: `1px solid ${rec.is_approved ? 'rgba(76, 175, 80, 0.3)' : 'var(--border-accent)'}`,
+                    fontSize: '13px',
+                    fontFamily: "'Inter', sans-serif",
                     display: 'flex',
                     alignItems: 'center',
                     gap: '8px'
                   }}>
-                    <span style={{ color: rec.is_approved ? 'var(--color-accent)' : 'var(--color-danger)', fontWeight: 'bold' }}>
+                    <span style={{ color: rec.is_approved ? 'var(--status-ok)' : 'var(--accent)', fontWeight: 'bold' }}>
                       {rec.is_approved ? 'APPROVED' : 'OVERRIDDEN'}
                     </span>
                     <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>

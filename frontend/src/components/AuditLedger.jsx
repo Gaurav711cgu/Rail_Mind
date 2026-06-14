@@ -111,18 +111,31 @@ export default function AuditLedger({ auditLogs }) {
     <div className="bento-grid" style={{ padding: 0 }}>
       
       {/* Feature 1: Immutable Block list, Search & Tamper Simulation */}
-      <div className="glass-card" style={{ gridColumn: 'span 7', minHeight: '380px', display: 'flex', flexDirection: 'column' }}>
+      <div style={{
+        gridColumn: 'span 7',
+        minHeight: '380px',
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '24px',
+        background: 'var(--surface-panel)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--rounded-md)'
+      }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px' }}>
           <div>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Cryptographic Audit Ledger</h3>
-            <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Chronologically sealed immutable agent chain</p>
+            <h3 style={{ fontFamily: "'Inter', sans-serif", fontSize: '16px', fontWeight: 600, color: 'var(--ink)', margin: 0 }}>
+              Cryptographic Audit Ledger
+            </h3>
+            <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'var(--ink-soft)', margin: '4px 0 0 0' }}>
+              Chronologically sealed immutable agent chain
+            </p>
           </div>
           
           <div style={{ display: 'flex', gap: '8px' }}>
             <button 
               className="btn-secondary" 
               onClick={handleExportJSON}
-              style={{ padding: '6px 12px', fontSize: '0.7rem' }}
+              style={{ height: '36px', padding: '0 20px', fontSize: '12px' }}
             >
               Export JSON
             </button>
@@ -130,9 +143,9 @@ export default function AuditLedger({ auditLogs }) {
               className="btn-primary" 
               onClick={handleVerify}
               disabled={verifying}
-              style={{ padding: '6px 12px', fontSize: '0.7rem' }}
+              style={{ height: '36px', padding: '0 20px', fontSize: '12px' }}
             >
-              {verifying ? 'Scanning Ledger...' : 'Verify Ledger'}
+              {verifying ? 'Scanning...' : 'Verify Ledger'}
             </button>
           </div>
         </div>
@@ -144,7 +157,18 @@ export default function AuditLedger({ auditLogs }) {
             placeholder="Search block payload hash or agent..."
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
-            style={{ flexGrow: 1, background: 'var(--bg-terminal)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '6px 12px', color: 'white', fontSize: '0.75rem', outline: 'none' }}
+            style={{
+              flexGrow: 1,
+              background: 'var(--surface-input)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--rounded-sm)',
+              padding: '8px 12px',
+              height: '36px',
+              color: 'var(--ink)',
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: '13px',
+              outline: 'none'
+            }}
           />
           <button
             onClick={() => {
@@ -152,13 +176,19 @@ export default function AuditLedger({ auditLogs }) {
               setVerification(null);
             }}
             style={{
-              padding: '6px 12px',
-              fontSize: '0.7rem',
-              borderRadius: '6px',
-              border: `1px solid ${tamperedState ? 'var(--color-danger)' : 'var(--border-color)'}`,
-              background: tamperedState ? 'rgba(239, 68, 68, 0.08)' : 'transparent',
-              color: tamperedState ? 'var(--color-danger)' : 'var(--color-text-muted)',
-              cursor: 'pointer'
+              height: '36px',
+              padding: '0 16px',
+              fontSize: '12px',
+              fontWeight: 700,
+              fontFamily: "'Inter', sans-serif",
+              letterSpacing: '2px',
+              textTransform: 'uppercase',
+              borderRadius: 'var(--rounded-sm)',
+              border: `1px solid ${tamperedState ? 'var(--border-accent)' : 'var(--border)'}`,
+              background: tamperedState ? 'var(--accent-subtle)' : 'transparent',
+              color: tamperedState ? 'var(--accent)' : 'var(--ink-soft)',
+              cursor: 'pointer',
+              outline: 'none'
             }}
           >
             {tamperedState ? 'Tampering Active' : 'Simulate Tamper'}
@@ -170,7 +200,7 @@ export default function AuditLedger({ auditLogs }) {
           {verifying && <div className="scanner-overlay" />}
           
           {filteredLogs.length === 0 ? (
-            <div style={{ textAlign: 'center', color: 'var(--color-text-dark)', fontStyle: 'italic', padding: '30px' }}>
+            <div style={{ textAlign: 'center', color: 'var(--ink-muted)', fontStyle: 'italic', padding: '30px', fontFamily: "'Inter', sans-serif" }}>
               -- No matching ledger records --
             </div>
           ) : (
@@ -183,23 +213,25 @@ export default function AuditLedger({ auditLogs }) {
                   key={log.id} 
                   onClick={() => setSelectedBlock(log)}
                   style={{
-                    background: 'rgba(255, 255, 255, 0.01)',
-                    border: `1px solid ${isTampered ? 'var(--color-danger)' : 'var(--border-color)'}`,
-                    borderRadius: '8px',
-                    padding: '8px 12px',
-                    fontSize: '0.72rem',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s'
+                    background: 'var(--surface-elevated)',
+                    border: `1px solid ${isTampered ? 'var(--border-accent)' : 'var(--border)'}`,
+                    borderRadius: 'var(--rounded-sm)',
+                    padding: '10px 14px',
+                    cursor: 'pointer'
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
-                    <span style={{ fontWeight: 700, color: 'var(--color-primary)' }}>{log.agent_name}</span>
-                    <span style={{ color: 'var(--color-text-muted)', fontFamily: 'monospace' }}>Block #{log.id}</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, color: 'var(--accent)', fontSize: '13px' }}>
+                      {log.agent_name}
+                    </span>
+                    <span style={{ color: 'var(--ink-soft)', fontFamily: "'JetBrains Mono', monospace", fontSize: '11px' }}>
+                      Block #{log.id}
+                    </span>
                   </div>
-                  <p style={{ color: 'var(--color-text-main)', fontSize: '0.7rem', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                  <p style={{ color: 'var(--ink)', fontFamily: "'Inter', sans-serif", fontSize: '13px', margin: 0, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
                     {log.reasoning}
                   </p>
-                  <div style={{ fontSize: '0.55rem', fontFamily: 'monospace', color: isTampered ? 'var(--color-danger)' : 'var(--color-text-muted)', marginTop: '4px' }}>
+                  <div style={{ fontSize: '11px', fontFamily: "'JetBrains Mono', monospace", color: isTampered ? 'var(--accent)' : 'var(--ink-muted)', marginTop: '6px' }}>
                     HASH: {displayHash}
                   </div>
                 </div>
@@ -210,20 +242,40 @@ export default function AuditLedger({ auditLogs }) {
       </div>
 
       {/* Feature 2: Cryptographic Validation Checklist */}
-      <div className="glass-card" style={{ gridColumn: 'span 5', minHeight: '380px', display: 'flex', flexDirection: 'column' }}>
-        <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px', marginBottom: '15px' }}>
-          Verification Status Checklist
+      <div style={{
+        gridColumn: 'span 5',
+        minHeight: '380px',
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '24px',
+        background: 'var(--surface-panel)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--rounded-md)'
+      }}>
+        <h4 style={{
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: '13px',
+          fontWeight: 700,
+          letterSpacing: '2px',
+          textTransform: 'uppercase',
+          color: 'var(--accent)',
+          borderBottom: '1px solid var(--border-soft)',
+          paddingBottom: '8px',
+          margin: '0 0 15px 0'
+        }}>
+          Verification Checklist
         </h4>
         
         {/* Verification Success or Failure Alert */}
         {verification && (
           <div style={{
             padding: '10px 14px',
-            borderRadius: '6px',
-            background: verification.chain_valid ? 'rgba(34, 197, 94, 0.05)' : 'rgba(239, 68, 68, 0.05)',
-            border: `1px solid ${verification.chain_valid ? 'var(--color-accent)' : 'var(--color-danger)'}`,
-            fontSize: '0.75rem',
-            color: verification.chain_valid ? 'var(--color-accent)' : 'var(--color-danger)',
+            borderRadius: 'var(--rounded-sm)',
+            background: verification.chain_valid ? 'rgba(76, 175, 80, 0.15)' : 'var(--accent-subtle)',
+            border: `1px solid ${verification.chain_valid ? 'rgba(76, 175, 80, 0.3)' : 'var(--border-accent)'}`,
+            fontSize: '13px',
+            fontFamily: "'Inter', sans-serif",
+            color: verification.chain_valid ? 'var(--status-ok)' : 'var(--accent)',
             marginBottom: '15px',
             display: 'flex',
             justifyContent: 'space-between',
@@ -237,7 +289,7 @@ export default function AuditLedger({ auditLogs }) {
         )}
 
         {/* Detailed checklist */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', flexGrow: 1, justifyContent: 'center' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flexGrow: 1, justifyContent: 'center' }}>
           {[
             { label: "Genesis Block Hash Integrity", value: verification ? verification.genesis_valid : null },
             { label: "SHA-256 Block Link Integrity", value: verification ? verification.links_valid : null },
@@ -245,14 +297,24 @@ export default function AuditLedger({ auditLogs }) {
             { label: "Chronological Timestamp Order", value: verification ? verification.timestamps_valid : null },
             { label: "Payload Structure Sanity Check", value: verification ? verification.payloads_valid : null }
           ].map((item, idx) => (
-            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', background: 'rgba(0,0,0,0.15)', padding: '8px 12px', borderRadius: '4px' }}>
-              <span style={{ color: 'var(--color-text-muted)' }}>{item.label}</span>
+            <div key={idx} style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              background: 'var(--surface-elevated)',
+              border: '1px solid var(--border)',
+              padding: '8px 12px',
+              borderRadius: 'var(--rounded-xs)'
+            }}>
+              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'var(--ink-soft)' }}>
+                {item.label}
+              </span>
               {item.value === null ? (
-                <span style={{ color: 'var(--color-text-dark)', fontWeight: 'bold' }}>PENDING</span>
+                <span className="badge-status pending">PENDING</span>
               ) : item.value ? (
-                <span style={{ color: 'var(--color-accent)', fontWeight: 'bold' }}>VALID</span>
+                <span className="badge-status healthy">VALID</span>
               ) : (
-                <span style={{ color: 'var(--color-danger)', fontWeight: 'bold' }}>FAIL</span>
+                <span className="badge-status failed">FAIL</span>
               )}
             </div>
           ))}
@@ -260,29 +322,48 @@ export default function AuditLedger({ auditLogs }) {
       </div>
 
       {/* Feature 3: Ledger Stats Dashboard & Consensus Validator Nodes status grid */}
-      <div className="glass-card" style={{ gridColumn: 'span 6', minHeight: '340px', display: 'flex', flexDirection: 'column' }}>
-        <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px', marginBottom: '15px' }}>
-          Network stats & Validator Node consensus
+      <div style={{
+        gridColumn: 'span 6',
+        minHeight: '340px',
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '24px',
+        background: 'var(--surface-panel)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--rounded-md)'
+      }}>
+        <h4 style={{
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: '13px',
+          fontWeight: 700,
+          letterSpacing: '2px',
+          textTransform: 'uppercase',
+          color: 'var(--accent)',
+          borderBottom: '1px solid var(--border-soft)',
+          paddingBottom: '8px',
+          margin: '0 0 15px 0'
+        }}>
+          Consensus & Validator Network
         </h4>
 
         {/* Stats dials */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '15px' }}>
-          <div style={{ background: 'rgba(0,0,0,0.2)', padding: '8px', borderRadius: '4px', textAlign: 'center' }}>
-            <span style={{ fontSize: '0.55rem', color: 'var(--color-text-muted)', display: 'block' }}>BLOCKS SEALED</span>
-            <span style={{ fontSize: '1rem', fontWeight: 800, color: 'white' }}>{stats.total_blocks_sealed}</span>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '16px' }}>
+          <div style={{ background: 'var(--surface-elevated)', border: '1px solid var(--border)', padding: '12px', borderRadius: 'var(--rounded-xs)', textAlign: 'center' }}>
+            <span style={{ fontSize: '10px', fontFamily: "'Inter', sans-serif", fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--ink-muted)', display: 'block', marginBottom: '4px' }}>BLOCKS SEALED</span>
+            <span style={{ fontSize: '18px', fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: 'var(--ink)' }}>{stats.total_blocks_sealed}</span>
           </div>
-          <div style={{ background: 'rgba(0,0,0,0.2)', padding: '8px', borderRadius: '4px', textAlign: 'center' }}>
-            <span style={{ fontSize: '0.55rem', color: 'var(--color-text-muted)', display: 'block' }}>HASH SPEED</span>
-            <span style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--color-primary)' }}>{stats.hash_rate_kps} kps</span>
+          <div style={{ background: 'var(--surface-elevated)', border: '1px solid var(--border)', padding: '12px', borderRadius: 'var(--rounded-xs)', textAlign: 'center' }}>
+            <span style={{ fontSize: '10px', fontFamily: "'Inter', sans-serif", fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--ink-muted)', display: 'block', marginBottom: '4px' }}>HASH SPEED</span>
+            <span style={{ fontSize: '18px', fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: 'var(--accent)' }}>{stats.hash_rate_kps} kps</span>
           </div>
-          <div style={{ background: 'rgba(0,0,0,0.2)', padding: '8px', borderRadius: '4px', textAlign: 'center' }}>
-            <span style={{ fontSize: '0.55rem', color: 'var(--color-text-muted)', display: 'block' }}>CONSENSUS</span>
-            <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--color-accent)', textTransform: 'uppercase', display: 'block', marginTop: '3px' }}>{stats.active_consensus}</span>
+          <div style={{ background: 'var(--surface-elevated)', border: '1px solid var(--border)', padding: '12px', borderRadius: 'var(--rounded-xs)', textAlign: 'center' }}>
+            <span style={{ fontSize: '10px', fontFamily: "'Inter', sans-serif", fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--ink-muted)', display: 'block', marginBottom: '4px' }}>CONSENSUS</span>
+            <span style={{ fontSize: '12px', fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', display: 'block', marginTop: '4px' }}>{stats.active_consensus}</span>
           </div>
         </div>
 
         {/* Consensus Grid */}
-        <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '6px' }}>
+        <span style={{ fontSize: '11px', fontFamily: "'Inter', sans-serif", color: 'var(--ink-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '8px' }}>
           Consensus Desk Validators (SECP256K1 signature matching)
         </span>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
@@ -291,84 +372,159 @@ export default function AuditLedger({ auditLogs }) {
             { name: "NCR CENTRAL", ip: "10.45.1.18", status: "VALIDATING" },
             { name: "RDSO SIGNAL", ip: "10.90.4.1", status: "VALIDATING" }
           ].map(node => (
-            <div key={node.name} style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '10px', fontSize: '0.65rem', position: 'relative' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontWeight: 700, color: 'white' }}>{node.name}</span>
+            <div key={node.name} style={{
+              background: 'var(--surface-elevated)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--rounded-xs)',
+              padding: '12px',
+              fontSize: '11px'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, color: 'var(--ink)' }}>{node.name}</span>
                 <span className="led-indicator active" style={{ width: '6px', height: '6px' }}></span>
               </div>
-              <span style={{ fontSize: '0.55rem', color: 'var(--color-text-muted)', fontFamily: 'monospace', display: 'block' }}>{node.ip}</span>
+              <span style={{ fontSize: '10px', color: 'var(--ink-muted)', fontFamily: "'JetBrains Mono', monospace", display: 'block' }}>
+                {node.ip}
+              </span>
             </div>
           ))}
         </div>
       </div>
 
       {/* Feature 4: ECDSA Sandbox Form & Block Payload Inspector */}
-      <div className="glass-card" style={{ gridColumn: 'span 6', minHeight: '340px', display: 'flex', flexDirection: 'column' }}>
-        <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px', marginBottom: '15px' }}>
+      <div style={{
+        gridColumn: 'span 6',
+        minHeight: '340px',
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '24px',
+        background: 'var(--surface-panel)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--rounded-md)'
+      }}>
+        <h4 style={{
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: '13px',
+          fontWeight: 700,
+          letterSpacing: '2px',
+          textTransform: 'uppercase',
+          color: 'var(--accent)',
+          borderBottom: '1px solid var(--border-soft)',
+          paddingBottom: '8px',
+          margin: '0 0 15px 0'
+        }}>
           {selectedBlock ? `Block Payload: #${selectedBlock.id}` : 'ECDSA Signature Sandbox'}
         </h4>
 
         {selectedBlock ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.75rem', flexGrow: 1 }}>
-            <div style={{ background: 'var(--bg-terminal)', borderRadius: '6px', padding: '12px', border: '1px solid var(--border-color)', fontFamily: 'monospace', fontSize: '0.62rem', flexGrow: 1, maxHeight: '170px', overflowY: 'auto' }}>
-              <pre style={{ color: 'var(--color-primary)', whiteSpace: 'pre-wrap' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '13px', flexGrow: 1 }}>
+            <div style={{
+              background: 'var(--surface-input)',
+              borderRadius: 'var(--rounded-sm)',
+              padding: '12px',
+              border: '1px solid var(--border)',
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: '11px',
+              flexGrow: 1,
+              maxHeight: '170px',
+              overflowY: 'auto'
+            }}>
+              <pre style={{ color: 'var(--ink)', whiteSpace: 'pre-wrap', margin: 0 }}>
                 {JSON.stringify(selectedBlock, null, 2)}
               </pre>
             </div>
             <button 
               className="btn-secondary" 
               onClick={() => setSelectedBlock(null)}
-              style={{ width: '100%', padding: '6px', fontSize: '0.7rem', marginTop: 'auto' }}
+              style={{ width: '100%', height: '36px', fontSize: '12px', marginTop: 'auto' }}
             >
               Close Block Inspector
             </button>
           </div>
         ) : (
-          <form onSubmit={runEcdsaSandboxTest} style={{ display: 'flex', flexDirection: 'column', gap: '8px', flexGrow: 1 }}>
+          <form onSubmit={runEcdsaSandboxTest} style={{ display: 'flex', flexDirection: 'column', gap: '12px', flexGrow: 1 }}>
             <div>
-              <label style={{ fontSize: '0.6rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '2px' }}>ECDSA Public Key (secp256k1)</label>
+              <label style={{ fontSize: '10px', fontFamily: "'Inter', sans-serif", fontWeight: 500, letterSpacing: '1px', textTransform: 'uppercase', color: 'var(--ink-soft)', display: 'block', marginBottom: '4px' }}>
+                ECDSA Public Key (secp256k1)
+              </label>
               <input 
                 type="text" 
                 value={ecdsaSandbox.pubKey}
                 onChange={e => setEcdsaSandbox({...ecdsaSandbox, pubKey: e.target.value})}
-                style={{ width: '100%', background: 'var(--bg-terminal)', color: 'white', border: '1px solid var(--border-color)', borderRadius: '4px', padding: '5px', fontSize: '0.65rem', fontFamily: 'monospace', outline: 'none' }}
+                style={{
+                  width: '100%',
+                  background: 'var(--surface-input)',
+                  color: 'var(--ink)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--rounded-sm)',
+                  padding: '8px 12px',
+                  height: '36px',
+                  fontSize: '13px',
+                  fontFamily: "'JetBrains Mono', monospace",
+                  outline: 'none',
+                  boxSizing: 'border-box'
+                }}
               />
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div>
-                <label style={{ fontSize: '0.6rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '2px' }}>Payload Text</label>
+                <label style={{ fontSize: '10px', fontFamily: "'Inter', sans-serif", fontWeight: 500, letterSpacing: '1px', textTransform: 'uppercase', color: 'var(--ink-soft)', display: 'block', marginBottom: '4px' }}>
+                  Payload Text
+                </label>
                 <input 
                   type="text" 
                   value={ecdsaSandbox.payload}
                   onChange={e => setEcdsaSandbox({...ecdsaSandbox, payload: e.target.value})}
-                  style={{ width: '100%', background: 'var(--bg-terminal)', color: 'white', border: '1px solid var(--border-color)', borderRadius: '4px', padding: '5px', fontSize: '0.65rem', outline: 'none' }}
+                  style={{
+                    width: '100%',
+                    background: 'var(--surface-input)',
+                    color: 'var(--ink)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--rounded-sm)',
+                    padding: '8px 12px',
+                    height: '36px',
+                    fontSize: '13px',
+                    fontFamily: "'Inter', sans-serif",
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
                 />
               </div>
               <div>
-                <label style={{ fontSize: '0.6rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '2px' }}>SECP Signature</label>
+                <label style={{ fontSize: '10px', fontFamily: "'Inter', sans-serif", fontWeight: 500, letterSpacing: '1px', textTransform: 'uppercase', color: 'var(--ink-soft)', display: 'block', marginBottom: '4px' }}>
+                  SECP Signature
+                </label>
                 <input 
                   type="text" 
                   value={ecdsaSandbox.signature}
                   onChange={e => setEcdsaSandbox({...ecdsaSandbox, signature: e.target.value})}
-                  style={{ width: '100%', background: 'var(--bg-terminal)', color: 'white', border: '1px solid var(--border-color)', borderRadius: '4px', padding: '5px', fontSize: '0.65rem', fontFamily: 'monospace', outline: 'none' }}
+                  style={{
+                    width: '100%',
+                    background: 'var(--surface-input)',
+                    color: 'var(--ink)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--rounded-sm)',
+                    padding: '8px 12px',
+                    height: '36px',
+                    fontSize: '13px',
+                    fontFamily: "'JetBrains Mono', monospace",
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
                 />
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginTop: 'auto' }}>
-              <button type="submit" className="btn-primary" style={{ flexGrow: 1, padding: '8px', fontSize: '0.75rem' }}>
+            <div style={{ display: 'flex', gap: '16px', alignItems: 'center', marginTop: 'auto' }}>
+              <button
+                type="submit"
+                className="btn-primary"
+                style={{ flexGrow: 1, height: '36px', fontSize: '12px' }}
+              >
                 Verify Key Pair Match
               </button>
               {ecdsaSandbox.result && (
-                <span style={{
-                  padding: '5px 10px',
-                  borderRadius: '4px',
-                  background: ecdsaSandbox.result === 'SUCCESS' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                  color: ecdsaSandbox.result === 'SUCCESS' ? 'var(--color-accent)' : 'var(--color-danger)',
-                  fontSize: '0.7rem',
-                  fontWeight: 'bold',
-                  border: `1px solid ${ecdsaSandbox.result === 'SUCCESS' ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}`
-                }}>
+                <span className={`badge-status ${ecdsaSandbox.result === 'SUCCESS' ? 'healthy' : 'failed'}`}>
                   {ecdsaSandbox.result}
                 </span>
               )}
