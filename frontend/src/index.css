@@ -1,46 +1,62 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Bebas+Neue&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
-
-/* ─── DESIGN TOKENS ──────────────────────────────────────────────── */
+/* ─── DESIGN TOKENS (DESIGN.md) ──────────────────────────────────── */
 :root {
-  /* Photo-aware background layers */
-  --bg-base: #040810;
-  --bg-card: rgba(4, 8, 18, 0.55);
-  --bg-card-hover: rgba(6, 12, 26, 0.75);
-  --bg-header: rgba(2, 5, 14, 0.82);
-  --bg-toolbar: rgba(2, 5, 14, 0.6);
-  --bg-terminal: #02040a;
+  /* Colors */
+  --surface-base: #0d0d0b;          /* Page background — near-black with warm tint */
+  --surface-panel: #13120f;         /* Main panel/card background */
+  --surface-elevated: #1a1916;      /* Elevated card, inner sections */
+  --surface-input: #111110;         /* Input fields, dropdowns */
+  --surface-row: #161513;           /* Table rows, log lines (alternating) */
 
-  /* Borders */
-  --border-color: rgba(255, 255, 255, 0.07);
-  --border-color-glow: rgba(227, 26, 34, 0.25);
-  --border-subtle: rgba(255, 255, 255, 0.04);
+  --accent: #E53935;                /* Primary red — buttons, active tabs, bars, labels */
+  --accent-dim: #B71C1C;            /* Pressed / active state of red */
+  --accent-subtle: #3a1010;         /* Red tint for alert card borders/backgrounds */
 
-  /* Brand palette — Crimson Red & White formal theme */
-  --color-primary: #E31A22;
-  --color-primary-dim: rgba(227, 26, 34, 0.15);
-  --color-secondary: #FFFFFF;
-  --color-accent: #FFFFFF;
-  --color-danger: #E31A22;
-  --color-warning: #E2E8F0;
+  --ink: #F5F5F0;                   /* Primary text — headings, values */
+  --ink-soft: #A09D96;              /* Secondary text — descriptions, subtitles */
+  --ink-muted: #5c5a55;             /* Tertiary — disabled, placeholders */
+  --ink-on-red: #FFFFFF;            /* Text on red buttons */
 
-  /* Text */
-  --color-text-main: #E8EDF5;
-  --color-text-muted: #7A8BA0;
-  --color-text-dark: #3D4F63;
-  --color-text-label: #A0B0C4;
+  --status-ok: #4CAF50;             /* SYSTEM OK dot, HEALTHY badge */
+  --status-warn: #FFA726;           /* Warning states */
+  --status-fail: #E53935;           /* FAILED, critical — same as accent */
+  --status-pending: #5c5a55;        /* PENDING label */
 
-  /* Glows — Crimson Red and Crisp White */
-  --shadow-neon-cyan: 0 0 20px rgba(227, 26, 34, 0.15);
-  --shadow-neon-purple: 0 0 20px rgba(255, 255, 255, 0.15);
-  --shadow-neon-green: 0 0 20px rgba(255, 255, 255, 0.2);
-  --shadow-neon-red: 0 0 20px rgba(227, 26, 34, 0.2);
-  --shadow-card: 0 12px 40px rgba(0, 0, 0, 0.6);
-  --shadow-header: 0 1px 0 rgba(255,255,255,0.04), 0 4px 32px rgba(0,0,0,0.7);
+  --border: #2a2825;                /* Default panel border — 1px */
+  --border-accent: #E53935;         /* Active panel border, selected card */
+  --border-soft: #1e1d1a;           /* Subtle dividers inside panels */
 
-  /* Blur intensity — strong because photo is behind */
-  --blur-glass: blur(22px);
-  --blur-header: blur(28px);
+  /* Rounded */
+  --rounded-none: 0px;
+  --rounded-xs: 2px;
+  --rounded-sm: 4px;
+  --rounded-md: 6px;
+  --rounded-lg: 8px;
+
+  /* Legacy Mapping for Smooth Transition */
+  --bg-base: var(--surface-base);
+  --bg-card: var(--surface-panel);
+  --bg-card-hover: var(--surface-elevated);
+  --bg-header: var(--surface-base);
+  --bg-toolbar: var(--surface-elevated);
+  --bg-terminal: var(--surface-input);
+
+  --border-color: var(--border);
+  --border-color-glow: var(--border-accent);
+  --border-subtle: var(--border-soft);
+
+  --color-primary: var(--accent);
+  --color-primary-dim: var(--accent-subtle);
+  --color-secondary: var(--ink);
+  --color-accent: var(--accent);
+  --color-danger: var(--status-fail);
+  --color-warning: var(--status-warn);
+
+  --color-text-main: var(--ink);
+  --color-text-muted: var(--ink-soft);
+  --color-text-dark: var(--ink-muted);
+  --color-text-label: var(--ink-soft);
 }
 
 /* ─── RESET ──────────────────────────────────────────────────────── */
@@ -52,15 +68,15 @@
 
 /* ─── BODY + PHOTO BACKGROUND ────────────────────────────────────── */
 body {
-  background-color: var(--bg-base);
-  color: var(--color-text-main);
+  background-color: var(--surface-base);
+  color: var(--ink);
   font-family: 'Inter', sans-serif;
   overflow-x: hidden;
   line-height: 1.5;
   min-height: 100vh;
 }
 
-/* Fixed photo background — layered under everything */
+/* Fixed photo background — 12% opacity locomotive background layer */
 body::before {
   content: '';
   position: fixed;
@@ -70,80 +86,42 @@ body::before {
   background-size: cover;
   background-position: center 40%;
   background-repeat: no-repeat;
-  filter: saturate(0.6) brightness(0.35);
-}
-
-/* Dark gradient film over photo — preserves readability */
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  background:
-    linear-gradient(180deg,
-      rgba(2, 5, 14, 0.75) 0%,
-      rgba(4, 8, 18, 0.45) 30%,
-      rgba(4, 8, 18, 0.55) 70%,
-      rgba(2, 5, 14, 0.9) 100%
-    ),
-    radial-gradient(ellipse at 20% 0%, rgba(227, 26, 34, 0.04) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 100%, rgba(255, 255, 255, 0.04) 0%, transparent 50%);
+  opacity: 0.12;
 }
 
 /* ─── SCROLLBAR ──────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: var(--color-primary); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: var(--rounded-none); }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 
-/* ─── GLASSMORPHISM CARD ─────────────────────────────────────────── */
+/* ─── GLASSMORPHISM CARD (DEPRECATED OUT OF STYLE, ENFORCING PANELS) ─ */
 .glass-card {
-  background: var(--bg-card);
-  backdrop-filter: var(--blur-glass);
-  -webkit-backdrop-filter: var(--blur-glass);
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
+  background: var(--surface-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--rounded-md);
   padding: 20px;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
-  box-shadow: var(--shadow-card);
+  transition: border-color 0.2s, background 0.2s;
   overflow: hidden;
   position: relative;
 }
 
-/* Top shimmer line */
-.glass-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 1px;
-  background: linear-gradient(90deg,
-    transparent 0%,
-    rgba(227, 26, 34, 0.3) 50%,
-    transparent 100%
-  );
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-
-.glass-card:hover::before { opacity: 1; }
-
 .glass-card:hover {
-  border-color: var(--border-color-glow);
-  box-shadow: var(--shadow-card), 0 0 0 1px rgba(227, 26, 34, 0.08);
-  background: var(--bg-card-hover);
+  border-color: var(--border-accent);
+  background: var(--surface-elevated);
 }
 
 /* ─── BENTO GRID ─────────────────────────────────────────────────── */
 .bento-grid {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
-  gap: 16px;
+  gap: 24px;
   max-width: 1440px;
   margin: 0 auto;
-  padding: 16px 24px;
+  padding: 24px;
 }
 
-/* ─── APP HEADER ─────────────────────────────────────────────────── */
+/* ─── APP HEADER {component.top-nav} ─────────────────────────────── */
 .app-header {
   position: sticky;
   top: 0;
@@ -151,27 +129,10 @@ body::after {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 28px;
-  height: 58px;
-  background: var(--bg-header);
-  backdrop-filter: var(--blur-header);
-  -webkit-backdrop-filter: var(--blur-header);
-  border-bottom: 1px solid var(--border-color);
-  box-shadow: var(--shadow-header);
-}
-
-/* Subtle scan line on header bottom */
-.app-header::after {
-  content: '';
-  position: absolute;
-  bottom: -1px; left: 0;
-  width: 100%; height: 1px;
-  background: linear-gradient(90deg,
-    transparent 0%,
-    rgba(227, 26, 34, 0.2) 30%,
-    rgba(255, 255, 255, 0.15) 70%,
-    transparent 100%
-  );
+  padding: 0 24px;
+  height: 56px;
+  background: var(--surface-base);
+  border-bottom: 1px solid var(--border);
 }
 
 /* ─── BRAND ──────────────────────────────────────────────────────── */
@@ -181,89 +142,73 @@ body::after {
   gap: 12px;
 }
 
-.brand-logo {
-  width: 34px;
-  height: 34px;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 1rem;
-  letter-spacing: 1px;
-  color: #02040a;
-  box-shadow: var(--shadow-neon-cyan), 0 2px 8px rgba(0,0,0,0.5);
-  flex-shrink: 0;
-}
-
 .brand-logo-img {
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  box-shadow: var(--shadow-neon-cyan), 0 2px 8px rgba(0,0,0,0.5);
+  width: 32px;
+  height: 32px;
+  border-radius: var(--rounded-sm);
+  border: 1px solid var(--border);
   flex-shrink: 0;
   object-fit: cover;
 }
 
 .brand-title {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 1.25rem;
-  letter-spacing: 2px;
-  color: #fff;
-  line-height: 1;
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  color: var(--ink);
+  line-height: 1.2;
 }
 
 .brand-tagline {
-  font-size: 0.6rem;
-  color: var(--color-text-muted);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--ink-muted);
   text-transform: uppercase;
-  letter-spacing: 3px;
-  margin-top: 3px;
-  font-weight: 500;
+  letter-spacing: 0.5px;
+  margin-top: 2px;
 }
 
 /* ─── NAV TABS ───────────────────────────────────────────────────── */
 nav {
   display: flex;
   height: 100%;
-  gap: 4px;
+  gap: 8px;
 }
 
 .nav-tab {
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
-  color: var(--color-text-muted);
+  color: var(--ink-soft);
   font-family: 'Inter', sans-serif;
-  font-size: 0.72rem;
+  font-size: 12px;
   font-weight: 600;
-  padding: 0 14px;
+  padding: 0 16px;
   height: 100%;
   cursor: pointer;
   transition: color 0.2s, border-color 0.2s;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 1.5px;
   white-space: nowrap;
 }
 
 .nav-tab:hover {
-  color: var(--color-text-main);
-  border-bottom-color: rgba(227, 26, 34, 0.25);
+  color: var(--ink);
 }
 
 .nav-tab.active {
-  color: var(--color-primary);
-  border-bottom-color: var(--color-primary);
+  color: var(--ink);
+  border-bottom: 2px solid var(--accent);
 }
 
-/* ─── CONTROL TOOLBAR ────────────────────────────────────────────── */
+/* ─── CONTROL TOOLBAR {component.scenario-bar} ───────────────────── */
 .control-toolbar {
-  background: var(--bg-toolbar);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  border-bottom: 1px solid var(--border-subtle);
-  padding: 8px 28px;
+  background: var(--surface-elevated);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  height: 44px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -272,40 +217,35 @@ nav {
 
 /* ─── LED INDICATORS ─────────────────────────────────────────────── */
 .led-indicator {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   display: inline-block;
   flex-shrink: 0;
 }
 
 .led-indicator.active {
-  background-color: var(--color-secondary);
-  box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
-  animation: pulse-white 2.5s infinite;
+  background-color: var(--status-ok);
 }
 
 .led-indicator.warning {
-  background-color: var(--color-warning);
-  box-shadow: 0 0 8px rgba(226, 232, 240, 0.8);
+  background-color: var(--status-warn);
 }
 
 .led-indicator.danger {
-  background-color: var(--color-primary);
-  box-shadow: 0 0 8px rgba(227, 26, 34, 0.8);
-  animation: pulse-red 2s infinite;
+  background-color: var(--status-fail);
 }
 
 /* ─── TIMELINE STEP BUTTONS ──────────────────────────────────────── */
 .timeline-step-btn {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--rounded-xs);
   background: transparent;
-  border: 1px solid var(--border-color);
-  color: var(--color-text-dark);
-  font-size: 0.6rem;
-  font-weight: 700;
+  border: 1px solid var(--border);
+  color: var(--ink-muted);
+  font-size: 11px;
+  font-weight: 500;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -315,68 +255,72 @@ nav {
 }
 
 .timeline-step-btn:hover:not(:disabled) {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-  box-shadow: 0 0 6px rgba(227, 26, 34, 0.3);
+  border-color: var(--border-accent);
+  color: var(--ink);
 }
 
 .timeline-step-btn.passed {
-  border-color: rgba(255, 255, 255, 0.4);
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--color-secondary);
+  border-color: var(--border);
+  background: var(--surface-panel);
+  color: var(--ink-soft);
 }
 
 .timeline-step-btn.active {
-  border-color: var(--color-primary);
-  background: var(--color-primary);
-  color: #020810;
-  box-shadow: 0 0 10px rgba(227, 26, 34, 0.4);
+  border-color: var(--border-accent);
+  background: var(--accent);
+  color: var(--ink-on-red);
 }
 
-/* ─── BUTTONS ────────────────────────────────────────────────────── */
+/* ─── BUTTONS {component.button-primary / button-secondary} ──────── */
 .btn-primary {
-  background: var(--color-primary);
-  color: #FFFFFF;
+  background: var(--accent);
+  color: var(--ink-on-red);
   border: none;
-  border-radius: 6px;
-  padding: 7px 16px;
-  font-weight: 700;
-  font-size: 0.72rem;
-  letter-spacing: 0.5px;
-  cursor: pointer;
-  transition: box-shadow 0.2s, transform 0.15s;
+  border-radius: var(--rounded-sm);
+  padding: 10px 20px;
   font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 2px;
   text-transform: uppercase;
+  height: 36px;
+  cursor: pointer;
+  transition: background 0.15s;
 }
 
 .btn-primary:hover:not(:disabled) {
-  box-shadow: var(--shadow-neon-cyan);
-  transform: translateY(-1px);
+  background: var(--accent-dim);
 }
 
-.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-primary:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
 
 .btn-secondary {
-  background: var(--color-primary);
-  color: #FFFFFF;
-  border: none;
-  border-radius: 6px;
-  padding: 7px 16px;
-  font-weight: 600;
-  font-size: 0.72rem;
-  letter-spacing: 0.5px;
-  cursor: pointer;
-  transition: box-shadow 0.2s, transform 0.15s;
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: var(--rounded-sm);
+  padding: 10px 20px;
   font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 2px;
   text-transform: uppercase;
+  height: 36px;
+  cursor: pointer;
+  transition: border-color 0.15s;
 }
 
 .btn-secondary:hover:not(:disabled) {
-  box-shadow: var(--shadow-neon-cyan);
-  transform: translateY(-1px);
+  border-color: var(--ink-soft);
 }
 
-.btn-secondary:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-secondary:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
 
 /* ─── CARD HEADER TYPOGRAPHY ─────────────────────────────────────── */
 .card-header h3 {
@@ -544,4 +488,56 @@ nav {
 }
 .tooltip-wrapper:hover::after {
   opacity: 1;
+}
+
+/* ─── STATUS / BADGES {component.badge-status} ──────────────────── */
+.badge-status {
+  padding: 3px 8px;
+  border-radius: var(--rounded-xs);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.badge-status.healthy {
+  background: rgba(76,175,80,0.15);
+  color: var(--status-ok);
+  border: 1px solid rgba(76,175,80,0.3);
+}
+.badge-status.failed {
+  background: var(--accent-subtle);
+  color: var(--accent);
+  border: 1px solid var(--border-accent);
+}
+.badge-status.pending {
+  background: transparent;
+  color: var(--ink-muted);
+  border: 1px solid var(--border);
+}
+.badge-status.in-review {
+  background: rgba(255,167,38,0.1);
+  color: var(--status-warn);
+  border: 1px solid rgba(255,167,38,0.3);
+}
+.badge-status.resolved {
+  background: transparent;
+  color: var(--ink-muted);
+  border: 1px solid var(--border);
+}
+
+/* ─── TICKER ─────────────────────────────────────────────────────── */
+.status-ticker-container {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--ink-muted);
+  overflow: hidden;
+  white-space: nowrap;
+  flex-grow: 1;
+  text-align: center;
+  max-width: 450px;
+  margin: 0 auto;
 }

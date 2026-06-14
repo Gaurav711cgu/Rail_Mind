@@ -102,10 +102,10 @@ export default function App() {
 
   /* ── SYSTEM STATUS LABEL ── */
   const getStatusLabel = (step) => {
-    if (step === 0) return { label: 'NOMINAL', color: 'var(--color-accent)' };
-    if (step === 6) return { label: 'RESOLVED', color: 'var(--color-accent)' };
-    if (step >= 4)  return { label: 'CRITICAL', color: 'var(--color-danger)' };
-    return { label: 'ALERT', color: 'var(--color-warning)' };
+    if (step === 0) return { label: 'NOMINAL', color: 'var(--status-ok)', variant: 'healthy' };
+    if (step === 6) return { label: 'RESOLVED', color: 'var(--ink-muted)', variant: 'resolved' };
+    if (step >= 4)  return { label: 'CRITICAL', color: 'var(--status-fail)', variant: 'failed' };
+    return { label: 'ALERT', color: 'var(--status-warn)', variant: 'in-review' };
   };
 
   /* ── ERROR STATE ── */
@@ -159,17 +159,11 @@ export default function App() {
           ))}
         </nav>
 
-        {/* System status pill — top right */}
+        {/* System status badge — top right */}
         {status && (
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            background: 'rgba(255,255,255,0.03)',
-            border: `1px solid ${status.color}30`,
-            borderRadius: 20, padding: '5px 12px',
-            flexShrink: 0,
-          }}>
+          <div className={`badge-status ${status.variant}`}>
             <span className={`led-indicator ${scenarioState.step === 0 || scenarioState.step === 6 ? 'active' : scenarioState.step >= 4 ? 'danger' : 'warning'}`} />
-            <span style={{ fontSize:'0.6rem', fontWeight:700, letterSpacing:'2px', color: status.color, textTransform:'uppercase', fontFamily:"'JetBrains Mono', monospace" }}>
+            <span>
               {status.label}
             </span>
           </div>
@@ -180,21 +174,22 @@ export default function App() {
       {scenarioState && (
         <div className="control-toolbar">
           <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
-            <span style={{ fontFamily:"'JetBrains Mono', monospace", fontSize:'0.62rem', color:'var(--color-text-dark)', flexShrink:0 }}>
-              STEP {scenarioState.step}
+            <span style={{ fontFamily:"'Inter', sans-serif", fontSize:'16px', fontWeight:600, color:'var(--ink)', textTransform:'uppercase', whiteSpace:'nowrap' }}>
+              {scenarioState.title} OPERATION — SECTOR NORTH
             </span>
-            <span style={{ fontSize:'0.75rem', fontWeight:700, color:'var(--color-text-main)', textTransform:'uppercase', letterSpacing:'0.5px' }}>
-              {scenarioState.title}
-            </span>
-            <span className="toolbar-desc" style={{ fontSize:'0.72rem', color:'var(--color-text-muted)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-              — {scenarioState.description}
-            </span>
+          </div>
+
+          {/* Scrolling status ticker center */}
+          <div className="status-ticker-container">
+            <marquee scrollamount="3">
+              [SYSTEM STATUS: {scenarioState.step === 0 ? 'NOMINAL OPERATIONS — ALL TRACK SEGMENTS REPORTING NORMAL SIGNAL INTEG' : `OUTAGE DETECTED — ${scenarioState.description.toUpperCase()} — CORRIDOR ACTIONS IN PROGRESS`} — LATENCY: 2.1s — INTEGRITY: SECURE]
+            </marquee>
           </div>
 
           <div style={{ display:'flex', alignItems:'center', gap:16, flexShrink:0 }}>
             {/* Timeline stepper */}
             <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-              <span style={{ fontSize:'0.58rem', fontWeight:700, color:'var(--color-text-dark)', textTransform:'uppercase', letterSpacing:'1px', fontFamily:"'JetBrains Mono', monospace" }}>
+              <span style={{ fontSize:'0.58rem', fontWeight:700, color:'var(--ink-muted)', textTransform:'uppercase', letterSpacing:'1px', fontFamily:"'JetBrains Mono', monospace" }}>
                 TL
               </span>
               <div style={{ display:'flex', gap:4 }}>
