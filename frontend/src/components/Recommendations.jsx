@@ -96,7 +96,7 @@ export default function Recommendations({ recommendations, onApprove, onOverride
                         {rec.tier === 2 ? 'Escalated' : 'System Auto'}
                       </span>
                     </div>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', lineHeight: '1.4' }}>
+                    <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', color: 'var(--ink-soft)', lineHeight: '1.4', margin: '4px 0 0 0' }}>
                       {rec.reasoning}
                     </p>
                   </div>
@@ -176,7 +176,7 @@ export default function Recommendations({ recommendations, onApprove, onOverride
                     <span style={{ color: rec.is_approved ? 'var(--status-ok)' : 'var(--accent)', fontWeight: 'bold' }}>
                       {rec.is_approved ? 'APPROVED' : 'OVERRIDDEN'}
                     </span>
-                    <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>
+                    <span style={{ fontFamily: "'Inter', sans-serif", color: 'var(--ink-soft)', fontSize: '13px' }}>
                       {rec.is_approved 
                         ? 'Resolution successfully dispatched to track control.'
                         : `Reason: ${rec.override_reason}`

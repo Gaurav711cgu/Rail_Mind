@@ -526,7 +526,7 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
         borderRadius: 'var(--rounded-sm)', padding: '10px 14px', marginBottom: '12px',
         display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap',
       }}>
-        <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+        <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--ink-soft)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
           Live Route
         </span>
         <input
@@ -541,14 +541,14 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
             textTransform: 'uppercase',
           }}
         />
-        <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem' }}>→</span>
+        <span style={{ color: 'var(--ink-soft)', fontSize: '0.75rem' }}>→</span>
         <input
           value={toInput}
           onChange={e => { setToInput(e.target.value.toUpperCase()); setToCode(e.target.value.toUpperCase()); }}
           placeholder="TO (e.g. CNB)"
           maxLength={6}
           style={{
-            width: '90px', background: '#0a0e1a', border: '1px solid var(--border-color)',
+            width: '90px', background: 'var(--surface-input)', border: '1px solid var(--border)',
             borderRadius: '4px', color: 'var(--accent)', fontSize: '0.75rem',
             fontWeight: 700, padding: '5px 8px', outline: 'none', fontFamily: 'monospace',
             textTransform: 'uppercase',
@@ -570,14 +570,14 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
           <button
             onClick={() => { setSearchMode(false); setRouteTrains([]); setRouteError(null); setStationBoard(null); }}
             style={{
-              background: 'transparent', border: '1px solid var(--border-color)',
-              borderRadius: '4px', color: 'var(--color-text-muted)', fontWeight: 700,
+              background: 'transparent', border: '1px solid var(--border)',
+              borderRadius: '4px', color: 'var(--ink-soft)', fontWeight: 700,
               fontSize: '0.65rem', padding: '5px 10px', cursor: 'pointer',
             }}
           >Clear</button>
         )}
         {routeError && (
-          <span style={{ fontSize: '0.65rem', color: 'var(--color-danger)' }}>Warning: {routeError}</span>
+          <span style={{ fontSize: '0.65rem', color: 'var(--accent)' }}>Warning: {routeError}</span>
         )}
         {/* Quick preset buttons */}
         <div style={{ display: 'flex', gap: '4px', marginLeft: 'auto' }}>
@@ -591,9 +591,9 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
               key={lbl}
               onClick={() => { setFromCode(f); setFromInput(f); setToCode(t); setToInput(t); }}
               style={{
-                background: fromCode === f && toCode === t ? 'var(--color-primary-dim)' : 'rgba(255,255,255,0.02)',
-                border: `1px solid ${fromCode === f && toCode === t ? 'var(--color-primary)' : 'var(--border-color)'}`,
-                borderRadius: '4px', color: fromCode === f && toCode === t ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                background: fromCode === f && toCode === t ? 'var(--accent-subtle)' : 'transparent',
+                border: `1px solid ${fromCode === f && toCode === t ? 'var(--accent)' : 'var(--border)'}`,
+                borderRadius: '4px', color: fromCode === f && toCode === t ? 'var(--accent)' : 'var(--ink-soft)',
                 fontSize: '0.58rem', fontWeight: 700, padding: '3px 7px', cursor: 'pointer',
               }}
             >{lbl}</button>
@@ -602,7 +602,7 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
       </div>
 
       {/* ── Map Area ── */}
-      <div style={{ position: 'relative', flex: '1 1 auto', minHeight: '240px', background: '#030712', borderRadius: '10px', border: '1px solid var(--border-color)', overflow: 'hidden', marginBottom: '14px' }}>
+      <div style={{ position: 'relative', flex: '1 1 auto', minHeight: '240px', background: 'var(--surface-input)', borderRadius: 'var(--rounded-md)', border: '1px solid var(--border)', overflow: 'hidden', marginBottom: '14px' }}>
         {/* Leaflet geo map */}
         <div
           ref={mapRef}
@@ -627,18 +627,18 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
               .sch-core { stroke-width:2.5; stroke-linecap:round; stroke-dasharray:6 5; }
               .up   { stroke:var(--accent); }
               .down { stroke:var(--ink-soft); }
-              .disrupted.sch-glow { stroke:var(--status-warn); opacity:.35; animation:pulse-glow 1.5s infinite; }
-              .disrupted.sch-core { stroke:var(--status-warn); opacity:.8; animation:blink-y 1.5s infinite; }
+              .disrupted.sch-glow { stroke:var(--status-warn); opacity:.35; }
+              .disrupted.sch-core { stroke:var(--status-warn); opacity:.8; }
               .stn-out { fill:#030712; stroke:rgba(255,255,255,.12); stroke-width:1.5; cursor:pointer; }
               .stn-out.act { stroke:var(--accent); }
-              .stn-out.danger { stroke:var(--status-fail); filter:url(#neon-glow); }
+              .stn-out.danger { stroke:var(--status-fail); }
               .stn-in { fill:rgba(255,255,255,.15); }
               .stn-in.act { fill:var(--accent); }
               .stn-in.danger { fill:var(--status-fail); }
-              .train-node { transition:all .8s cubic-bezier(.25,1,.5,1); cursor:pointer; }
-              .train-node:hover { filter:drop-shadow(0 0 8px var(--color-primary)); }
-              @keyframes pulse-glow { 0%,100%{opacity:.15} 50%{opacity:.4} }
-              @keyframes blink-y    { 0%,100%{opacity:.4}  50%{opacity:1}  }
+              .train-node { cursor:pointer; }
+              .train-node:hover { stroke:var(--accent); }
+              
+              
             `}</style>
 
             {/* Track segments */}
@@ -666,9 +666,9 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
                   <circle cx={s.x} cy={s.y_up}   r="3.5" className={`stn-in ${hasDis ? 'danger' : 'act'}`} />
                   <circle cx={s.x} cy={s.y_down} r="8" className={`stn-out ${hasDis ? 'danger' : 'act'}`} />
                   <circle cx={s.x} cy={s.y_down} r="3.5" className={`stn-in ${hasDis ? 'danger' : 'act'}`} />
-                  <rect x={s.x - 45} y="180" width="90" height="28" rx="4" fill="rgba(3,5,10,.88)" stroke="var(--border-color)" strokeWidth="1" />
-                  <text x={s.x} y="193" textAnchor="middle" fill="var(--color-text-main)" fontSize="0.62rem" fontWeight="800">{s.name}</text>
-                  <text x={s.x} y="204" textAnchor="middle" fill="var(--color-primary)" fontSize="0.55rem" fontWeight="600" letterSpacing="1px">{code}</text>
+                  <rect x={s.x - 45} y="180" width="90" height="28" rx="4" fill="var(--surface-input)" stroke="var(--border)" strokeWidth="1" />
+                  <text x={s.x} y="193" textAnchor="middle" fill="var(--ink)" fontSize="0.62rem" fontWeight="800">{s.name}</text>
+                  <text x={s.x} y="204" textAnchor="middle" fill="var(--accent)" fontSize="0.55rem" fontWeight="600" letterSpacing="1px">{code}</text>
                 </g>
               );
             })}
@@ -691,11 +691,11 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
                     fill="none" stroke="#FFF" strokeWidth="1.8" strokeLinecap="round" />
                   <g transform={`translate(0,${y === 70 ? -24 : 24})`}>
                     <rect x="-35" y="-10" width="70" height="15" rx="3" fill="#030712" stroke={color} strokeWidth="1" />
-                    <text x="0" y="0.5" textAnchor="middle" fill="var(--color-text-main)" fontSize="0.55rem" fontWeight="800">
+                    <text x="0" y="0.5" textAnchor="middle" fill="var(--ink)" fontSize="0.55rem" fontWeight="800">
                       {train.train_no}
                     </text>
                     {(train.current_delay > 0) && (
-                      <text x="0" y="10" textAnchor="middle" fill="var(--color-danger)" fontSize="0.45rem" fontWeight="700">
+                      <text x="0" y="10" textAnchor="middle" fill="var(--accent)" fontSize="0.45rem" fontWeight="700">
                         +{train.current_delay}m
                       </text>
                     )}
@@ -710,10 +710,10 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
         {routeLoading && (
           <div style={{
             position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: 'rgba(3,7,18,0.7)', zIndex: 500,
+            background: 'rgba(13,13,11,0.7)', zIndex: 500,
           }}>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '0.75rem', color: 'var(--color-primary)', fontWeight: 700 }}>Fetching live trains…</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--accent)', fontWeight: 700 }}>Fetching live trains…</div>
             </div>
           </div>
         )}
@@ -722,11 +722,11 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
         {searchMode && !routeLoading && (
           <div style={{
             position: 'absolute', top: '10px', left: '10px', zIndex: 400,
-            background: 'rgba(0,0,0,0.8)', border: '1px solid var(--color-primary)',
+            background: 'rgba(0,0,0,0.8)', border: '1px solid var(--border-accent)',
             borderRadius: '6px', padding: '6px 12px', fontSize: '0.7rem', fontWeight: 700,
           }}>
-            <span style={{ color: 'var(--color-primary)' }}>{routeTrains.length}</span>
-            <span style={{ color: 'var(--color-text-muted)', marginLeft: '5px' }}>trains · {fromCode} → {toCode}</span>
+            <span style={{ color: 'var(--accent)' }}>{routeTrains.length}</span>
+            <span style={{ color: 'var(--ink-soft)', marginLeft: '5px' }}>trains · {fromCode} → {toCode}</span>
           </div>
         )}
       </div>
@@ -747,11 +747,11 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
                 </h4>
                 <button
                   onClick={() => setStationBoard(null)}
-                  style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: '0.8rem' }}
+                  style={{ background: 'none', border: 'none', color: 'var(--ink-soft)', cursor: 'pointer', fontSize: '0.8rem' }}
                 >X</button>
               </div>
-              <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '4px' }} />
-              {stationLoading && <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', textAlign: 'center', padding: '10px' }}>Loading…</div>}
+              <div style={{ borderBottom: '1px solid var(--border-soft)', paddingBottom: '4px' }} />
+              {stationLoading && <div style={{ fontSize: '0.65rem', color: 'var(--ink-soft)', textAlign: 'center', padding: '10px' }}>Loading…</div>}
               {stationBoard.error && <div style={{ fontSize: '0.65rem', color: 'var(--color-warning)', textAlign: 'center' }}>API unavailable — check key</div>}
               {!stationLoading && !stationBoard.error && stationBoard.trains.length === 0 && (
                 <div style={{ fontSize: '0.65rem', color: 'var(--color-text-dark)', textAlign: 'center', padding: '10px' }}>No trains in next 2h</div>
@@ -760,7 +760,7 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
                 {stationBoard.trains.slice(0, 8).map((t, i) => (
                   <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.62rem', padding: '3px 5px', background: 'rgba(0,0,0,0.2)', borderRadius: '3px' }}>
                     <span style={{ fontWeight: 700, color: 'white' }}>{t.train_no || t.trainNo}</span>
-                    <span style={{ color: 'var(--color-text-muted)' }} title={t.train_name || t.trainName}>
+                    <span style={{ color: 'var(--ink-soft)' }} title={t.train_name || t.trainName}>
                       {(t.train_name || t.trainName || '').substring(0, 14)}
                     </span>
                     <span style={{ color: 'var(--accent)', fontWeight: 700 }}>{t.expected_arrival || t.arrival || '--'}</span>
@@ -770,28 +770,28 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
             </>
           ) : (
             <>
-              <h4 style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 600, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border-color)', paddingBottom: '5px', margin: 0 }}>
+              <h4 style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 600, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border-soft)', paddingBottom: '5px', margin: 0 }}>
                 Sensors & Kavach
               </h4>
               {/* Visibility slider */}
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', marginBottom: '3px' }}>
-                  <span style={{ color: 'var(--color-text-muted)' }}>Visibility</span>
-                  <span style={{ color: weatherState.visibility_meters < 500 ? 'var(--color-danger)' : 'var(--color-accent)', fontWeight: 700 }}>
+                  <span style={{ color: 'var(--ink-soft)' }}>Visibility</span>
+                  <span style={{ color: weatherState.visibility_meters < 500 ? 'var(--accent)' : 'var(--ink)', fontWeight: 700 }}>
                     {weatherState.visibility_meters}m {weatherState.active_warning !== 'NONE' && ' WARNING'}
                   </span>
                 </div>
                 <input type="range" min="100" max="3000" step="100" value={weatherState.visibility_meters} onChange={handleVisibilitySlider}
-                  style={{ width: '100%', height: '3px', background: 'var(--border-color)', outline: 'none', appearance: 'none', cursor: 'pointer' }} />
+                  style={{ width: '100%', height: '3px', background: 'var(--border)', outline: 'none', appearance: 'none', cursor: 'pointer' }} />
               </div>
               {/* Kavach toggles */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <span style={{ fontSize: '0.58rem', color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>Kavach Segments</span>
+                <span style={{ fontSize: '0.58rem', color: 'var(--ink-soft)', textTransform: 'uppercase' }}>Kavach Segments</span>
                 {Object.keys(kavachStates).map(sec => (
                   <label key={sec} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.65rem', background: 'rgba(0,0,0,0.15)', padding: '4px 7px', borderRadius: '4px', cursor: 'pointer' }}>
                     <span style={{ fontWeight: 600 }}>{sec}</span>
                     <input type="checkbox" checked={kavachStates[sec]} onChange={() => handleKavachToggle(sec)}
-                      style={{ accentColor: 'var(--color-primary)' }} />
+                      style={{ accentColor: 'var(--accent)' }} />
                   </label>
                 ))}
               </div>
@@ -804,14 +804,14 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
           background: 'var(--surface-panel)', border: '1px solid var(--border)',
           borderRadius: 'var(--rounded-md)', padding: '16px', display: 'flex', flexDirection: 'column'
         }}>
-          <h4 style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 600, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border-color)', paddingBottom: '5px', marginBottom: '8px', marginTop: 0 }}>
+          <h4 style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 600, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border-soft)', paddingBottom: '5px', marginBottom: '8px', marginTop: 0 }}>
             Telemetry Inspector
           </h4>
 
           {/* Route train list (when search active) */}
           {searchMode && !selectedTrain && (
             <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '3px', maxHeight: '180px' }}>
-              {routeLoading && <div style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', textAlign: 'center', padding: '20px' }}>Fetching live data…</div>}
+              {routeLoading && <div style={{ fontSize: '0.65rem', color: 'var(--ink-soft)', textAlign: 'center', padding: '20px' }}>Fetching live data…</div>}
               {!routeLoading && routeTrains.length === 0 && !routeError && (
                 <div style={{ fontSize: '0.65rem', color: 'var(--color-text-dark)', textAlign: 'center', padding: '16px', fontStyle: 'italic' }}>
                   Enter stations above & click SEARCH to see live trains
@@ -833,11 +833,11 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
                       borderRadius: '4px', cursor: 'pointer', border: '1px solid transparent',
                       transition: 'border-color 0.15s',
                     }}
-                    onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--color-primary)'}
+                    onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--accent)'}
                     onMouseLeave={e => e.currentTarget.style.borderColor = 'transparent'}
                   >
                     <span style={{ fontWeight: 700, color: 'white', minWidth: '50px' }}>{no}</span>
-                    <span style={{ color: 'var(--color-text-muted)', flex: 1, marginLeft: '6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
+                    <span style={{ color: 'var(--ink-soft)', flex: 1, marginLeft: '6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
                     <span style={{ color: 'var(--accent)', fontWeight: 700, marginLeft: '6px', whiteSpace: 'nowrap' }}>{dep}→{arr}</span>
                     <span style={{ color: 'var(--color-text-dark)', marginLeft: '6px' }}>{dur}</span>
                   </div>
@@ -862,7 +862,7 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
                   <span style={{ color: 'var(--accent)', fontWeight: 700, fontFamily: 'monospace' }}>{selectedTrain.train_no}</span>
                   <button
                     onClick={() => setSelectedTrain(null)}
-                    style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: '0.75rem' }}
+                    style={{ background: 'none', border: 'none', color: 'var(--ink-soft)', cursor: 'pointer', fontSize: '0.75rem' }}
                   >X</button>
                 </div>
               </div>
@@ -870,7 +870,7 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', background: 'rgba(0,0,0,0.2)', padding: '6px', borderRadius: '4px', fontSize: '0.62rem' }}>
                 {selectedTrain.current_station && <div>Station: <strong style={{ color: 'white' }}>{selectedTrain.current_station}</strong></div>}
                 {selectedTrain.status && <div>Status: <strong style={{ color: 'white' }}>{selectedTrain.status}</strong></div>}
-                {(selectedTrain.current_delay !== undefined) && <div>Delay: <strong style={{ color: selectedTrain.current_delay > 0 ? 'var(--color-danger)' : 'var(--color-accent)' }}>{selectedTrain.current_delay > 0 ? `+${selectedTrain.current_delay}m` : 'On time'}</strong></div>}
+                {(selectedTrain.current_delay !== undefined) && <div>Delay: <strong style={{ color: selectedTrain.current_delay > 0 ? 'var(--accent)' : 'var(--ink)' }}>{selectedTrain.current_delay > 0 ? `+${selectedTrain.current_delay}m` : 'On time'}</strong></div>}
                 {selectedTrain.latitude > 0 && <div>Lat: <strong style={{ color: 'white' }}>{selectedTrain.latitude.toFixed(3)}</strong></div>}
                 {selectedTrain.arrival_time && selectedTrain.arrival_time !== '--' && <div>Arrival: <strong style={{ color: 'white' }}>{selectedTrain.arrival_time}</strong></div>}
                 {selectedTrain.departure_time && selectedTrain.departure_time !== '--' && <div>Departure: <strong style={{ color: 'white' }}>{selectedTrain.departure_time}</strong></div>}
@@ -879,14 +879,14 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
               </div>
 
               {/* Live status fetch result */}
-              {liveLoading && <div style={{ fontSize: '0.62rem', color: 'var(--color-text-muted)', textAlign: 'center' }}>Fetching live status…</div>}
+              {liveLoading && <div style={{ fontSize: '0.62rem', color: 'var(--ink-soft)', textAlign: 'center' }}>Fetching live status…</div>}
               {liveStatus && !liveLoading && (
-                <div style={{ background: 'var(--color-primary-dim)', border: '1px solid rgba(227,26,34,0.15)', borderRadius: '4px', padding: '6px', fontSize: '0.62rem' }}>
-                  <div style={{ color: 'var(--color-primary)', fontWeight: 700, marginBottom: '3px' }}>Live Telemetry</div>
+                <div style={{ background: 'var(--accent-subtle)', border: '1px solid var(--border-accent)', borderRadius: '4px', padding: '6px', fontSize: '0.62rem' }}>
+                  <div style={{ color: 'var(--accent)', fontWeight: 700, marginBottom: '3px' }}>Live Telemetry</div>
                   {liveStatus.error ? (
                     <span style={{ color: 'var(--color-warning)' }}>Live status API unavailable</span>
                   ) : (
-                    <pre style={{ margin: 0, fontSize: '0.55rem', color: 'var(--color-text-muted)', overflowX: 'auto', maxHeight: '80px' }}>
+                    <pre style={{ margin: 0, fontSize: '0.55rem', color: 'var(--ink-soft)', overflowX: 'auto', maxHeight: '80px' }}>
                       {JSON.stringify(liveStatus.data, null, 1).substring(0, 400)}
                     </pre>
                   )}
@@ -895,7 +895,7 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
 
               {/* Speed lock */}
               <div style={{ marginTop: '2px' }}>
-                <label style={{ fontSize: '0.62rem', color: 'var(--color-text-muted)', display: 'block', marginBottom: '3px' }}>Safety Speed Lock (GZB-ALJN):</label>
+                <label style={{ fontSize: '0.62rem', color: 'var(--ink-soft)', display: 'block', marginBottom: '3px' }}>Safety Speed Lock (GZB-ALJN):</label>
                 <div style={{ display: 'flex', gap: '5px' }}>
                   {[30, 60, 110, 130].map(sp => (
                     <button
@@ -903,9 +903,9 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
                       onClick={() => handleSpeedLimitChange('GZB-ALJN', sp)}
                       style={{
                         flex: 1,
-                        background: speedLimits['GZB-ALJN'] === sp ? 'var(--color-primary)' : 'rgba(255,255,255,0.02)',
-                        border: '1px solid var(--border-color)', borderRadius: '3px',
-                        color: speedLimits['GZB-ALJN'] === sp ? 'black' : 'white',
+                        background: speedLimits['GZB-ALJN'] === sp ? 'var(--accent)' : 'transparent',
+                        border: '1px solid var(--border)', borderRadius: '3px',
+                        color: speedLimits['GZB-ALJN'] === sp ? 'var(--ink-on-red)' : 'var(--ink-soft)',
                         fontSize: '0.58rem', fontWeight: 'bold', padding: '3px 0', cursor: 'pointer',
                       }}
                     >{sp}</button>
@@ -921,7 +921,7 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
           background: 'var(--surface-panel)', border: '1px solid var(--border)',
           borderRadius: 'var(--rounded-md)', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px'
         }}>
-          <h4 style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 600, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border-color)', paddingBottom: '5px', margin: 0 }}>
+          <h4 style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 600, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border-soft)', paddingBottom: '5px', margin: 0 }}>
             System Metrics
           </h4>
 
@@ -940,18 +940,18 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
           </div>
 
           {/* Active trains count */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', background: 'rgba(0,0,0,0.1)', padding: '5px 8px', borderRadius: '4px' }}>
-            <span style={{ color: 'var(--color-text-muted)' }}>Active Trains</span>
-            <span style={{ fontWeight: 700, color: 'var(--color-primary)' }}>{activeTrains.length}</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', background: 'var(--surface-input)', border: '1px solid var(--border)', borderRadius: 'var(--rounded-xs)', padding: '5px 8px' }}>
+            <span style={{ color: 'var(--ink-soft)' }}>Active Trains</span>
+            <span style={{ fontWeight: 700, color: 'var(--accent)' }}>{activeTrains.length}</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', background: 'rgba(0,0,0,0.1)', padding: '5px 8px', borderRadius: '4px' }}>
-            <span style={{ color: 'var(--color-text-muted)' }}>Disruptions</span>
-            <span style={{ fontWeight: 700, color: disruptions.some(d => d.status === 'ACTIVE') ? 'var(--color-danger)' : 'var(--color-accent)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', background: 'var(--surface-input)', border: '1px solid var(--border)', borderRadius: 'var(--rounded-xs)', padding: '5px 8px' }}>
+            <span style={{ color: 'var(--ink-soft)' }}>Disruptions</span>
+            <span style={{ fontWeight: 700, color: disruptions.some(d => d.status === 'ACTIVE') ? 'var(--accent)' : 'var(--ink-soft)' }}>
               {disruptions.filter(d => d.status === 'ACTIVE').length} ACTIVE
             </span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', background: 'rgba(0,0,0,0.1)', padding: '5px 8px', borderRadius: '4px' }}>
-            <span style={{ color: 'var(--color-text-muted)' }}>Data Source</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', background: 'var(--surface-input)', border: '1px solid var(--border)', borderRadius: 'var(--rounded-xs)', padding: '5px 8px' }}>
+            <span style={{ color: 'var(--ink-soft)' }}>Data Source</span>
             <span style={{ fontWeight: 700, color: 'var(--accent)', fontSize: '0.58rem' }}>
               {searchMode ? 'RapidAPI IRCTC' : 'SCENARIO+LIVE'}
             </span>
@@ -971,10 +971,10 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
             >{autoplay ? 'PAUSE AUTOPLAY' : 'START AUTOPLAY'}</button>
             {autoplay && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <div style={{ flexGrow: 1, height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', overflow: 'hidden' }}>
-                  <div style={{ width: `${(autoplayCountdown / 6) * 100}%`, height: '100%', background: 'var(--color-primary)', transition: 'width 1s linear' }} />
+                <div style={{ flexGrow: 1, height: '3px', background: 'var(--border)', overflow: 'hidden' }}>
+                  <div style={{ width: `${(autoplayCountdown / 6) * 100}%`, height: '100%', background: 'var(--accent)', transition: 'width 1s linear' }} />
                 </div>
-                <span style={{ fontSize: '0.55rem', color: 'var(--color-text-muted)' }}>{autoplayCountdown}s</span>
+                <span style={{ fontSize: '0.55rem', color: 'var(--ink-soft)' }}>{autoplayCountdown}s</span>
               </div>
             )}
           </div>
