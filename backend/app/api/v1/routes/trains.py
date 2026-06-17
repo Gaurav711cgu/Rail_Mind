@@ -262,8 +262,10 @@ async def rapidapi_live_train_status(
                     break
         elif train_no in ["12002", "22415", "BOXN-902"]:
             train_name = (
-                "NDLS-BCT Shatabdi Express" if train_no == "12002"
-                else "NDLS-BSB Vande Bharat" if train_no == "22415"
+                "NDLS-BCT Shatabdi Express"
+                if train_no == "12002"
+                else "NDLS-BSB Vande Bharat"
+                if train_no == "22415"
                 else "Coal Freight"
             )
             station = "GZB" if train_no == "BOXN-902" else "NDLS"
@@ -279,7 +281,7 @@ async def rapidapi_live_train_status(
                 "stationName": station,
             },
             "currentStatus": f"Delayed by {delay} min" if delay > 0 else "Running on time",
-            "lastUpdated": "Just now (Telemetry Link Mocked)"
+            "lastUpdated": "Just now (Telemetry Link Mocked)",
         }
         return {
             "provider": "rapidapi-irctc",
