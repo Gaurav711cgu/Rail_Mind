@@ -41,6 +41,7 @@ class AgentState(TypedDict):
     audit_chain: List[Dict[str, Any]]
     # Annotated with operator.add means LangGraph appends, never overwrites
     logs: Annotated[List[str], operator.add]
+    outbox_events: Annotated[List[Dict[str, Any]], operator.add]
     escalated: bool
     step: int
     timestamp: str
@@ -79,16 +80,16 @@ async def _node_monitor(state: AgentState) -> Dict[str, Any]:
         updates, confidence, reasoning = await _monitor.process(state)
         _update_health("MonitorAgent", "healthy", confidence)
         log = f"[MonitorAgent] conf={confidence:.2f} | {reasoning}"
-        await stream_service.publish(
-            settings.REDIS_STREAM_POSITIONS,
-            {
+        outbox = {
+            "stream": settings.REDIS_STREAM_POSITIONS,
+            "payload": {
                 "agent": "MonitorAgent",
                 "confidence": confidence,
                 "reasoning": reasoning,
                 **{k: v for k, v in updates.items() if k != "trains"},
-            },
-        )
-        return {**updates, "logs": [log]}
+            }
+        }
+        return {**updates, "logs": [log], "outbox_events": [outbox]}
     except Exception as exc:
         _update_health("MonitorAgent", "degraded", error=str(exc))
         raise
@@ -100,16 +101,17 @@ async def _node_conflict(state: AgentState) -> Dict[str, Any]:
         updates, confidence, reasoning = await _conflict.process(state)
         _update_health("ConflictDetector", "healthy", confidence)
         log = f"[ConflictDetector] conf={confidence:.2f} | {reasoning}"
+        outbox_events = []
         if updates.get("disruptions"):
-            await stream_service.publish(
-                settings.REDIS_STREAM_DISRUPTIONS,
-                {
+            outbox_events.append({
+                "stream": settings.REDIS_STREAM_DISRUPTIONS,
+                "payload": {
                     "agent": "ConflictDetector",
                     "disruptions": updates["disruptions"],
                     "confidence": confidence,
-                },
-            )
-        return {**updates, "logs": [log]}
+                }
+            })
+        return {**updates, "logs": [log], "outbox_events": outbox_events}
     except Exception as exc:
         _update_health("ConflictDetector", "degraded", error=str(exc))
         raise
@@ -133,16 +135,17 @@ async def _node_dispatch(state: AgentState) -> Dict[str, Any]:
         updates, confidence, reasoning = await _dispatch.process(state)
         _update_health("DispatchAgent", "healthy", confidence)
         log = f"[DispatchAgent] conf={confidence:.2f} | {reasoning}"
+        outbox_events = []
         if updates.get("recommendations"):
-            await stream_service.publish(
-                settings.REDIS_STREAM_RECOMMENDATIONS,
-                {
+            outbox_events.append({
+                "stream": settings.REDIS_STREAM_RECOMMENDATIONS,
+                "payload": {
                     "agent": "DispatchAgent",
                     "recommendations": updates.get("recommendations", []),
                     "confidence": confidence,
-                },
-            )
-        return {**updates, "logs": [log]}
+                }
+            })
+        return {**updates, "logs": [log], "outbox_events": outbox_events}
     except Exception as exc:
         _update_health("DispatchAgent", "degraded", error=str(exc))
         raise
@@ -166,15 +169,16 @@ async def _node_audit(state: AgentState) -> Dict[str, Any]:
         updates, confidence, reasoning = await _audit.process(state)
         _update_health("AuditAgent", "healthy", confidence)
         log = f"[AuditAgent] conf={confidence:.2f} | {reasoning}"
+        outbox_events = []
         if updates.get("audit_entries"):
-            await stream_service.publish(
-                settings.REDIS_STREAM_AUDIT,
-                {
+            outbox_events.append({
+                "stream": settings.REDIS_STREAM_AUDIT,
+                "payload": {
                     "agent": "AuditAgent",
                     "entries_added": len(updates.get("audit_entries", [])),
-                },
-            )
-        return {**updates, "logs": [log]}
+                }
+            })
+        return {**updates, "logs": [log], "outbox_events": outbox_events}
     except Exception as exc:
         _update_health("AuditAgent", "degraded", error=str(exc))
         raise
@@ -259,13 +263,32 @@ class AgentOrchestrator:
             "audit_entries": initial_state.get("audit_entries", []),
             "audit_chain": initial_state.get("audit_chain", []),
             "logs": initial_state.get("logs", []),
+            "outbox_events": initial_state.get("outbox_events", []),
             "escalated": initial_state.get("escalated", False),
             "step": initial_state.get("step", 0),
             "timestamp": datetime.datetime.utcnow().isoformat(),
         }
 
         try:
+            from app.db.database import AsyncSessionLocal, DBOutboxEvent
+            import json
+            
             result = await _graph.ainvoke(state)
+            
+            # TRANSACTIONAL OUTBOX: Persist all accumulated side-effects in a single DB transaction
+            outbox_events = result.get("outbox_events", [])
+            if outbox_events:
+                async with AsyncSessionLocal() as session:
+                    for evt in outbox_events:
+                        db_event = DBOutboxEvent(
+                            aggregate_type="AgentGraph",
+                            aggregate_id=result.get("timestamp", ""),
+                            event_type=evt.get("stream", "unknown"),
+                            payload=json.dumps(evt.get("payload", {}))
+                        )
+                        session.add(db_event)
+                    await session.commit()
+            
             return dict(result)
         except Exception as exc:
             logger.error("[Orchestrator] Pipeline error: %s", exc, exc_info=True)
@@ -308,6 +331,7 @@ class AgentOrchestrator:
                         "audit_entries": [],
                         "audit_chain": [],
                         "logs": [],
+                        "outbox_events": [],
                         "escalated": False,
                         "step": 0,
                         "timestamp": datetime.datetime.utcnow().isoformat(),

@@ -275,6 +275,45 @@ class StreamService:
         except Exception:
             return True
 
+    # ----------------------------------------------------------------------- #
+    #  Transactional Outbox Worker                                             #
+    # ----------------------------------------------------------------------- #
+    async def start_outbox_worker(self, poll_interval: float = 1.0) -> None:
+        """
+        Continuously poll the DBOutboxEvent table for PENDING events,
+        publish them to Redis, and mark them as PROCESSED.
+        """
+        while True:
+            try:
+                from sqlalchemy import select
+                from app.db.database import AsyncSessionLocal, DBOutboxEvent
+                import datetime
+                
+                async with AsyncSessionLocal() as session:
+                    # Select PENDING events
+                    stmt = select(DBOutboxEvent).where(DBOutboxEvent.status == "PENDING").order_by(DBOutboxEvent.created_at.asc()).limit(50)
+                    result = await session.execute(stmt)
+                    events = result.scalars().all()
+                    
+                    for event in events:
+                        # Publish to stream
+                        payload = json.loads(event.payload)
+                        await self.publish(event.event_type, payload)
+                        
+                        # Mark as processed
+                        event.status = "PROCESSED"
+                        event.processed_at = datetime.datetime.utcnow()
+                    
+                    if events:
+                        await session.commit()
+                        
+            except asyncio.CancelledError:
+                break
+            except Exception as exc:
+                logger.warning("[OutboxWorker] Error processing outbox: %s", exc)
+                
+            await asyncio.sleep(poll_interval)
+
 
 # Singleton
 stream_service = StreamService()

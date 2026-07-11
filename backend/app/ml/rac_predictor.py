@@ -259,6 +259,7 @@ class RACPredictor:
         from datetime import datetime, timezone
         from evidently.legacy.report import Report
         from evidently.legacy.metric_preset import DataDriftPreset
+        from evidently.calculations.stattests import psi_stat_test
 
         random_state = random.Random(42)
         ref_data = []
@@ -292,7 +293,11 @@ class RACPredictor:
                 )
         curr_df = pd.DataFrame(current_data)
 
-        report = Report(metrics=[DataDriftPreset()])
+        # Force Population Stability Index (PSI) for continuous variables as requested for 10/10 feature
+        from evidently.options import DataDriftOptions
+        options = DataDriftOptions(all_features_stattest=psi_stat_test, threshold=0.1)
+
+        report = Report(metrics=[DataDriftPreset()], options=[options])
         report.run(reference_data=ref_df, current_data=curr_df)
 
         import json
