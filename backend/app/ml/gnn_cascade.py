@@ -69,7 +69,10 @@ except ImportError:
             nn.init.xavier_uniform_(self.att)
 
         def forward(
-            self, x: torch.Tensor, edge_index: torch.Tensor, edge_attr: Optional[torch.Tensor] = None
+            self,
+            x: torch.Tensor,
+            edge_index: torch.Tensor,
+            edge_attr: Optional[torch.Tensor] = None,
         ) -> torch.Tensor:
             num_nodes = x.size(0)
             h = self.lin(x).view(num_nodes, self.heads, self.out_channels)
