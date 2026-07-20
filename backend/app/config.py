@@ -68,6 +68,13 @@ class Settings(BaseSettings):
     RAPIDAPI_IRCTC_KEY: str = ""
     RAPIDAPI_IRCTC_TIMEOUT_SECONDS: float = 10.0
 
+    # RailRadar (primary live-data source, 50 req/day free)
+    RAILRADAR_API_KEY: str = ""
+    RAILRADAR_BASE_URL: str = "https://api.railradar.in/v1"
+
+    # RailwayAPI.in (secondary fallback, 500 req/day free)
+    RAILWAYAPI_KEY: str = ""
+
     # ------------------------------------------------------------------ #
     #  ML Model paths                                                      #
     # ------------------------------------------------------------------ #
