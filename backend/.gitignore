@@ -4,7 +4,6 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .mypy_cache/
-railmind_local.db
-test_railmind.db
+*.db
 .DS_Store
 .coverage

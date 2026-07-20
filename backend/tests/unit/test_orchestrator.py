@@ -202,12 +202,12 @@ async def test_all_route_prefixes_registered(client):
 
 @pytest.mark.asyncio
 async def test_request_metrics_tracked(client):
-    """After requests, _request_metrics should be updated."""
-    from app.main import _request_metrics
+    """After requests, request_metrics should be updated."""
+    from app.core.state import request_metrics
 
     await client.get("/api/v1/health")
     await client.get("/api/v1/health")
-    assert _request_metrics["total_requests"] >= 0  # may be 0 in test mode
+    assert request_metrics["total_requests"] >= 0  # may be 0 in test mode
 
 
 # ─────────────────────────────────────────────────────────────
