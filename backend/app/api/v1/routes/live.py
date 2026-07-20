@@ -92,7 +92,7 @@ async def live_mode_stream(db: AsyncSession = Depends(get_db)):
                 "data": json.dumps(
                     {
                         "active_runs": len(_active_runs),
-                        "timestamp": text("NOW()"),  # just indicating alive
+                        "timestamp": datetime.now().isoformat(),  # just indicating alive
                     }
                 ),
             }
