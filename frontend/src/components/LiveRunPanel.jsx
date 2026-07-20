@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Terminal, Activity, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Terminal, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 
 const LiveRunPanel = () => {
   const [activeRuns, setActiveRuns] = useState(0);
@@ -14,9 +14,14 @@ const LiveRunPanel = () => {
       setActiveRuns(data.active_runs);
       if (data.active_runs > 0) {
         setLastStatus('Running Agent Cycle...');
-      } else if (lastStatus === 'Running Agent Cycle...') {
-        setLastStatus('Completed');
-        setTimeout(() => setLastStatus('Idle'), 3000);
+      } else {
+        setLastStatus((prevStatus) => {
+          if (prevStatus === 'Running Agent Cycle...') {
+            setTimeout(() => setLastStatus('Idle'), 3000);
+            return 'Completed';
+          }
+          return prevStatus;
+        });
       }
     };
     
@@ -28,7 +33,7 @@ const LiveRunPanel = () => {
     return () => {
       eventSource.close();
     };
-  }, [lastStatus]);
+  }, []);
   
   if (activeRuns === 0 && lastStatus === 'Idle') return null;
 

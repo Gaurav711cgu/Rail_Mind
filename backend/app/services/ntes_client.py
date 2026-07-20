@@ -1,4 +1,3 @@
-import asyncio
 import httpx
 from datetime import date, datetime, timezone
 from typing import Optional

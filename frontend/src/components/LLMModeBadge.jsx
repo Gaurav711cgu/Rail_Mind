@@ -1,4 +1,3 @@
-import React from 'react';
 import { Bot, BrainCircuit } from 'lucide-react';
 
 const LLMModeBadge = ({ isAgentic }) => {

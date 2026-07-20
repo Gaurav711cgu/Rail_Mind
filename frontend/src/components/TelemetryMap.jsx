@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 /* ─────────────────────────────────────────────────────────────────
    STATION COORDINATE REGISTRY
@@ -69,7 +69,7 @@ function coordsFor(code) {
 }
 
 /* colour by delay */
-function trainColor(delay, isFreight) {
+function trainColor(delay) {
   if (delay >= 10) return 'var(--accent)'; // Crimson Red for delays
   return 'var(--ink)'; // Crisp White for on-time / freight
 }
@@ -151,6 +151,7 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
     return () => clearInterval(timerRef.current);
   }, [autoplay, onNextStep]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setAutoplayCD(6); }, [scenarioStep]);
 
   /* ────────────────────────────────────────────
@@ -159,11 +160,11 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
   const handleKavachToggle = async (sec) => {
     const next = !kavachStates[sec];
     setKavachStates(p => ({ ...p, [sec]: next }));
-    try { await fetch(`/api/v1/cascade/kavach-toggle?section_code=${sec}&active=${next}`, { method: 'POST' }); } catch {}
+    try { await fetch(`/api/v1/cascade/kavach-toggle?section_code=${sec}&active=${next}`, { method: 'POST' }); } catch (err) { console.error(err); }
   };
   const handleSpeedLimitChange = async (sec, limit) => {
     setSpeedLimits(p => ({ ...p, [sec]: limit }));
-    try { await fetch(`/api/v1/trains/speed-lock?section_code=${sec}&speed_limit=${limit}`, { method: 'POST' }); } catch {}
+    try { await fetch(`/api/v1/trains/speed-lock?section_code=${sec}&speed_limit=${limit}`, { method: 'POST' }); } catch (err) { console.error(err); }
   };
   const handleVisibilitySlider = async (e) => {
     const v = parseInt(e.target.value);
@@ -171,7 +172,7 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
     const s = v < 500 ? 30 : v < 1000 ? 60 : 130;
     const next = { ...weatherState, visibility_meters: v, fog_density: d, recommended_speed_limit: s, active_warning: v < 500 ? 'SEVERE_FOG_WARNING' : 'NONE' };
     setWeatherState(next);
-    try { await fetch(`/api/v1/cascade/weather?visibility=${v}&fog_density=${d}&speed_limit=${s}`, { method: 'POST' }); } catch {}
+    try { await fetch(`/api/v1/cascade/weather?visibility=${v}&fog_density=${d}&speed_limit=${s}`, { method: 'POST' }); } catch (err) { console.error(err); }
   };
 
   /* ────────────────────────────────────────────

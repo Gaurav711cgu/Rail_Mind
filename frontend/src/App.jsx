@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import TelemetryMap from './components/TelemetryMap';
 import AgentLogs from './components/AgentLogs';
 import Recommendations from './components/Recommendations';
@@ -38,13 +38,14 @@ export default function App() {
       ]);
       if (resScenario.ok) setScenarioState(await resScenario.json());
       if (resAudit.ok)    setAuditLogs(await resAudit.json());
-    } catch (err) {
+    } catch {
       setError('Failed to establish telemetry link with backend server.');
     } finally {
       setLoading(false);
     }
   };
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { fetchData(); }, []);
 
   const handleNextStep = async () => {

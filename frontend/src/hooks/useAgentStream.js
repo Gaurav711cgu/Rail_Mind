@@ -27,7 +27,7 @@ export default function useAgentStream() {
   const retryDelay = useRef(2000); // start at 2s, exponential back-off
   const wsWasConnected = useRef(false);
 
-  const connectSSE = useCallback(() => {
+  const connectSSE = useCallback(function doConnectSSE() {
     // Don't start SSE if WebSocket is connected
     if (ws.connected) return;
 
@@ -68,7 +68,7 @@ export default function useAgentStream() {
       // Exponential back-off: 2s → 4s → 8s → cap at 30s
       retryRef.current = setTimeout(() => {
         retryDelay.current = Math.min(retryDelay.current * 2, 30000);
-        connectSSE();
+        doConnectSSE();
       }, retryDelay.current);
     };
   }, [ws.connected]);

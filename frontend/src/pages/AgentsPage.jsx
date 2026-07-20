@@ -1,4 +1,3 @@
-import React from 'react';
 import useAgentStream from '../hooks/useAgentStream';
 
 // Agent display metadata

@@ -11,12 +11,12 @@ router = APIRouter()
 @router.get("/health/system")
 async def health_system(db: AsyncSession = Depends(get_db)):
     import time
-    from app.main import _startup_time, _request_metrics
+    from app.core.state import startup_time, request_metrics
     from app.services.stream_service import stream_service
     from app.ml.rac_predictor import rac_predictor
     from app.agents.orchestrator import orchestrator
 
-    uptime = time.time() - _startup_time if _startup_time is not None else 0.0
+    uptime = time.time() - startup_time if startup_time is not None else 0.0
 
     db_status = "connected"
     try:
@@ -46,8 +46,8 @@ async def health_system(db: AsyncSession = Depends(get_db)):
         "agents_total": total_agents,
         "ml_status": ml_status,
         "ml_model": ml_status,
-        "total_requests": _request_metrics["total_requests"],
-        "avg_latency_ms": _request_metrics["avg_latency_ms"],
+        "total_requests": request_metrics["total_requests"],
+        "avg_latency_ms": request_metrics["avg_latency_ms"],
         "components": {
             "database": db_status,
             "redis": redis_status,
@@ -56,9 +56,9 @@ async def health_system(db: AsyncSession = Depends(get_db)):
             "agents": {"total": total_agents, "healthy": healthy_agents},
         },
         "performance": {
-            "total_requests": _request_metrics["total_requests"],
-            "avg_latency_ms": _request_metrics["avg_latency_ms"],
-            "p99_latency_ms": _request_metrics["p99_latency_ms"],
+            "total_requests": request_metrics["total_requests"],
+            "avg_latency_ms": request_metrics["avg_latency_ms"],
+            "p99_latency_ms": request_metrics["p99_latency_ms"],
         },
         "test_coverage": {"total": 18, "passing": 18},
     }

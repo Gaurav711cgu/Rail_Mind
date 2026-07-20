@@ -1,4 +1,3 @@
-import React from 'react';
 import { Play, Activity } from 'lucide-react';
 
 const ModeToggle = ({ isLive, setIsLive, onTriggerLive }) => {

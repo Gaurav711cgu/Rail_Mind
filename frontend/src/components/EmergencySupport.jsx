@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function EmergencySupport() {
   const [report, setReport] = useState({
@@ -17,7 +17,7 @@ export default function EmergencySupport() {
     power: true,
     radio: false
   });
-  const [pingStates, setPingStates] = useState({
+  const [pingStates] = useState({
     db: '9ms',
     api: '14ms',
     mlModel: '42ms',

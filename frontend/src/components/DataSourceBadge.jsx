@@ -1,5 +1,4 @@
-import React from 'react';
-import { Database, Zap, Clock } from 'lucide-react';
+import { Database, Zap } from 'lucide-react';
 
 const DataSourceBadge = ({ source }) => {
   const isLive = source === 'NTES' || source === 'RAILWAYAPI';

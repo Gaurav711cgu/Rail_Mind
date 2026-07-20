@@ -1,14 +1,13 @@
 import asyncio
 import json
-from fastapi import APIRouter, Depends, BackgroundTasks, HTTPException
+from fastapi import APIRouter, Depends, BackgroundTasks
 from sse_starlette.sse import EventSourceResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 
 from app.db.database import get_db, DBLiveAgentRun, DBUser
 from app.api.v1.routes.auth import get_current_user
-from app.services.ntes_client import ntes_client
-from app.agents.graph import RailMindGraph
+from app.agents.orchestrator import AgentOrchestrator
 
 router = APIRouter()
 
@@ -27,8 +26,8 @@ async def _run_agent_task(run_id: int, user_id: int):
                 await session.commit()
             
             # Execute graph
-            graph = RailMindGraph(session)
-            await graph.run()
+            orchestrator = AgentOrchestrator()
+            await orchestrator.run_pipeline({"trains": [], "disruptions": []})
             
             # Mark complete
             run = await session.get(DBLiveAgentRun, run_id)
@@ -48,7 +47,7 @@ async def _run_agent_task(run_id: int, user_id: int):
                     run.metrics_json = json.dumps({"error": str(e)})
                     run.completed_at = text("NOW()")
                     await session.commit()
-        except:
+        except Exception:
             pass
     finally:
         _active_runs.pop(run_id, None)

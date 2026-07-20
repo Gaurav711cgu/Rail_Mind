@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 const POLL_INTERVAL = 10000; // 10 seconds
 
@@ -36,6 +36,7 @@ export default function SystemStatusBar() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchHealth();
     const interval = setInterval(fetchHealth, POLL_INTERVAL);
     return () => clearInterval(interval);

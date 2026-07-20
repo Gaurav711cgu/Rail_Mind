@@ -24,7 +24,6 @@ from app.agents.cascade_predictor import CascadePredictor
 from app.agents.dispatch_agent import DispatchAgent
 from app.agents.notification_agent import NotificationAgent
 from app.agents.audit_agent import AuditAgent
-from app.services.stream_service import stream_service
 from app.config import settings
 
 logger = logging.getLogger(__name__)

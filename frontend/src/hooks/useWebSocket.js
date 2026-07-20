@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 /**
  * useWebSocket — connects to a WebSocket endpoint with exponential backoff.
@@ -19,7 +19,7 @@ export default function useWebSocket() {
   const retryDelay = useRef(2000); // start at 2s, exponential backoff
   const unmountedRef = useRef(false);
 
-  const connect = useCallback(() => {
+  function connect() {
     // Don't reconnect if component has unmounted
     if (unmountedRef.current) return;
 
@@ -74,18 +74,19 @@ export default function useWebSocket() {
       wsRef.current = null;
       scheduleRetry();
     };
-  }, []);
+  }
 
-  const scheduleRetry = useCallback(() => {
+  function scheduleRetry() {
     if (unmountedRef.current) return;
     retryRef.current = setTimeout(() => {
       retryDelay.current = Math.min(retryDelay.current * 2, 30000);
       connect();
     }, retryDelay.current);
-  }, [connect]);
+  }
 
   useEffect(() => {
     unmountedRef.current = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     connect();
     return () => {
       unmountedRef.current = true;
@@ -95,7 +96,7 @@ export default function useWebSocket() {
       }
       clearTimeout(retryRef.current);
     };
-  }, [connect]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return { data, connected, error, reconnect: connect };
 }
