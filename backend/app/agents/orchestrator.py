@@ -86,7 +86,7 @@ async def _node_monitor(state: AgentState) -> Dict[str, Any]:
                 "confidence": confidence,
                 "reasoning": reasoning,
                 **{k: v for k, v in updates.items() if k != "trains"},
-            }
+            },
         }
         return {**updates, "logs": [log], "outbox_events": [outbox]}
     except Exception as exc:
@@ -102,14 +102,16 @@ async def _node_conflict(state: AgentState) -> Dict[str, Any]:
         log = f"[ConflictDetector] conf={confidence:.2f} | {reasoning}"
         outbox_events = []
         if updates.get("disruptions"):
-            outbox_events.append({
-                "stream": settings.REDIS_STREAM_DISRUPTIONS,
-                "payload": {
-                    "agent": "ConflictDetector",
-                    "disruptions": updates["disruptions"],
-                    "confidence": confidence,
+            outbox_events.append(
+                {
+                    "stream": settings.REDIS_STREAM_DISRUPTIONS,
+                    "payload": {
+                        "agent": "ConflictDetector",
+                        "disruptions": updates["disruptions"],
+                        "confidence": confidence,
+                    },
                 }
-            })
+            )
         return {**updates, "logs": [log], "outbox_events": outbox_events}
     except Exception as exc:
         _update_health("ConflictDetector", "degraded", error=str(exc))
@@ -136,14 +138,16 @@ async def _node_dispatch(state: AgentState) -> Dict[str, Any]:
         log = f"[DispatchAgent] conf={confidence:.2f} | {reasoning}"
         outbox_events = []
         if updates.get("recommendations"):
-            outbox_events.append({
-                "stream": settings.REDIS_STREAM_RECOMMENDATIONS,
-                "payload": {
-                    "agent": "DispatchAgent",
-                    "recommendations": updates.get("recommendations", []),
-                    "confidence": confidence,
+            outbox_events.append(
+                {
+                    "stream": settings.REDIS_STREAM_RECOMMENDATIONS,
+                    "payload": {
+                        "agent": "DispatchAgent",
+                        "recommendations": updates.get("recommendations", []),
+                        "confidence": confidence,
+                    },
                 }
-            })
+            )
         return {**updates, "logs": [log], "outbox_events": outbox_events}
     except Exception as exc:
         _update_health("DispatchAgent", "degraded", error=str(exc))
@@ -170,13 +174,15 @@ async def _node_audit(state: AgentState) -> Dict[str, Any]:
         log = f"[AuditAgent] conf={confidence:.2f} | {reasoning}"
         outbox_events = []
         if updates.get("audit_entries"):
-            outbox_events.append({
-                "stream": settings.REDIS_STREAM_AUDIT,
-                "payload": {
-                    "agent": "AuditAgent",
-                    "entries_added": len(updates.get("audit_entries", [])),
+            outbox_events.append(
+                {
+                    "stream": settings.REDIS_STREAM_AUDIT,
+                    "payload": {
+                        "agent": "AuditAgent",
+                        "entries_added": len(updates.get("audit_entries", [])),
+                    },
                 }
-            })
+            )
         return {**updates, "logs": [log], "outbox_events": outbox_events}
     except Exception as exc:
         _update_health("AuditAgent", "degraded", error=str(exc))
@@ -271,9 +277,9 @@ class AgentOrchestrator:
         try:
             from app.db.database import AsyncSessionLocal, DBOutboxEvent
             import json
-            
+
             result = await _graph.ainvoke(state)
-            
+
             # TRANSACTIONAL OUTBOX: Persist all accumulated side-effects in a single DB transaction
             outbox_events = result.get("outbox_events", [])
             if outbox_events:
@@ -283,11 +289,11 @@ class AgentOrchestrator:
                             aggregate_type="AgentGraph",
                             aggregate_id=result.get("timestamp", ""),
                             event_type=evt.get("stream", "unknown"),
-                            payload=json.dumps(evt.get("payload", {}))
+                            payload=json.dumps(evt.get("payload", {})),
                         )
                         session.add(db_event)
                     await session.commit()
-            
+
             return dict(result)
         except Exception as exc:
             logger.error("[Orchestrator] Pipeline error: %s", exc, exc_info=True)

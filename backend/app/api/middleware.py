@@ -5,6 +5,7 @@ from fastapi import HTTPException
 from app.core import state
 from app.core.rate_limiter import rate_limiter
 
+
 async def performance_middleware(request: Request, call_next):
     start_time = time.perf_counter()
     try:
@@ -27,6 +28,7 @@ async def performance_middleware(request: Request, call_next):
             state.request_metrics["p99_latency_ms"] = round(sorted_l[idx], 2)
         else:
             state.request_metrics["p99_latency_ms"] = 0.0
+
 
 async def rate_limit_middleware(request: Request, call_next):
     try:

@@ -10,6 +10,7 @@ from app.agents.orchestrator import orchestrator
 from app.core import state
 from app.services.ntes_client import ntes_client
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     state.startup_time = time.time()
@@ -60,7 +61,7 @@ async def lifespan(app: FastAPI):
         await outbox_task
     except asyncio.CancelledError:
         pass
-        
+
     await orchestrator.stop()
     await stream_service.disconnect()
     await ntes_client.close()

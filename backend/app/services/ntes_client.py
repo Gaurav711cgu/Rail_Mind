@@ -35,7 +35,7 @@ class NTESClient:
             timeout=10.0,
             headers={"apikey": api_key} if api_key else {},
         )
-        self._validated = False   # set True after first successful call
+        self._validated = False  # set True after first successful call
         self._field_map: dict = {}  # populated after validation
 
     # ── Public API ──────────────────────────────────────────────
@@ -67,9 +67,7 @@ class NTESClient:
 
         return None
 
-    async def get_trains_between_stations(
-        self, from_code: str, to_code: str
-    ) -> list:
+    async def get_trains_between_stations(self, from_code: str, to_code: str) -> list:
         """Get trains between two stations. NTES only (no RailwayAPI equivalent on free tier)."""
         try:
             today = date.today().strftime("%Y%m%d")
@@ -108,7 +106,8 @@ class NTESClient:
                 params={"trainNo": "12301", "date": date.today().strftime("%Y%m%d")},
             )
             results["ntes_live_status"] = (
-                resp.status_code == 200 and "application/json" in resp.headers.get("content-type", "")
+                resp.status_code == 200
+                and "application/json" in resp.headers.get("content-type", "")
             )
         except Exception:
             pass
@@ -116,8 +115,12 @@ class NTESClient:
         try:
             resp = await self._ntes.get(
                 "/getTrainBetweenStation",
-                params={"fromStation": "NDLS", "toStation": "CNB",
-                        "date": date.today().strftime("%Y%m%d"), "flexiWithDate": "Y"},
+                params={
+                    "fromStation": "NDLS",
+                    "toStation": "CNB",
+                    "date": date.today().strftime("%Y%m%d"),
+                    "flexiWithDate": "Y",
+                },
             )
             results["ntes_between_stations"] = resp.status_code == 200
         except Exception:
@@ -192,8 +195,12 @@ class NTESClient:
             return None
 
         station = get_first(
-            "stationCode", "station_code", "currentStationCode",
-            "current_station_code", "stnCode", "code"
+            "stationCode",
+            "station_code",
+            "currentStationCode",
+            "current_station_code",
+            "stnCode",
+            "code",
         )
         delay_raw = get_first(
             "delayInMins", "delay", "lateBy", "delay_min", "late_by", "delayMinutes"
@@ -245,11 +252,16 @@ class NTESClient:
     def _map_running_status(self, raw: str) -> str:
         raw_upper = raw.upper()
         mapping = {
-            "YET TO START": "SCHEDULED", "NOT STARTED": "SCHEDULED",
-            "RUNNING": "RUNNING", "ON TIME": "RUNNING",
-            "ARRIVED": "ARRIVED", "AT STATION": "ARRIVED",
-            "DEPARTED": "RUNNING", "LEFT": "RUNNING",
-            "REACHED DESTINATION": "COMPLETED", "TERMINATED": "COMPLETED",
+            "YET TO START": "SCHEDULED",
+            "NOT STARTED": "SCHEDULED",
+            "RUNNING": "RUNNING",
+            "ON TIME": "RUNNING",
+            "ARRIVED": "ARRIVED",
+            "AT STATION": "ARRIVED",
+            "DEPARTED": "RUNNING",
+            "LEFT": "RUNNING",
+            "REACHED DESTINATION": "COMPLETED",
+            "TERMINATED": "COMPLETED",
         }
         for key, val in mapping.items():
             if key in raw_upper:
@@ -259,9 +271,11 @@ class NTESClient:
     async def _cache_to_db(self, train_no: str, data: dict, source: str):
         """Persist to train_telemetry_cache table."""
         import json
+
         try:
             from app.db.database import AsyncSessionLocal
             from sqlalchemy import text
+
             async with AsyncSessionLocal() as session:
                 await session.execute(
                     text("""
@@ -279,9 +293,11 @@ class NTESClient:
     async def _db_cache_fetch(self, train_no: str) -> Optional[dict]:
         """Fetch from cache. Returns None if no entry within 6 hours."""
         import json
+
         try:
             from app.db.database import AsyncSessionLocal
             from sqlalchemy import text
+
             async with AsyncSessionLocal() as session:
                 result = await session.execute(
                     text("""

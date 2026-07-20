@@ -171,11 +171,11 @@ class MonitorAgent(BaseAgent):
         Falls back to the existing state with a data quality warning.
         """
         watchlist = [t.strip() for t in settings.LIVE_TRAIN_WATCHLIST.split(",") if t.strip()]
-        
+
         # In live mode cap to LIVE_MODE_TRAIN_CAP to prevent rate limiting issues
         train_cap = getattr(settings, "LIVE_MODE_TRAIN_CAP", 10)
         watchlist = watchlist[:train_cap]
-        
+
         results: List[Dict] = []
 
         for train_no in watchlist:

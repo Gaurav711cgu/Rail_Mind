@@ -186,6 +186,7 @@ class DBOutboxEvent(Base):
     Agent decisions that alter physical/external state are written here within the same DB transaction.
     A separate background worker polls this table and publishes to Redis/Kafka.
     """
+
     __tablename__ = "outbox_events"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -193,10 +194,11 @@ class DBOutboxEvent(Base):
     aggregate_id: Mapped[str] = mapped_column(String(100), nullable=False)
     event_type: Mapped[str] = mapped_column(String(100), nullable=False)
     payload: Mapped[str] = mapped_column(Text, nullable=False)
-    status: Mapped[str] = mapped_column(String(20), default="PENDING", index=True) # PENDING, PROCESSED, FAILED
+    status: Mapped[str] = mapped_column(
+        String(20), default="PENDING", index=True
+    )  # PENDING, PROCESSED, FAILED
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     processed_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
-
 
 
 # ------------------------------------------------------------------ #

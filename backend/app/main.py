@@ -7,7 +7,17 @@ from app.core.lifespan import lifespan
 from app.api.middleware import performance_middleware, rate_limit_middleware
 from app.api.exceptions import global_exception_handler
 from app.api.v1.routes import (
-    auth, trains, disruptions, cascade, rerouting, rac, audit, health, recommendations, stream, live
+    auth,
+    trains,
+    disruptions,
+    cascade,
+    rerouting,
+    rac,
+    audit,
+    health,
+    recommendations,
+    stream,
+    live,
 )
 from app.services.stream_service import stream_service
 from app.ml.rac_predictor import rac_predictor
@@ -44,14 +54,21 @@ app.include_router(health.router, tags=["Health"])
 app.include_router(health.router, prefix=settings.API_V1_STR, tags=["Health"])
 app.include_router(auth.router, prefix=f"{settings.API_V1_STR}/auth", tags=["Auth"])
 app.include_router(trains.router, prefix=f"{settings.API_V1_STR}/trains", tags=["Trains"])
-app.include_router(disruptions.router, prefix=f"{settings.API_V1_STR}/disruptions", tags=["Disruptions"])
+app.include_router(
+    disruptions.router, prefix=f"{settings.API_V1_STR}/disruptions", tags=["Disruptions"]
+)
 app.include_router(cascade.router, prefix=f"{settings.API_V1_STR}/cascade", tags=["Cascade"])
 app.include_router(rerouting.router, prefix=f"{settings.API_V1_STR}/rerouting", tags=["Rerouting"])
 app.include_router(rac.router, prefix=f"{settings.API_V1_STR}/rac", tags=["RAC Predictor"])
 app.include_router(audit.router, prefix=f"{settings.API_V1_STR}/audit", tags=["Audit"])
-app.include_router(recommendations.router, prefix=f"{settings.API_V1_STR}/recommendations", tags=["Recommendations"])
+app.include_router(
+    recommendations.router,
+    prefix=f"{settings.API_V1_STR}/recommendations",
+    tags=["Recommendations"],
+)
 app.include_router(stream.router, prefix=f"{settings.API_V1_STR}/stream", tags=["Stream SSE"])
 app.include_router(live.router, prefix=f"{settings.API_V1_STR}/live", tags=["Live Data"])
+
 
 @app.get("/")
 async def root():

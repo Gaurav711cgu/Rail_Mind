@@ -27,6 +27,7 @@ class RACPredictor:
 
     def _try_load(self) -> None:
         import sys
+
         if "pytest" in sys.modules:
             print("[RACPredictor] Skipping XGBoost load during pytest to avoid segfault.")
             return
