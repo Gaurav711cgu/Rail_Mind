@@ -95,15 +95,9 @@ class RACPredictor:
         try:
             if isinstance(query, dict):
                 wl_pos = float(
-<<<<<<< HEAD
-                    query.get("waitlist_position", query.get("current_waitlist_position", 0))
-                )
-                rac_cnt = float(query.get("rac_count", query.get("current_rac_count", 0)))
-=======
                     query.get("waitlist_position", query.get("current_waitlist_position", 0)) or 0
                 )
                 rac_cnt = float(query.get("rac_count", query.get("current_rac_count", 0)) or 0)
->>>>>>> a2f1e34 (Fix type errors, formatting, and unit tests)
                 days = float(query.get("days_to_journey", 0))
                 q = str(query.get("quota", "GN"))
             else:
@@ -124,6 +118,7 @@ class RACPredictor:
                 self._query_log.pop(0)
         except Exception as log_ex:
             print(f"[RACPredictor] Error logging query for drift: {log_ex}")
+
         import pandas as pd
         from types import SimpleNamespace
 
@@ -266,13 +261,6 @@ class RACPredictor:
         Runs Evidently AI DataDriftPreset dynamically comparing current query distribution
         against historical training baseline.
         """
-<<<<<<< HEAD
-        import pandas as pd
-        import random
-        from datetime import datetime, timezone
-        from evidently.legacy.report import Report
-        from evidently.legacy.metric_preset import DataDriftPreset
-=======
         import random
         from datetime import datetime, timezone
 
@@ -293,7 +281,6 @@ class RACPredictor:
             from evidently.options import DataDriftOptions
         except Exception:
             return {**_empty, "note": "Evidently library unavailable. Drift reporting disabled."}
->>>>>>> a2f1e34 (Fix type errors, formatting, and unit tests)
 
         random_state = random.Random(42)
         ref_data = []
@@ -312,7 +299,6 @@ class RACPredictor:
 
         current_data = list(self._query_log)
         if len(current_data) < 10:
-<<<<<<< HEAD
             # Seed with drifted (holiday season high demand) current data for demonstration
             random_curr = random.Random(99)
             for _ in range(50):
@@ -326,54 +312,6 @@ class RACPredictor:
                         "quota": random_curr.choice(["GN"] * 70 + ["TQ"] * 25 + ["LD"] * 5),
                     }
                 )
-        curr_df = pd.DataFrame(current_data)
-
-        report = Report(metrics=[DataDriftPreset()])
-        report.run(reference_data=ref_df, current_data=curr_df)
-
-        import json
-
-        report_json = json.loads(report.json())
-
-        dataset_drift_metric = {}
-        data_drift_table = {}
-        for m in report_json.get("metrics", []):
-            if m.get("metric") == "DatasetDriftMetric":
-                dataset_drift_metric = m.get("result", {})
-            elif m.get("metric") == "DataDriftTable":
-                data_drift_table = m.get("result", {})
-
-        drift_by_columns = {}
-        raw_columns = data_drift_table.get("drift_by_columns", {})
-        for col, val in raw_columns.items():
-            drift_by_columns[col] = {
-                "drift_score": float(val.get("drift_score", 0.0)),
-                "drift_detected": bool(val.get("drift_detected", False)),
-                "test_name": str(val.get("stattest_name", val.get("test_name", "unknown"))),
-            }
-
-        return {
-            "dataset_drift": bool(dataset_drift_metric.get("dataset_drift", False)),
-            "number_of_columns": int(dataset_drift_metric.get("number_of_columns", 0)),
-            "number_of_drifted_columns": int(
-                dataset_drift_metric.get("number_of_drifted_columns", 0)
-            ),
-            "share_of_drifted_columns": float(
-                dataset_drift_metric.get("share_of_drifted_columns", 0.0)
-            ),
-            "drift_by_columns": drift_by_columns,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        }
-=======
-            return {
-                "dataset_drift": False,
-                "number_of_columns": 0,
-                "number_of_drifted_columns": 0,
-                "share_of_drifted_columns": 0.0,
-                "drift_by_columns": {},
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-                "note": f"Insufficient query data for drift analysis ({len(current_data)}/10 minimum required).",
-            }
         curr_df = pd.DataFrame(current_data)
 
         try:
@@ -419,7 +357,6 @@ class RACPredictor:
         except Exception as exc:
             print(f"[RACPredictor] Drift report execution error: {exc}")
             return {**_empty, "note": f"Drift computation failed: {exc}"}
->>>>>>> a2f1e34 (Fix type errors, formatting, and unit tests)
 
 
 rac_predictor = RACPredictor()
