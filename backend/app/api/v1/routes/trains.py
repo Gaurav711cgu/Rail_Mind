@@ -37,7 +37,7 @@ speed_locks = {
 
 
 def drop_empty_params(params: Dict[str, Optional[str | int]]) -> Dict[str, str | int]:
-    return {key: value for key, value in params.items() if value not in (None, "")}
+    return {key: value for key, value in params.items() if value is not None and value != ""}
 
 
 # Helper to generate mock route details for the scenario trains

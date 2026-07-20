@@ -95,9 +95,9 @@ class RACPredictor:
         try:
             if isinstance(query, dict):
                 wl_pos = float(
-                    query.get("waitlist_position", query.get("current_waitlist_position", 0))
+                    query.get("waitlist_position", query.get("current_waitlist_position", 0)) or 0
                 )
-                rac_cnt = float(query.get("rac_count", query.get("current_rac_count", 0)))
+                rac_cnt = float(query.get("rac_count", query.get("current_rac_count", 0)) or 0)
                 days = float(query.get("days_to_journey", 0))
                 q = str(query.get("quota", "GN"))
             else:

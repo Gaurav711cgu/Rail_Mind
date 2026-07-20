@@ -54,12 +54,13 @@ except ImportError:
             out_channels: int,
             heads: int = 1,
             dropout: float = 0.0,
-            edge_dim: int = None,
+            edge_dim: Optional[int] = None,
         ):
             super().__init__()
             self.heads = heads
             self.out_channels = out_channels
             self.lin = nn.Linear(in_channels, out_channels * heads)
+            self.lin_edge: Optional[nn.Linear]
             if edge_dim:
                 self.lin_edge = nn.Linear(edge_dim, out_channels * heads)
             else:
@@ -68,7 +69,7 @@ except ImportError:
             nn.init.xavier_uniform_(self.att)
 
         def forward(
-            self, x: torch.Tensor, edge_index: torch.Tensor, edge_attr: torch.Tensor = None
+            self, x: torch.Tensor, edge_index: torch.Tensor, edge_attr: Optional[torch.Tensor] = None
         ) -> torch.Tensor:
             num_nodes = x.size(0)
             h = self.lin(x).view(num_nodes, self.heads, self.out_channels)
@@ -257,6 +258,7 @@ class CascadeLoss(nn.Module):
             return self.alpha * l_delay + (1.0 - self.alpha) * l_cascade
         else:
             # Compatibility mode for older tests
+            assert isinstance(pred, torch.Tensor) and isinstance(target, torch.Tensor)
             if cascade_weights is not None:
                 return torch.nn.functional.binary_cross_entropy(
                     pred, target, weight=cascade_weights

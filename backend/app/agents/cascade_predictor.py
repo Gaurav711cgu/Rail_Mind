@@ -122,7 +122,7 @@ class CascadePredictor(BaseAgent):
         # Use real model
         import numpy as np
 
-        preds = rac_predictor.model.predict_proba(np.array([features]))
+        preds = rac_predictor._model.predict_proba(np.array([features]))
         prob_cascade = preds[0][1]
 
         return {
@@ -211,7 +211,7 @@ class CascadePredictor(BaseAgent):
             logger.error("[CascadePredictor] BFS error: %s", exc, exc_info=True)
             return {}, 0.40, f"BFS propagation failed: {exc}"
 
-        gnn_prediction = self._gnn_predict(start_node, upstream_delay)
+        gnn_prediction = self._gnn_predict(str(start_node), upstream_delay)
 
         # Update disruption with cascade metadata and GNN prediction
         updated_disruption = {

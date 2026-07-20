@@ -57,7 +57,7 @@ class StreamService:
                 socket_connect_timeout=3,
             )
             # Ping to verify connection
-            await self._client.ping()
+            _ = bool(await self._client.ping())  # type: ignore[misc]
             self._redis_available = True
             logger.info("[StreamService] Connected to Redis at %s", settings.REDIS_URL)
         except Exception as exc:
@@ -83,9 +83,9 @@ class StreamService:
 
         if self._redis_available and self._client:
             try:
-                entry_id: str = await self._client.xadd(
+                entry_id: str = await self._client.xadd(  # type: ignore[arg-type]
                     stream,
-                    serialised,
+                    serialised,  # type: ignore[arg-type]
                     maxlen=1000,  # cap stream length to avoid unbounded growth
                     approximate=True,
                 )

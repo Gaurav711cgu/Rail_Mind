@@ -57,7 +57,7 @@ _notification = NotificationAgent()
 _audit = AuditAgent()
 
 
-def _update_health(agent_name: str, status: str, confidence: float = 1.0, error: str = None):
+def _update_health(agent_name: str, status: str, confidence: float = 1.0, error: str | None = None):
     import datetime
 
     try:

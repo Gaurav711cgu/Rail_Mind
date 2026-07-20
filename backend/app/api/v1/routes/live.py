@@ -1,9 +1,10 @@
 import asyncio
 import json
+from datetime import datetime
 from fastapi import APIRouter, Depends, BackgroundTasks
 from sse_starlette.sse import EventSourceResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import text
+from sqlalchemy import func
 
 from app.db.database import get_db, DBLiveAgentRun, DBUser
 from app.api.v1.routes.auth import get_current_user
@@ -12,7 +13,7 @@ from app.agents.orchestrator import AgentOrchestrator
 router = APIRouter()
 
 # Global state to prevent concurrent identical runs
-_active_runs = {}
+_active_runs: dict[int, bool] = {}
 
 
 async def _run_agent_task(run_id: int, user_id: int):
@@ -36,7 +37,7 @@ async def _run_agent_task(run_id: int, user_id: int):
             if run:
                 run.status = "COMPLETED"
                 run.metrics_json = json.dumps({"status": "success", "user_id": user_id})
-                run.completed_at = text("NOW()")
+                run.completed_at = func.now()
                 await session.commit()
     except Exception as e:
         print(f"Agent run {run_id} failed: {e}")
@@ -48,7 +49,7 @@ async def _run_agent_task(run_id: int, user_id: int):
                 if run:
                     run.status = "FAILED"
                     run.metrics_json = json.dumps({"error": str(e)})
-                    run.completed_at = text("NOW()")
+                    run.completed_at = func.now()
                     await session.commit()
         except Exception:
             pass
