@@ -1,6 +1,12 @@
-import httpx
+"""NTES / RailwayAPI client with exponential backoff, retry, and stale-cache fallback."""
+
+import asyncio
+import random
 from datetime import date, datetime, timezone
 from typing import Optional
+
+import httpx
+
 from app.config import settings
 
 # ─── Source priority chain ─────────────────────────────────────
@@ -19,6 +25,61 @@ NTES_HEADERS = {
     "X-Requested-With": "XMLHttpRequest",
 }
 
+# Rate-limit / quota error status codes
+_QUOTA_STATUS_CODES = {429, 403, 503, 509}
+
+# Retry config
+_MAX_RETRIES = 3
+_BASE_BACKOFF = 1.0  # seconds
+_MAX_BACKOFF = 30.0  # seconds cap
+
+
+async def _fetch_with_retry(
+    client: httpx.AsyncClient,
+    method: str,
+    url: str,
+    **kwargs,
+) -> Optional[httpx.Response]:
+    """
+    Execute an httpx request with exponential backoff + jitter.
+    Returns the response on success, None on quota exhaustion or permanent failure.
+    """
+    for attempt in range(_MAX_RETRIES):
+        try:
+            resp = await client.request(method, url, **kwargs)
+
+            if resp.status_code in _QUOTA_STATUS_CODES:
+                wait = min(_BASE_BACKOFF * (2**attempt) + random.uniform(0, 1), _MAX_BACKOFF)
+                print(
+                    f"[NTESClient] Rate-limited (HTTP {resp.status_code}) on {url!r}. "
+                    f"Attempt {attempt + 1}/{_MAX_RETRIES}. Backing off {wait:.1f}s."
+                )
+                if attempt < _MAX_RETRIES - 1:
+                    await asyncio.sleep(wait)
+                else:
+                    print(f"[NTESClient] Quota exhausted after {_MAX_RETRIES} attempts on {url!r}.")
+                    return None
+                continue
+
+            return resp
+
+        except (httpx.TimeoutException, httpx.ConnectError) as exc:
+            wait = min(_BASE_BACKOFF * (2**attempt) + random.uniform(0, 1), _MAX_BACKOFF)
+            print(
+                f"[NTESClient] Network error on {url!r}: {exc}. "
+                f"Attempt {attempt + 1}/{_MAX_RETRIES}. Backing off {wait:.1f}s."
+            )
+            if attempt < _MAX_RETRIES - 1:
+                await asyncio.sleep(wait)
+            else:
+                return None
+
+        except Exception as exc:
+            print(f"[NTESClient] Unexpected error on {url!r}: {exc}.")
+            return None
+
+    return None
+
 
 class NTESClient:
     def __init__(self):
@@ -28,21 +89,21 @@ class NTESClient:
             timeout=10.0,
             follow_redirects=True,
         )
-        # Note: getattr handles cases where RAILWAYAPI_KEY might not be present in settings initially
         api_key = getattr(settings, "RAILWAYAPI_KEY", "")
         self._railwayapi = httpx.AsyncClient(
             base_url=RAILWAYAPI_BASE,
             timeout=10.0,
             headers={"apikey": api_key} if api_key else {},
         )
-        self._validated = False  # set True after first successful call
-        self._field_map: dict = {}  # populated after validation
+        self._validated = False
+        self._field_map: dict = {}
 
     # ── Public API ──────────────────────────────────────────────
 
     async def get_live_status(self, train_no: str) -> Optional[dict]:
         """
-        Fetch live status. Tries NTES → RailwayAPI → DB cache in order.
+        Fetch live status. Tries NTES → RailwayAPI → DB cache (stale) in order.
+        On quota exhaustion, falls back to cached data instead of erroring out.
         Returns None only if all three fail.
         """
         # Source 1: NTES
@@ -58,62 +119,68 @@ class NTESClient:
                 await self._cache_to_db(train_no, result, source="RAILWAYAPI")
                 return result
 
-        # Source 3: DB cache (stale but real)
+        # Source 3: DB cache — stale but real data, always attempted on upstream failure
+        print(f"[NTESClient] All live sources failed for {train_no}. Serving stale cache.")
         result = await self._db_cache_fetch(train_no)
         if result:
             result["source"] = "CACHE"
             result["data_quality"] = 0.5
+            result["stale"] = True
+            result["cache_notice"] = "Live API quota exhausted. Displaying last known data."
             return result
 
         return None
 
     async def get_trains_between_stations(self, from_code: str, to_code: str) -> list:
         """Get trains between two stations. NTES only (no RailwayAPI equivalent on free tier)."""
-        try:
-            today = date.today().strftime("%Y%m%d")
-            resp = await self._ntes.get(
-                "/getTrainBetweenStation",
-                params={
-                    "fromStation": from_code,
-                    "toStation": to_code,
-                    "date": today,
-                    "flexiWithDate": "Y",
-                },
-            )
-            if resp.status_code == 200:
+        today = date.today().strftime("%Y%m%d")
+        resp = await _fetch_with_retry(
+            self._ntes,
+            "GET",
+            "/getTrainBetweenStation",
+            params={
+                "fromStation": from_code,
+                "toStation": to_code,
+                "date": today,
+                "flexiWithDate": "Y",
+            },
+        )
+        if resp and resp.status_code == 200:
+            try:
                 body = resp.json()
-                # Handle both list and dict responses
                 if isinstance(body, list):
                     return body
                 return body.get("trainBtwnStnsList", body.get("trains", []))
-        except Exception as e:
-            print(f"[NTES] Trains between stations failed: {e}")
+            except Exception as e:
+                print(f"[NTES] Failed to parse trains between stations response: {e}")
         return []
 
     async def validate_endpoints(self) -> dict:
-        """
-        Run at startup. Confirms which endpoints are live.
-        Results stored in settings for the session.
-        """
+        """Run at startup. Confirms which endpoints are live."""
         results = {
             "ntes_live_status": False,
             "ntes_between_stations": False,
             "railwayapi": False,
         }
         try:
-            resp = await self._ntes.get(
+            resp = await _fetch_with_retry(
+                self._ntes,
+                "GET",
                 "/getNTESTrainLiveStatus",
                 params={"trainNo": "12301", "date": date.today().strftime("%Y%m%d")},
             )
-            results["ntes_live_status"] = (
-                resp.status_code == 200
+            results["ntes_live_status"] = bool(
+                resp
+                and resp.status_code == 200
                 and "application/json" in resp.headers.get("content-type", "")
             )
         except Exception:
             pass
 
         try:
-            resp = await self._ntes.get(
+            resp = await _fetch_with_retry(
+                self._ntes,
+                "GET",
                 "/getTrainBetweenStation",
                 params={
                     "fromStation": "NDLS",
@@ -122,14 +189,16 @@ class NTESClient:
                     "flexiWithDate": "Y",
                 },
             )
-            results["ntes_between_stations"] = resp.status_code == 200
+            results["ntes_between_stations"] = bool(resp and resp.status_code == 200)
         except Exception:
             pass
 
         if getattr(settings, "RAILWAYAPI_KEY", ""):
             try:
-                resp = await self._railwayapi.get("/live-train-status/12301/0")
-                results["railwayapi"] = resp.status_code == 200
+                resp = await _fetch_with_retry(
+                    self._railwayapi, "GET", "/live-train-status/12301/0"
+                )
+                results["railwayapi"] = bool(resp and resp.status_code == 200)
             except Exception:
                 pass
 
@@ -140,42 +209,40 @@ class NTESClient:
     # ── Private source implementations ─────────────────────────
 
     async def _ntes_live_status(self, train_no: str) -> Optional[dict]:
+        resp = await _fetch_with_retry(
+            self._ntes,
+            "GET",
+            "/getNTESTrainLiveStatus",
+            params={"trainNo": train_no, "date": date.today().strftime("%Y%m%d")},
+        )
+        if not resp or resp.status_code != 200:
+            return None
+        if "json" not in resp.headers.get("content-type", ""):
+            print(f"[NTES] Endpoint returned HTML for {train_no}. Endpoint may have changed.")
+            return None
         try:
-            resp = await self._ntes.get(
-                "/getNTESTrainLiveStatus",
-                params={"trainNo": train_no, "date": date.today().strftime("%Y%m%d")},
-            )
-            if resp.status_code != 200:
-                return None
-            ct = resp.headers.get("content-type", "")
-            if "json" not in ct:
-                # Got HTML — endpoint changed
-                print(f"[NTES] Endpoint returned HTML for {train_no}. Endpoint may have changed.")
-                return None
             raw = resp.json()
             return self._normalize_ntes(train_no, raw)
         except Exception as e:
-            print(f"[NTES] _ntes_live_status failed for {train_no}: {e}")
+            print(f"[NTES] Failed to parse live status for {train_no}: {e}")
             return None
 
     async def _railwayapi_live_status(self, train_no: str) -> Optional[dict]:
+        resp = await _fetch_with_retry(self._railwayapi, "GET", f"/live-train-status/{train_no}/0")
+        if not resp or resp.status_code != 200:
+            return None
         try:
-            resp = await self._railwayapi.get(f"/live-train-status/{train_no}/0")
-            if resp.status_code != 200:
-                return None
             raw = resp.json()
             return self._normalize_railwayapi(train_no, raw)
         except Exception as e:
-            print(f"[RailwayAPI] Failed for {train_no}: {e}")
+            print(f"[RailwayAPI] Failed to parse response for {train_no}: {e}")
             return None
 
     def _normalize_ntes(self, train_no: str, raw: dict) -> Optional[dict]:
         """
         Convert NTES response to RailMind TrainPosition schema.
         Defensive: tries multiple field name variants.
-        Returns None if critical fields missing.
         """
-        # NTES wraps data in different keys depending on version
         body = raw
         if isinstance(raw, dict):
             for key in ("trainLiveStatusList", "data", "response", "train"):
@@ -187,7 +254,6 @@ class NTESClient:
         if not body or not isinstance(body, dict):
             return None
 
-        # Try all known field name variants
         def get_first(*keys):
             for k in keys:
                 if k in body and body[k] not in (None, "", "null"):
@@ -211,7 +277,7 @@ class NTESClient:
         )
 
         if not station:
-            return None  # Can't place the train without station
+            return None
 
         try:
             delay = max(0, int(str(delay_raw).replace("min", "").strip())) if delay_raw else 0
@@ -266,7 +332,7 @@ class NTESClient:
         for key, val in mapping.items():
             if key in raw_upper:
                 return val
-        return "RUNNING"  # safe default
+        return "RUNNING"
 
     async def _cache_to_db(self, train_no: str, data: dict, source: str):
         """Persist to train_telemetry_cache table."""
@@ -291,7 +357,10 @@ class NTESClient:
             print(f"[NTESClient] Cache write failed for {train_no}: {e}")
 
     async def _db_cache_fetch(self, train_no: str) -> Optional[dict]:
-        """Fetch from cache. Returns None if no entry within 6 hours."""
+        """
+        Fetch from cache. Returns data up to 24 hours old on quota exhaustion
+        (wider window than the normal 6h to maximise stale-data availability).
+        """
         import json
 
         try:
@@ -303,7 +372,7 @@ class NTESClient:
                     text("""
                         SELECT payload FROM train_telemetry_cache
                         WHERE train_no = :train_no
-                        AND fetched_at > NOW() - INTERVAL '6 hours'
+                        AND fetched_at > NOW() - INTERVAL '24 hours'
                         LIMIT 1
                     """),
                     {"train_no": train_no},
