@@ -1,0 +1,13 @@
+{
+  "benchmark": "dispatch_decision_latency",
+  "sample_size": 200,
+  "baseline": "FIFO",
+  "candidate": "RailMind DispatchAgent deterministic fallback",
+  "unit": "milliseconds",
+  "fifo_median_ms": 0.000333,
+  "railmind_median_ms": 0.007542,
+  "latency_reduction_pct": -2164.714,
+  "fifo_p95_ms": 0.000542,
+  "railmind_p95_ms": 0.009791,
+  "note": "Negative latency_reduction_pct means RailMind is slower than FIFO in compute latency. This benchmark does not measure operational delay-minute savings."
+}
