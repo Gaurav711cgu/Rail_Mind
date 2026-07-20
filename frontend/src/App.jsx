@@ -8,7 +8,10 @@ import OperatorProfile from './components/OperatorProfile';
 import EmergencySupport from './components/EmergencySupport';
 import SystemStatusBar from './components/SystemStatusBar';
 import AgentsPage from './pages/AgentsPage';
-
+import ModeToggle from './components/ModeToggle';
+import DataSourceBadge from './components/DataSourceBadge';
+import LLMModeBadge from './components/LLMModeBadge';
+import LiveRunPanel from './components/LiveRunPanel';
 const stepDetails = [
   { title: "Nominal",            desc: "Corridor runs at standard operational threshold" },
   { title: "Signal Fault",       desc: "Interlocking code 0x4F failure at New Delhi exit" },
@@ -25,6 +28,7 @@ export default function App() {
   const [loading, setLoading]             = useState(true);
   const [error, setError]                 = useState(null);
   const [activeTab, setActiveTab]         = useState('dashboard');
+  const [isLiveMode, setIsLiveMode]       = useState(false);
 
   const fetchData = async () => {
     try {
@@ -97,6 +101,12 @@ export default function App() {
     try {
       const res = await fetch(`/api/v1/cascade/recommendations/${recId}/override?override_reason=${encodeURIComponent(reason)}`, { method: 'POST' });
       if (res.ok) fetchData();
+    } catch (err) { console.error(err); }
+  };
+
+  const handleTriggerLive = async () => {
+    try {
+      await fetch('/api/v1/live/trigger', { method: 'POST' });
     } catch (err) { console.error(err); }
   };
 
@@ -176,15 +186,20 @@ export default function App() {
           ))}
         </nav>
 
-        {/* System status badge — top right */}
-        {status && (
-          <div className={`badge-status ${status.variant}`}>
-            <span className={`led-indicator ${scenarioState.step === 0 || scenarioState.step === 6 ? 'active' : scenarioState.step >= 4 ? 'danger' : 'warning'}`} />
-            <span>
-              {status.label}
-            </span>
-          </div>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <ModeToggle isLive={isLiveMode} setIsLive={setIsLiveMode} onTriggerLive={handleTriggerLive} />
+          <DataSourceBadge source={isLiveMode ? 'NTES' : 'SCENARIO'} />
+          <LLMModeBadge isAgentic={true} />
+          {/* System status badge — top right */}
+          {status && (
+            <div className={`badge-status ${status.variant}`}>
+              <span className={`led-indicator ${scenarioState.step === 0 || scenarioState.step === 6 ? 'active' : scenarioState.step >= 4 ? 'danger' : 'warning'}`} />
+              <span>
+                {status.label}
+              </span>
+            </div>
+          )}
+        </div>
       </header>
 
       {/* ── CONTROL TOOLBAR ── */}
@@ -297,6 +312,8 @@ export default function App() {
 
       {/* ── SYSTEM STATUS BAR ── */}
       <SystemStatusBar />
+      
+      {isLiveMode && <LiveRunPanel />}
     </div>
   );
 }

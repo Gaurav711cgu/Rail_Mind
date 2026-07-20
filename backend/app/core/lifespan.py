@@ -8,6 +8,7 @@ from app.db.seed import seed_topology
 from app.services.stream_service import stream_service
 from app.agents.orchestrator import orchestrator
 from app.core import state
+from app.services.ntes_client import ntes_client
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -23,6 +24,10 @@ async def lifespan(app: FastAPI):
 
     # 3. Seed topology once
     await seed_topology()
+
+    # 3.5 Validate NTES endpoints
+    print("[Lifespan] Validating NTES endpoints...")
+    await ntes_client.validate_endpoints()
 
     # 4. Start Redis stream consumer (background task)
     async def _on_telemetry_events(events):
@@ -58,4 +63,5 @@ async def lifespan(app: FastAPI):
         
     await orchestrator.stop()
     await stream_service.disconnect()
+    await ntes_client.close()
     print("[Lifespan] Clean shutdown complete.")

@@ -265,6 +265,29 @@ event.listen(
 
 
 # ------------------------------------------------------------------ #
+#  Live Mode / Telemetry Cache Models                                  #
+# ------------------------------------------------------------------ #
+class DBTrainTelemetryCache(Base):
+    __tablename__ = "train_telemetry_cache"
+
+    train_no: Mapped[str] = mapped_column(String(10), primary_key=True, index=True)
+    payload: Mapped[str] = mapped_column(Text, nullable=False)
+    source: Mapped[str] = mapped_column(String(50), nullable=False)
+    fetched_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class DBLiveAgentRun(Base):
+    __tablename__ = "live_agent_runs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    agent_name: Mapped[str] = mapped_column(String(50), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), default="RUNNING")
+    metrics_json: Mapped[str] = mapped_column(Text, nullable=True)
+    started_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    completed_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+
+
+# ------------------------------------------------------------------ #
 #  Init                                                                #
 # ------------------------------------------------------------------ #
 async def init_db():

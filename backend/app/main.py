@@ -7,7 +7,7 @@ from app.core.lifespan import lifespan
 from app.api.middleware import performance_middleware, rate_limit_middleware
 from app.api.exceptions import global_exception_handler
 from app.api.v1.routes import (
-    auth, trains, disruptions, cascade, rerouting, rac, audit, health, recommendations, stream
+    auth, trains, disruptions, cascade, rerouting, rac, audit, health, recommendations, stream, live
 )
 from app.services.stream_service import stream_service
 from app.ml.rac_predictor import rac_predictor
@@ -51,6 +51,7 @@ app.include_router(rac.router, prefix=f"{settings.API_V1_STR}/rac", tags=["RAC P
 app.include_router(audit.router, prefix=f"{settings.API_V1_STR}/audit", tags=["Audit"])
 app.include_router(recommendations.router, prefix=f"{settings.API_V1_STR}/recommendations", tags=["Recommendations"])
 app.include_router(stream.router, prefix=f"{settings.API_V1_STR}/stream", tags=["Stream SSE"])
+app.include_router(live.router, prefix=f"{settings.API_V1_STR}/live", tags=["Live Data"])
 
 @app.get("/")
 async def root():

@@ -12,13 +12,13 @@ Data flow:
 """
 
 import logging
+import asyncio
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
-import httpx
-
 from app.agents.base_agent import BaseAgent
 from app.config import settings
+from app.services.ntes_client import ntes_client
 
 logger = logging.getLogger(__name__)
 
@@ -167,64 +167,27 @@ class MonitorAgent(BaseAgent):
 
     async def _fetch_live_trains(self, fallback: List[Dict]) -> List[Dict]:
         """
-        Attempts to fetch live train data from RapidAPI IRCTC endpoint.
+        Attempts to fetch live train data from NTES client.
         Falls back to the existing state with a data quality warning.
         """
-        if not settings.RAPIDAPI_IRCTC_KEY:
-            # No API key — use scenario / existing state
-            return fallback
-
         watchlist = [t.strip() for t in settings.LIVE_TRAIN_WATCHLIST.split(",") if t.strip()]
+        
+        # In live mode cap to LIVE_MODE_TRAIN_CAP to prevent rate limiting issues
+        train_cap = getattr(settings, "LIVE_MODE_TRAIN_CAP", 10)
+        watchlist = watchlist[:train_cap]
+        
         results: List[Dict] = []
 
-        async with httpx.AsyncClient(timeout=settings.RAPIDAPI_IRCTC_TIMEOUT_SECONDS) as client:
-            for train_no in watchlist:
-                try:
-                    resp = await client.get(
-                        f"{settings.RAPIDAPI_IRCTC_BASE_URL}/api/v1/liveTrainStatus",
-                        params={"trainNo": train_no, "startDay": "1"},
-                        headers={
-                            "X-RapidAPI-Key": settings.RAPIDAPI_IRCTC_KEY,
-                            "X-RapidAPI-Host": settings.RAPIDAPI_IRCTC_HOST,
-                        },
-                    )
-                    if resp.status_code == 200:
-                        data = resp.json()
-                        train = self._parse_live_response(train_no, data)
-                        if train:
-                            results.append(train)
-                except httpx.TimeoutException:
-                    logger.warning("[MonitorAgent] Timeout fetching train %s", train_no)
-                except Exception as exc:
-                    logger.warning("[MonitorAgent] Error fetching train %s: %s", train_no, exc)
+        for train_no in watchlist:
+            try:
+                train = await ntes_client.get_live_status(train_no)
+                if train:
+                    results.append(train)
+                await asyncio.sleep(getattr(settings, "NTES_RATE_LIMIT_DELAY_SEC", 2.0))
+            except Exception as exc:
+                logger.warning("[MonitorAgent] Error fetching train %s: %s", train_no, exc)
 
         return results if results else fallback
-
-    def _parse_live_response(self, train_no: str, data: Dict) -> Optional[Dict]:
-        """Normalise the RapidAPI IRCTC live status response."""
-        try:
-            body = data.get("body", data)
-            delay_str = body.get("delayInArrival") or body.get("delay") or "0"
-            delay = int(str(delay_str).replace("m", "").strip()) if delay_str else 0
-            station = (
-                body.get("currentStation", {}).get("stationCode", "")
-                or body.get("stationCode", "")
-                or ""
-            )
-            return {
-                "train_no": train_no,
-                "train_name": body.get("trainName", train_no),
-                "current_station": station.upper(),
-                "current_delay": max(0, delay),
-                "status": "DELAYED" if delay > 5 else "ON_TIME",
-                "train_type": "EXPRESS",
-                "data_quality": 1.0,
-                "data_source": "rapidapi-irctc",
-                "polled_at": datetime.utcnow().isoformat(),
-            }
-        except Exception as exc:
-            logger.debug("[MonitorAgent] Parse error for %s: %s", train_no, exc)
-            return None
 
     def _make_disruption(self, train: Dict, disp_type: str, severity: str) -> Dict:
         return {

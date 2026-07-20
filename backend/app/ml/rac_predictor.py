@@ -278,19 +278,10 @@ class RACPredictor:
 
         current_data = list(self._query_log)
         if len(current_data) < 10:
-            # Seed with drifted (holiday season high demand) current data for demonstration
-            random_curr = random.Random(99)
-            for _ in range(50):
-                current_data.append(
-                    {
-                        "days_to_journey": max(1.0, float(int(random_curr.normalvariate(4, 2)))),
-                        "current_waitlist_position": max(
-                            1.0, float(int(random_curr.normalvariate(35, 12)))
-                        ),  # Shifted mean
-                        "current_rac_count": max(0.0, float(int(random_curr.normalvariate(8, 4)))),
-                        "quota": random_curr.choice(["GN"] * 70 + ["TQ"] * 25 + ["LD"] * 5),
-                    }
-                )
+            return {
+                "error": "Not enough data. Minimum 10 real queries required for drift calculation.",
+                "current_queries": len(current_data)
+            }
         curr_df = pd.DataFrame(current_data)
 
         # Force Population Stability Index (PSI) for continuous variables as requested for 10/10 feature
