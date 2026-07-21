@@ -187,7 +187,7 @@ export default function App() {
           ))}
         </nav>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <ModeToggle isLive={isLiveMode} setIsLive={setIsLiveMode} onTriggerLive={handleTriggerLive} />
           <DataSourceBadge source={isLiveMode ? 'NTES' : 'SCENARIO'} />
           <LLMModeBadge isAgentic={true} />

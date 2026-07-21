@@ -1,35 +1,95 @@
-import { Play, Activity } from 'lucide-react';
+import { Activity } from 'lucide-react';
 
 const ModeToggle = ({ isLive, setIsLive, onTriggerLive }) => {
   const handleToggle = () => {
     const nextState = !isLive;
     setIsLive(nextState);
-    if (nextState && onTriggerLive) {
-      // we just switched to live, maybe trigger immediately or wait for button
-    }
   };
 
   return (
-    <div className="flex items-center gap-3 bg-slate-900/50 p-2 rounded-xl border border-slate-800">
-      <span className={`text-sm font-medium ${!isLive ? 'text-amber-400' : 'text-slate-500'}`}>
-        SCENARIO
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: '6px',
+      height: '28px',
+      padding: '0 10px',
+      borderRadius: '6px',
+      border: '1px solid var(--border)',
+      background: 'var(--surface-elevated)',
+      flexShrink: 0,
+    }}>
+      <span style={{
+        fontFamily: "'JetBrains Mono', monospace",
+        fontSize: '10px',
+        fontWeight: 700,
+        letterSpacing: '1px',
+        textTransform: 'uppercase',
+        color: !isLive ? 'var(--accent)' : 'var(--ink-muted)',
+        whiteSpace: 'nowrap',
+      }}>
+        SCN
       </span>
-      <button 
+
+      <button
         onClick={handleToggle}
-        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isLive ? 'bg-green-500' : 'bg-slate-700'}`}
+        style={{
+          position: 'relative',
+          width: '32px',
+          height: '16px',
+          borderRadius: '8px',
+          border: 'none',
+          background: isLive ? '#22c55e' : 'var(--border)',
+          cursor: 'pointer',
+          padding: 0,
+          flexShrink: 0,
+          transition: 'background 0.2s',
+        }}
       >
-        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isLive ? 'translate-x-6' : 'translate-x-1'}`} />
+        <span style={{
+          position: 'absolute',
+          top: '2px',
+          left: isLive ? '16px' : '2px',
+          width: '12px',
+          height: '12px',
+          borderRadius: '50%',
+          background: '#fff',
+          transition: 'left 0.2s',
+        }} />
       </button>
-      <span className={`text-sm font-medium flex items-center gap-1 ${isLive ? 'text-green-400' : 'text-slate-500'}`}>
-        <Activity className="w-4 h-4" /> LIVE
+
+      <span style={{
+        fontFamily: "'JetBrains Mono', monospace",
+        fontSize: '10px',
+        fontWeight: 700,
+        letterSpacing: '1px',
+        textTransform: 'uppercase',
+        color: isLive ? '#22c55e' : 'var(--ink-muted)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '3px',
+        whiteSpace: 'nowrap',
+      }}>
+        <Activity style={{ width: '10px', height: '10px' }} /> LIVE
       </span>
-      
+
       {isLive && (
-        <button 
+        <button
           onClick={onTriggerLive}
-          className="ml-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors"
+          style={{
+            marginLeft: '4px',
+            background: 'rgba(34,197,94,0.15)',
+            border: '1px solid rgba(34,197,94,0.3)',
+            color: '#22c55e',
+            padding: '2px 7px',
+            borderRadius: '4px',
+            fontSize: '10px',
+            fontWeight: 700,
+            fontFamily: "'JetBrains Mono', monospace",
+            cursor: 'pointer',
+            whiteSpace: 'nowrap',
+          }}
         >
-          <Play className="w-3 h-3" /> Trigger Agent Run
+          ▶ RUN
         </button>
       )}
     </div>
