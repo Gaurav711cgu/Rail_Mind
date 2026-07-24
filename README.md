@@ -25,7 +25,7 @@ RailMind is an enterprise-grade multi-agent autonomous dispatching and punctuali
 | Ticket confirmation model | Stacked Ensemble (XGBoost + RandomForest + HistGradientBoosting) |
 | Decision Engine | Groq Llama 3.3 70B with local fallback heuristics |
 | Reinforcement learning | Gymnasium environment (RailGym PPO Dispatcher) |
-| Test validation status | 136/136 tests passing (86% backend coverage) |
+| Test validation status | 152/152 unit tests passing (181 total tests, 76% backend coverage) |
 | Telemetry transport | Real-time WebSocket with EventSource Server-Sent Events (SSE) fallback |
 | Audit security | SHA-256 cryptographic blockchain ledger with cursor-level DDL protection |
 
