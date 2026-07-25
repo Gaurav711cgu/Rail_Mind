@@ -466,7 +466,7 @@ async def test_rerouting_extended_routes_scenario_and_db(unit_client, unit_sessi
 
 @pytest.mark.asyncio
 async def test_stream_sse_endpoints(unit_client):
-    from unittest.mock import AsyncMock, patch
+    from unittest.mock import patch
 
     # Mock the infinite event generators to yield once and exit cleanly, preventing event loop hanging/timeouts
     async def mock_agent_event_generator():

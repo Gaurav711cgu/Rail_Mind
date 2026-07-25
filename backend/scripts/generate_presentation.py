@@ -1,4 +1,3 @@
-import sys
 import os
 from pptx import Presentation
 from pptx.util import Inches, Pt
@@ -57,7 +56,7 @@ def draw_card(slide, left, top, width, height, fill_color, border_color, border_
     card.line.width = Pt(border_width_pt)
     try:
         card.adjustments[0] = 0.04  # Subtle round corners
-    except:
+    except Exception:
         pass
     return card
 

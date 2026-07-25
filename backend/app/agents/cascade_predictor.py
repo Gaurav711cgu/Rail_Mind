@@ -139,7 +139,7 @@ class CascadePredictor(BaseAgent):
                 "severity": "HIGH" if prob_cascade > 0.65 else ("MEDIUM" if prob_cascade > 0.35 else "LOW"),
                 "confidence": round(float(prob_cascade), 2),
             }
-        except Exception as e:
+        except Exception:
             return {"severity": "HIGH" if current_delay > 30 else "MEDIUM", "confidence": 0.78}
 
     async def process(self, state: Any) -> Tuple[Dict[str, Any], float, str]:

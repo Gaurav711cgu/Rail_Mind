@@ -5,7 +5,6 @@ No network calls — tests pure data-transformation logic only.
 
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from datetime import datetime
 
 
 # ─────────────────────────────────────────────────────────────
@@ -285,7 +284,6 @@ async def test_railradar_request_404():
 async def test_railradar_request_quota_exhausted():
     """All 3 retry attempts hit 429 — should return None without raising."""
     from app.services.railradar_client import _request
-    import httpx
 
     mock_resp = MagicMock()
     mock_resp.status_code = 429

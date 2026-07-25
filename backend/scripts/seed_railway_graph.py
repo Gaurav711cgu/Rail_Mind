@@ -7,7 +7,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.db.database import init_db, AsyncSessionLocal, DBStation, DBSection, DBUser
 from app.api.v1.routes.auth import get_password_hash
-from sqlalchemy import select, delete
+from sqlalchemy import delete
 
 async def seed_data():
     print("Initializing database tables...")

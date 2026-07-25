@@ -6,7 +6,6 @@ Future-Observed Delay Propagation Labels + Temporal Graph Snapshots
 import os
 import json
 import torch
-import torch.nn as nn
 import numpy as np
 import pandas as pd
 import networkx as nx
@@ -180,7 +179,7 @@ def train_gnn():
         val_prec = float(precision_score(true_label, pred_binary))
         val_rec = float(recall_score(true_label, pred_binary))
 
-    print(f"\n  Empirical GNN Validation Metrics (IIT KGP IEEE ITS Paper Benchmark):")
+    print("\n  Empirical GNN Validation Metrics (IIT KGP IEEE ITS Paper Benchmark):")
     print(f"    Validation AUC: {val_auc:.4f} (Target: 0.82 - 0.86)")
     print(f"    Validation F1:  {val_f1:.4f} (Target: 0.74 - 0.80)")
     print(f"    Precision:      {val_prec:.4f} (Target: 0.75 - 0.82)")
@@ -227,7 +226,7 @@ def train_gnn():
     with open(report_path, "w") as f:
         json.dump(metrics_report, f, indent=2)
 
-    print(f"Artifacts saved:")
+    print("Artifacts saved:")
     print(f"  PyTorch Weights: {weights_path} ({os.path.getsize(weights_path) / 1024:.2f} KB)")
     print(f"  Metrics JSON: {report_path}")
 

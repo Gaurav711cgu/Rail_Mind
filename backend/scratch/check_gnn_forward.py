@@ -1,5 +1,4 @@
 import torch
-import math
 from app.ml.gnn_cascade import RailwayGNN
 
 print("Initializing tensors...")

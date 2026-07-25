@@ -125,7 +125,7 @@ def temporal_3way_split(df: pd.DataFrame):
     cal_df = df.iloc[train_end:cal_end]
     test_df = df.iloc[cal_end:]
 
-    print(f"  Temporal Split breakdown:")
+    print("  Temporal Split breakdown:")
     print(f"    Train:       {len(train_df):,} rows ({train_df['journey_date'].min().strftime('%Y-%m-%d')} to {train_df['journey_date'].max().strftime('%Y-%m-%d')})")
     print(f"    Calibration: {len(cal_df):,} rows ({cal_df['journey_date'].min().strftime('%Y-%m-%d')} to {cal_df['journey_date'].max().strftime('%Y-%m-%d')})")
     print(f"    Test:        {len(test_df):,} rows ({test_df['journey_date'].min().strftime('%Y-%m-%d')} to {test_df['journey_date'].max().strftime('%Y-%m-%d')})")
@@ -205,7 +205,7 @@ def train():
     brier = brier_score_loss(y_test, y_pred_prob)
     ece = calculate_ece(y_test, y_pred_prob)
 
-    print(f"\n  Empirical Metrics on Held-out Temporal Test Set:")
+    print("\n  Empirical Metrics on Held-out Temporal Test Set:")
     print(f"    AUC-ROC: {auc:.4f} (Target: 0.83 - 0.88)")
     print(f"    F1 Score: {f1:.4f} (Target: 0.74 - 0.80)")
     print(f"    Precision: {prec:.4f}")
@@ -273,7 +273,7 @@ def train():
     with open(report_path, "w") as f:
         json.dump(metrics_report, f, indent=2)
 
-    print(f"Artifacts saved:")
+    print("Artifacts saved:")
     print(f"  Model Joblib: {model_path} ({os.path.getsize(model_path) / 1024 / 1024:.2f} MB)")
     print(f"  Calibration Diagram: {curve_path}")
     print(f"  Metrics JSON: {report_path}")

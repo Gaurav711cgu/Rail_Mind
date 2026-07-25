@@ -5,7 +5,6 @@ Data Source: runningstatus.in station-level delay logs (50+ trains x 90 days)
 """
 
 import os
-import time
 import requests
 import pandas as pd
 import numpy as np
