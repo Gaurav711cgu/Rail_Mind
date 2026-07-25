@@ -1,11 +1,12 @@
 {
   "model": "RailwayGNN (3-layer GraphSAGE + GATConv, 128-dim hidden)",
-  "topology": "50 Junction Stations, 140 Direct Track Section Links",
+  "reference_paper": "2025 IEEE Transactions on Intelligent Transportation Systems (IIT Kharagpur)",
+  "topology": "15 Major Junction Stations, 28 Directed Track Section Links",
   "num_parameters": 133668,
-  "val_auc": 0.9219,
-  "val_f1": 0.7895,
-  "val_precision": 0.7895,
-  "val_recall": 0.7895,
-  "weights_size_bytes": 547872,
-  "trained_at": "2026-07-25T19:17:10.532547+00:00"
+  "val_auc": 0.8214,
+  "val_f1": 0.7143,
+  "val_precision": 0.7143,
+  "val_recall": 0.7143,
+  "weights_size_bytes": 547936,
+  "trained_at": "2026-07-25T19:23:21.706102+00:00"
 }
