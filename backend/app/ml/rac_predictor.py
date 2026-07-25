@@ -57,11 +57,20 @@ class RACPredictor:
                 self._model = loaded_data
                 self._model_version = settings.RAC_MODEL_VERSION
 
+            base_model = self._model
+            if hasattr(self._model, "calibrated_classifiers_"):
+                base_model = self._model.calibrated_classifiers_[0].estimator
+            elif hasattr(self._model, "estimator"):
+                base_model = self._model.estimator
+
             self._pipeline = joblib.load(pipeline_path)
-            self._explainer = shap.TreeExplainer(self._model)
+            try:
+                self._explainer = shap.TreeExplainer(base_model)
+            except Exception:
+                self._explainer = None
             self._loaded = True
             print(
-                f"[RACPredictor] Successfully loaded XGBoost model and pipeline (version {self._model_version})."
+                f"[RACPredictor] Successfully loaded Calibrated XGBoost model and pipeline (version {self._model_version})."
             )
         except Exception as exc:
             print(f"[RACPredictor] Could not load model artifacts: {exc}")
