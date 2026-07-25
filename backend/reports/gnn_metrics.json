@@ -2,10 +2,10 @@
   "model": "RailwayGNN (3-layer GraphSAGE + GATConv, 128-dim hidden)",
   "topology": "50 Junction Stations, 140 Direct Track Section Links",
   "num_parameters": 133668,
-  "val_auc": 0.9835,
-  "val_f1": 0.9206,
-  "val_precision": 1.0,
-  "val_recall": 0.8529,
+  "val_auc": 0.9219,
+  "val_f1": 0.7895,
+  "val_precision": 0.7895,
+  "val_recall": 0.7895,
   "weights_size_bytes": 547872,
-  "trained_at": "2026-07-25T19:07:55.715854+00:00"
+  "trained_at": "2026-07-25T19:17:10.532547+00:00"
 }

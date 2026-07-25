@@ -57,14 +57,22 @@ def build_railway_topology(num_nodes: int = 50, num_edges: int = 140):
 
     # Targets:
     # 1. delay_minutes: [delay_30min, delay_60min, delay_90min]
-    # 2. cascade_reached: binary indicator if delay > 25min propagates
+    # 2. cascade_reached: stochastic binary indicator if delay cascades downstream
     delay_targets = torch.zeros((num_nodes, 3), dtype=torch.float)
-    delay_targets[:, 0] = x[:, 3] * 1.1 + torch.randn(num_nodes) * 2
-    delay_targets[:, 1] = x[:, 3] * 1.25 + torch.randn(num_nodes) * 3
-    delay_targets[:, 2] = x[:, 3] * 1.40 + torch.randn(num_nodes) * 4
+    # Add non-linear graph propagation noise (unobserved signaling holds, weather, locopilot shifts)
+    propagation_noise = torch.randn(num_nodes) * 14.5
+    delay_targets[:, 0] = x[:, 3] * 0.85 + propagation_noise
+    delay_targets[:, 1] = x[:, 3] * 0.95 + propagation_noise * 1.45
+    delay_targets[:, 2] = x[:, 3] * 1.05 + propagation_noise * 1.70
     delay_targets = torch.clamp(delay_targets, min=0.0)
 
-    cascade_reached = (delay_targets[:, 1] > 20.0).float()
+    # Probabilistic threshold with 20% label flip noise
+    raw_probs = torch.sigmoid((delay_targets[:, 1] - 28.0) / 8.0)
+    cascade_reached = (raw_probs + torch.randn(num_nodes) * 0.25 > 0.50).float()
+    
+    # Randomly flip 20% of labels to simulate unobserved dispatcher overrides
+    flip_mask = torch.rand(num_nodes) < 0.20
+    cascade_reached[flip_mask] = 1.0 - cascade_reached[flip_mask]
 
     return {
         "x": x,
