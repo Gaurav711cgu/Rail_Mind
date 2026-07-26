@@ -54,9 +54,7 @@ app.include_router(health.router, tags=["Health"])
 app.include_router(health.router, prefix=settings.API_V1_STR, tags=["Health"])
 app.include_router(auth.router, prefix=f"{settings.API_V1_STR}/auth", tags=["Auth"])
 app.include_router(trains.router, prefix=f"{settings.API_V1_STR}/trains", tags=["Trains"])
-app.include_router(
-    disruptions.router, prefix=f"{settings.API_V1_STR}/disruptions", tags=["Disruptions"]
-)
+app.include_router(disruptions.router, prefix=f"{settings.API_V1_STR}/disruptions", tags=["Disruptions"])
 app.include_router(cascade.router, prefix=f"{settings.API_V1_STR}/cascade", tags=["Cascade"])
 app.include_router(rerouting.router, prefix=f"{settings.API_V1_STR}/rerouting", tags=["Rerouting"])
 app.include_router(rac.router, prefix=f"{settings.API_V1_STR}/rac", tags=["RAC Predictor"])

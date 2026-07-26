@@ -8,9 +8,7 @@ class Disruption(BaseModel):
     train_no: str
     section_from: str
     section_to: str
-    disruption_type: str = (
-        "DELAY_CASCADE"  # 'DELAY_CASCADE', 'SIGNAL_FAILURE', 'TRACK_FAULT', 'WEATHER'
-    )
+    disruption_type: str = "DELAY_CASCADE"  # 'DELAY_CASCADE', 'SIGNAL_FAILURE', 'TRACK_FAULT', 'WEATHER'
     severity: str = "MEDIUM"  # 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'
     cascade_depth: int = 0
     trains_affected: List[str] = []

@@ -65,10 +65,7 @@ def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     R = 6371
     dlat = math.radians(lat2 - lat1)
     dlon = math.radians(lon2 - lon1)
-    a = (
-        math.sin(dlat / 2) ** 2
-        + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2) ** 2
-    )
+    a = math.sin(dlat / 2) ** 2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2) ** 2
     return R * 2 * math.asin(math.sqrt(a))
 
 
@@ -119,8 +116,7 @@ class MonitorAgent(BaseAgent):
             prev_delay = prev.get("current_delay", 0)
             if current_delay - prev_delay > _DELAY_SPIKE_THRESHOLD_MIN:
                 self.log(
-                    f"DELAY SPIKE: {train_no} delay jumped from "
-                    f"{prev_delay}→{current_delay} min at {current_station}"
+                    f"DELAY SPIKE: {train_no} delay jumped from {prev_delay}→{current_delay} min at {current_station}"
                 )
                 anomaly_count += 1
                 if not any(d.get("train_no") == train_no for d in disruptions):

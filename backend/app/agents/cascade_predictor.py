@@ -169,9 +169,7 @@ class CascadePredictor(BaseAgent):
             bfs_tree = nx.bfs_tree(_RAILWAY_GRAPH, source=start_node, depth_limit=5)
             bfs_nodes = list(bfs_tree.nodes())
 
-            active_count_on_section = len(
-                [t for t in trains if t.get("current_station") == start_node]
-            )
+            active_count_on_section = len([t for t in trains if t.get("current_station") == start_node])
 
             for depth, node in enumerate(bfs_nodes[1:], start=1):  # skip root
                 # Delay propagated to this hop
@@ -186,9 +184,7 @@ class CascadePredictor(BaseAgent):
 
                 # Find trains scheduled through this node
                 trains_here = [
-                    t
-                    for t in trains
-                    if t.get("current_station") == node or node in t.get("route_stations", [])
+                    t for t in trains if t.get("current_station") == node or node in t.get("route_stations", [])
                 ]
 
                 for train in trains_here:

@@ -92,9 +92,7 @@ def get_base_estimators():
         estimators.append(
             (
                 "cat",
-                CatBoostClassifier(
-                    iterations=100, depth=6, learning_rate=0.05, verbose=0, thread_count=1
-                ),
+                CatBoostClassifier(iterations=100, depth=6, learning_rate=0.05, verbose=0, thread_count=1),
             )
         )
     else:

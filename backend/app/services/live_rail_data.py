@@ -68,11 +68,7 @@ def _station_code_from_text(value: Any) -> Optional[str]:
 
 class LiveRailDataService:
     def watchlist(self) -> List[str]:
-        return [
-            train_no.strip()
-            for train_no in settings.LIVE_TRAIN_WATCHLIST.split(",")
-            if train_no.strip()
-        ]
+        return [train_no.strip() for train_no in settings.LIVE_TRAIN_WATCHLIST.split(",") if train_no.strip()]
 
     async def search_station(self, query: str) -> Dict[str, Any]:
         return await rapidapi_irctc.get("/api/v1/searchStation", {"query": query})
@@ -116,18 +112,13 @@ class LiveRailDataService:
                 "fromStationCode",
             ],
         )
-        current_station = (
-            _station_code_from_text(station_hint) or fallback.get("current_station") or "UNKNOWN"
-        )
+        current_station = _station_code_from_text(station_hint) or fallback.get("current_station") or "UNKNOWN"
         coords = STATION_COORDINATES.get(current_station, {})
         fallback_lat = fallback.get("latitude", 0.0)
         fallback_lng = fallback.get("longitude", 0.0)
 
         return {
-            "train_no": str(
-                _first_present(merged, ["train_no", "trainNo", "train_number", "trainNumber"])
-                or train_no
-            ),
+            "train_no": str(_first_present(merged, ["train_no", "trainNo", "train_number", "trainNumber"]) or train_no),
             "train_name": str(
                 _first_present(merged, ["train_name", "trainName", "name"])
                 or fallback.get("train_name")
@@ -181,22 +172,14 @@ class LiveRailDataService:
 
             fallback_trains = scenario_engine.get_state().get("trains", [])
 
-        fallback_by_train = {
-            str(train["train_no"]): train
-            for train in fallback_trains or []
-            if train.get("train_no")
-        }
+        fallback_by_train = {str(train["train_no"]): train for train in fallback_trains or [] if train.get("train_no")}
         train_numbers = list(dict.fromkeys([*fallback_by_train.keys(), *self.watchlist()]))
         live_trains: List[Dict[str, Any]] = []
         failures: List[str] = []
 
         for train_no in train_numbers:
             try:
-                live_trains.append(
-                    await self.live_train_snapshot(
-                        train_no, fallback=fallback_by_train.get(train_no)
-                    )
-                )
+                live_trains.append(await self.live_train_snapshot(train_no, fallback=fallback_by_train.get(train_no)))
             except Exception as exc:
                 # Catch any Exception (HTTPException, connection error, etc.) to ensure complete resilience
                 status_code = getattr(exc, "status_code", 500)
@@ -220,11 +203,7 @@ class LiveRailDataService:
         return live_trains
 
     async def hydrate_scenario_state(self, state: Dict[str, Any]) -> Dict[str, Any]:
-        if (
-            settings.SCENARIO_MODE
-            and not settings.REAL_DATA_REQUIRED
-            and not settings.RAPIDAPI_IRCTC_KEY
-        ):
+        if settings.SCENARIO_MODE and not settings.REAL_DATA_REQUIRED and not settings.RAPIDAPI_IRCTC_KEY:
             return state
 
         live_trains = await self.live_watchlist_snapshot(state.get("trains", []))

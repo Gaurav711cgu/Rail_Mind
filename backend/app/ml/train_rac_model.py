@@ -22,12 +22,7 @@ def generate_synthetic_data(num_rows: int = 5000) -> pd.DataFrame:
     # days to journey increases it
     # current RAC count increases it
     # quota GN/LD/DF increases it, TQ decreases it
-    prob = (
-        0.5
-        - (current_waitlist_position * 0.005)
-        + (days_to_journey * 0.008)
-        + (current_rac_count * 0.003)
-    )
+    prob = 0.5 - (current_waitlist_position * 0.005) + (days_to_journey * 0.008) + (current_rac_count * 0.003)
 
     # Quota modifiers
     quota_mods = {"GN": 0.05, "TQ": -0.20, "LD": 0.10, "DF": 0.15}

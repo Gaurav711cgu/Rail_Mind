@@ -12,9 +12,7 @@ class Settings(BaseSettings):
     # ------------------------------------------------------------------ #
     #  Security — NEVER hardcode. All loaded from .env / HF Space secrets #
     # ------------------------------------------------------------------ #
-    SECRET_KEY: str = os.environ.get(
-        "SECRET_KEY", "change-me-before-any-deployment-this-is-not-safe"
-    )
+    SECRET_KEY: str = os.environ.get("SECRET_KEY", "change-me-before-any-deployment-this-is-not-safe")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30  # 30 min access token
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     ENFORCE_RBAC: bool = True  # ALWAYS on
@@ -79,9 +77,7 @@ class Settings(BaseSettings):
     #  ML Model paths                                                      #
     # ------------------------------------------------------------------ #
     RAC_MODEL_PATH: str = str(Path(__file__).parent / "ml" / "artifacts" / "rac_model.joblib")
-    RAC_PIPELINE_PATH: str = str(
-        Path(__file__).parent / "ml" / "artifacts" / "feature_pipeline.joblib"
-    )
+    RAC_PIPELINE_PATH: str = str(Path(__file__).parent / "ml" / "artifacts" / "feature_pipeline.joblib")
     RAC_MODEL_VERSION: str = "XGBoost-v1.2"
 
     # ------------------------------------------------------------------ #

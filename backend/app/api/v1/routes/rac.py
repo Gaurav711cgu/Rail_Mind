@@ -76,15 +76,10 @@ async def get_historical_trends(train_no: str):
 
     rng = random.Random(seed)
 
-    base_rate = (
-        0.82 if train_no in ("22415", "12301") else 0.71 if train_no in ("12002", "12952") else 0.58
-    )
+    base_rate = 0.82 if train_no in ("22415", "12301") else 0.71 if train_no in ("12002", "12952") else 0.58
 
     months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"]
-    return [
-        {"month": m, "rate": round(max(0.1, min(0.97, base_rate + rng.uniform(-0.06, 0.06))), 3)}
-        for m in months
-    ]
+    return [{"month": m, "rate": round(max(0.1, min(0.97, base_rate + rng.uniform(-0.06, 0.06))), 3)} for m in months]
 
 
 @router.get("/alternative-suggestions")

@@ -31,9 +31,7 @@ async def health_system(db: AsyncSession = Depends(get_db)):
     groq_status = "configured" if settings.GROQ_API_KEY else "disabled"
 
     total_agents = len(orchestrator.pipeline)
-    healthy_agents = sum(
-        1 for a in orchestrator.agent_health.values() if a["status"] in ("healthy", "running")
-    )
+    healthy_agents = sum(1 for a in orchestrator.agent_health.values() if a["status"] in ("healthy", "running"))
 
     is_operational = db_status == "connected" and healthy_agents == total_agents
     system_status = "operational" if is_operational else "degraded"

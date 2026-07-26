@@ -45,9 +45,7 @@ async def _position_event_generator() -> AsyncGenerator[str, None]:
     Uses RapidAPI-backed live telemetry when configured, with scenario fallback.
     """
     while True:
-        trains = await live_rail_data.live_watchlist_snapshot(
-            scenario_engine.get_state().get("trains", [])
-        )
+        trains = await live_rail_data.live_watchlist_snapshot(scenario_engine.get_state().get("trains", []))
         payload = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "trains": trains,
@@ -105,9 +103,7 @@ async def websocket_stream(ws: WebSocket):
     await ws.accept()
     try:
         while True:
-            trains = await live_rail_data.live_watchlist_snapshot(
-                scenario_engine.get_state().get("trains", [])
-            )
+            trains = await live_rail_data.live_watchlist_snapshot(scenario_engine.get_state().get("trains", []))
             payload = {
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "agents": orchestrator.agent_health,

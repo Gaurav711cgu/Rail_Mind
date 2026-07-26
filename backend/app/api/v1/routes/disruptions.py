@@ -28,9 +28,7 @@ async def list_disruptions(db: AsyncSession = Depends(get_db)):
                     disruption_type=d["disruption_type"],
                     severity=d["severity"],
                     cascade_depth=d["cascade_depth"],
-                    trains_affected=[
-                        t["train_no"] for t in state["trains"] if t["current_delay"] > 0
-                    ],
+                    trains_affected=[t["train_no"] for t in state["trains"] if t["current_delay"] > 0],
                     passengers_affected=4820 if d["severity"] == "CRITICAL" else 140,
                     status=d["status"],
                     detected_at=datetime.utcnow(),

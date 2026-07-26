@@ -140,9 +140,7 @@ class RailGym(gym.Env):
             sections.append(
                 {
                     "train_count": int(self.np_random.integers(1, 5)),
-                    "avg_delay": float(
-                        cfg["base_delay"] * (3 if disrupted else 1) + self.np_random.integers(0, 10)
-                    ),
+                    "avg_delay": float(cfg["base_delay"] * (3 if disrupted else 1) + self.np_random.integers(0, 10)),
                     "capacity_util": float(self.np_random.uniform(0.3, 0.95 if disrupted else 0.7)),
                     "last_hold_steps": int(self.np_random.integers(0, 10)),
                     "passenger_count": int(self.np_random.integers(1, 4)),
@@ -177,9 +175,7 @@ class RailGym(gym.Env):
         for sec in self._state["sections"]:
             # Delays grow naturally under load/traffic
             delay_growth = 0.05 * sec["avg_delay"] if sec["capacity_util"] > 0.8 else -0.02
-            sec["avg_delay"] = max(
-                0.0, sec["avg_delay"] + delay_growth + float(self.np_random.normal(0, 2))
-            )
+            sec["avg_delay"] = max(0.0, sec["avg_delay"] + delay_growth + float(self.np_random.normal(0, 2)))
 
             total_passenger_delay += sec["avg_delay"] * sec["passenger_count"]
             total_freight_delay += sec["avg_delay"] * sec["freight_count"]
@@ -189,9 +185,7 @@ class RailGym(gym.Env):
                 safety_violations += 1
 
         # Objective reward calculation
-        reward = (
-            -total_passenger_delay * 1.0 - total_freight_delay * 0.3 - safety_violations * 10000.0
-        )
+        reward = -total_passenger_delay * 1.0 - total_freight_delay * 0.3 - safety_violations * 10000.0
 
         # Clear cascade bonus
         avg_delay = float(np.mean([s["avg_delay"] for s in self._state["sections"]]))

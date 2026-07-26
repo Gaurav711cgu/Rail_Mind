@@ -194,9 +194,7 @@ class DBOutboxEvent(Base):
     aggregate_id: Mapped[str] = mapped_column(String(100), nullable=False)
     event_type: Mapped[str] = mapped_column(String(100), nullable=False)
     payload: Mapped[str] = mapped_column(Text, nullable=False)
-    status: Mapped[str] = mapped_column(
-        String(20), default="PENDING", index=True
-    )  # PENDING, PROCESSED, FAILED
+    status: Mapped[str] = mapped_column(String(20), default="PENDING", index=True)  # PENDING, PROCESSED, FAILED
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     processed_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
 
@@ -246,9 +244,7 @@ class DBTrainPosition(Base):
     delay_minutes: Mapped[int] = mapped_column(Integer, default=0)
     data_source: Mapped[str] = mapped_column(String(50), default="indianrailapi")
     data_quality: Mapped[float] = mapped_column(Float, default=1.0)
-    recorded_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.utcnow, index=True, nullable=False
-    )
+    recorded_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True, nullable=False)
 
 
 _TIMESCALE_DDL = DDL("""

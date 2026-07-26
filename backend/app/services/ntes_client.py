@@ -149,11 +149,7 @@ class NTESClient:
         if resp and resp.status_code == 200:
             try:
                 body = resp.json()
-                trains = (
-                    body
-                    if isinstance(body, list)
-                    else body.get("trainBtwnStnsList", body.get("trains", []))
-                )
+                trains = body if isinstance(body, list) else body.get("trainBtwnStnsList", body.get("trains", []))
                 if trains:
                     return trains
             except Exception as e:
@@ -184,9 +180,7 @@ class NTESClient:
                 params={"trainNo": "12301", "date": date.today().strftime("%Y%m%d")},
             )
             results["ntes_live_status"] = bool(
-                resp
-                and resp.status_code == 200
-                and "application/json" in resp.headers.get("content-type", "")
+                resp and resp.status_code == 200 and "application/json" in resp.headers.get("content-type", "")
             )
         except Exception:
             pass
@@ -216,9 +210,7 @@ class NTESClient:
 
         if getattr(settings, "RAILWAYAPI_KEY", ""):
             try:
-                resp = await _fetch_with_retry(
-                    self._railwayapi, "GET", "/live-train-status/12301/0"
-                )
+                resp = await _fetch_with_retry(self._railwayapi, "GET", "/live-train-status/12301/0")
                 results["railwayapi"] = bool(resp and resp.status_code == 200)
             except Exception:
                 pass
@@ -293,13 +285,9 @@ class NTESClient:
             "stnCode",
             "code",
         )
-        delay_raw = get_first(
-            "delayInMins", "delay", "lateBy", "delay_min", "late_by", "delayMinutes"
-        )
+        delay_raw = get_first("delayInMins", "delay", "lateBy", "delay_min", "late_by", "delayMinutes")
         name = get_first("trainName", "train_name", "name", "trainNameDisplay")
-        status = get_first(
-            "trainRunningStatus", "running_status", "status", "currentStatus", "runStatus"
-        )
+        status = get_first("trainRunningStatus", "running_status", "status", "currentStatus", "runStatus")
 
         if not station:
             return None

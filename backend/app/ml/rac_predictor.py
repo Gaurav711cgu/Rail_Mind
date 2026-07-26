@@ -36,10 +36,7 @@ class RACPredictor:
         pipeline_path = Path(settings.RAC_PIPELINE_PATH)
 
         if not self._artifact_is_valid(model_path) or not self._artifact_is_valid(pipeline_path):
-            print(
-                "[RACPredictor] Model artifacts missing or invalid (LFS pointer?). "
-                "Training fresh model now..."
-            )
+            print("[RACPredictor] Model artifacts missing or invalid (LFS pointer?). Training fresh model now...")
             try:
                 self._train_and_save()
             except Exception as e:
@@ -103,9 +100,7 @@ class RACPredictor:
         # Log query features for dynamic data drift monitoring
         try:
             if isinstance(query, dict):
-                wl_pos = float(
-                    query.get("waitlist_position", query.get("current_waitlist_position", 0)) or 0
-                )
+                wl_pos = float(query.get("waitlist_position", query.get("current_waitlist_position", 0)) or 0)
                 rac_cnt = float(query.get("rac_count", query.get("current_rac_count", 0)) or 0)
                 days = float(query.get("days_to_journey", 0))
                 q = str(query.get("quota", "GN"))
@@ -133,9 +128,7 @@ class RACPredictor:
 
         # Convert dictionary to an object mapping if needed
         if isinstance(query, dict):
-            current_waitlist_position = query.get(
-                "waitlist_position", query.get("current_waitlist_position", 0)
-            )
+            current_waitlist_position = query.get("waitlist_position", query.get("current_waitlist_position", 0))
             current_rac_count = query.get("rac_count", query.get("current_rac_count", 0))
             days_to_journey = query.get("days_to_journey", 0)
             quota = query.get("quota", "GN")
@@ -297,9 +290,7 @@ class RACPredictor:
             ref_data.append(
                 {
                     "days_to_journey": max(1.0, float(int(random_state.normalvariate(5, 2)))),
-                    "current_waitlist_position": max(
-                        1.0, float(int(random_state.normalvariate(20, 10)))
-                    ),
+                    "current_waitlist_position": max(1.0, float(int(random_state.normalvariate(20, 10)))),
                     "current_rac_count": max(0.0, float(int(random_state.normalvariate(10, 5)))),
                     "quota": random_state.choice(["GN"] * 80 + ["TQ"] * 10 + ["LD"] * 10),
                 }
@@ -354,12 +345,8 @@ class RACPredictor:
             return {
                 "dataset_drift": bool(dataset_drift_metric.get("dataset_drift", False)),
                 "number_of_columns": int(dataset_drift_metric.get("number_of_columns", 0)),
-                "number_of_drifted_columns": int(
-                    dataset_drift_metric.get("number_of_drifted_columns", 0)
-                ),
-                "share_of_drifted_columns": float(
-                    dataset_drift_metric.get("share_of_drifted_columns", 0.0)
-                ),
+                "number_of_drifted_columns": int(dataset_drift_metric.get("number_of_drifted_columns", 0)),
+                "share_of_drifted_columns": float(dataset_drift_metric.get("share_of_drifted_columns", 0.0)),
                 "drift_by_columns": drift_by_columns,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }

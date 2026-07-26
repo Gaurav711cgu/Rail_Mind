@@ -6,9 +6,7 @@ from pydantic import BaseModel, Field
 class AuditLogEntry(BaseModel):
     id: Optional[str] = None
     agent_name: str
-    action_type: (
-        str  # 'MONITOR', 'CONFLICT_DETECTED', 'RECOMMENDATION_ISSUED', 'AUTO_ACTION', 'ESCALATION'
-    )
+    action_type: str  # 'MONITOR', 'CONFLICT_DETECTED', 'RECOMMENDATION_ISSUED', 'AUTO_ACTION', 'ESCALATION'
     target: str  # Train no or station/section ID
     reasoning: str
     confidence: float

@@ -33,9 +33,7 @@ async def sync_scenario_step_to_db(db: AsyncSession, state: dict):
                 disruption_type=d["disruption_type"],
                 severity=d["severity"],
                 cascade_depth=d["cascade_depth"],
-                trains_affected_json=json.dumps(
-                    [t["train_no"] for t in state["trains"] if t["current_delay"] > 0]
-                ),
+                trains_affected_json=json.dumps([t["train_no"] for t in state["trains"] if t["current_delay"] > 0]),
                 passengers_affected=4820 if d["severity"] == "CRITICAL" else 140,
                 status=d["status"],
                 detected_at=datetime.utcnow(),
@@ -50,9 +48,7 @@ async def sync_scenario_step_to_db(db: AsyncSession, state: dict):
 
     # 2. Sync Recommendations
     for r in state["recommendations"]:
-        result_rec = await db.execute(
-            select(DBRecommendation).where(DBRecommendation.id == r["id"])
-        )
+        result_rec = await db.execute(select(DBRecommendation).where(DBRecommendation.id == r["id"]))
         existing_rec = result_rec.scalars().first()
         if not existing_rec:
             db_rec = DBRecommendation(
@@ -73,15 +69,11 @@ async def sync_scenario_step_to_db(db: AsyncSession, state: dict):
 
     # 3. Sync Audit Log Entries
     for a in state["audit_entries"]:
-        result_audit = await db.execute(
-            select(DBAuditEntry).where(DBAuditEntry.current_hash == a["hash"])
-        )
+        result_audit = await db.execute(select(DBAuditEntry).where(DBAuditEntry.current_hash == a["hash"]))
         existing_audit = result_audit.scalars().first()
         if not existing_audit:
             # Fetch previous entry to get the previous hash
-            res_prev = await db.execute(
-                select(DBAuditEntry).order_by(DBAuditEntry.id.desc()).limit(1)
-            )
+            res_prev = await db.execute(select(DBAuditEntry).order_by(DBAuditEntry.id.desc()).limit(1))
             prev_entry = res_prev.scalars().first()
             prev_hash = (
                 prev_entry.current_hash
@@ -500,14 +492,8 @@ async def get_disruption_details(disruption_id: str):
         }
 
     # Real details
-    err_code = (
-        "0xINTERLOCK_4F"
-        if disruption["disruption_type"] == "SIGNAL_FAILURE"
-        else "0xCASC_TIMEOUT_99"
-    )
-    clear_time = (
-        45 if disruption["severity"] == "MEDIUM" else 90 if disruption["severity"] == "HIGH" else 15
-    )
+    err_code = "0xINTERLOCK_4F" if disruption["disruption_type"] == "SIGNAL_FAILURE" else "0xCASC_TIMEOUT_99"
+    clear_time = 45 if disruption["severity"] == "MEDIUM" else 90 if disruption["severity"] == "HIGH" else 15
     passengers = 4820 if disruption["severity"] == "CRITICAL" else 140
 
     return {
@@ -622,9 +608,7 @@ async def get_impact_summary():
                 (1 - optimised["avg_delay_minutes"] / baseline["avg_delay_minutes"]) * 100,
                 1,
             ),
-            "cascade_reduction_percent": round(
-                (1 - optimised["cascade_depth"] / baseline["cascade_depth"]) * 100, 1
-            ),
+            "cascade_reduction_percent": round((1 - optimised["cascade_depth"] / baseline["cascade_depth"]) * 100, 1),
             "passenger_impact_reduction_percent": round(
                 (1 - optimised["passengers_impacted"] / baseline["passengers_impacted"]) * 100,
                 1,

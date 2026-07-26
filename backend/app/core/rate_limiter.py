@@ -24,9 +24,7 @@ class InMemoryRateLimiter:
         now = time.time()
 
         # Clean history
-        self.history[client_ip] = [
-            t for t in self.history[client_ip] if now - t < self.window_seconds
-        ]
+        self.history[client_ip] = [t for t in self.history[client_ip] if now - t < self.window_seconds]
 
         # Check limit
         limit = self.requests_limit

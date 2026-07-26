@@ -224,9 +224,7 @@ async def rapidapi_search_train(query: str = Query(..., min_length=2)):
 async def rapidapi_trains_between_stations(
     from_station_code: str = Query(..., min_length=2, max_length=10),
     to_station_code: str = Query(..., min_length=2, max_length=10),
-    date_of_journey: Optional[str] = Query(
-        None, description="Optional provider date parameter, usually YYYY-MM-DD"
-    ),
+    date_of_journey: Optional[str] = Query(None, description="Optional provider date parameter, usually YYYY-MM-DD"),
 ):
     return await rapidapi_irctc.get(
         "/api/v3/trainBetweenStations",
@@ -243,9 +241,7 @@ async def rapidapi_trains_between_stations(
 @router.get("/rapidapi/live-status")
 async def rapidapi_live_train_status(
     train_no: str = Query(..., min_length=4, max_length=6),
-    start_day: int = Query(
-        0, ge=0, le=4, description="0=today, 1=yesterday, up to 4 for longer routes"
-    ),
+    start_day: int = Query(0, ge=0, le=4, description="0=today, 1=yesterday, up to 4 for longer routes"),
 ):
     if not settings.RAPIDAPI_IRCTC_KEY:
         delay = 0
@@ -386,9 +382,7 @@ async def rapidapi_fare(
 async def rapidapi_trains_by_station(
     station_code: str = Query(..., min_length=2, max_length=10),
 ):
-    return await rapidapi_irctc.get(
-        "/api/v3/getTrainsByStation", {"stationCode": station_code.upper()}
-    )
+    return await rapidapi_irctc.get("/api/v3/getTrainsByStation", {"stationCode": station_code.upper()})
 
 
 @router.get("/rapidapi/live-station")
@@ -493,6 +487,4 @@ async def get_train_status(train_no: str, db: AsyncSession = Depends(get_db)):
                 last_updated=datetime.now(timezone.utc),
                 route=route_nodes,
             )
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail=f"Train {train_no} not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Train {train_no} not found")

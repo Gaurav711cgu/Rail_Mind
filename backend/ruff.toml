@@ -1,0 +1,20 @@
+target-version = "py311"
+line-length = 120
+
+[lint]
+select = ["E", "F", "W", "BLE"]
+
+ignore = [
+    "BLE001", # Blind exception catching used for resilient external client fallbacks
+    "E402",   # Module level import not at top of file
+    "E501",   # Line too long
+    "E701",   # Multiple statements on one line
+    "E741",   # Ambiguous variable name
+    "F821",   # Undefined name (handled by mypy)
+    "F841",   # Local variable name is assigned to but never used
+    "W291",   # Trailing whitespace
+    "W293",   # Blank line contains whitespace
+]
+
+[lint.per-file-ignores]
+"tests/*" = ["BLE001"]

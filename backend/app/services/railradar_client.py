@@ -95,9 +95,7 @@ class RailRadarClient:
         """
         return await _request(self._client, "GET", f"/trains/{number}/live")
 
-    async def get_route(
-        self, number: str, fmt: str = "geojson", stops: bool = True
-    ) -> Optional[dict]:
+    async def get_route(self, number: str, fmt: str = "geojson", stops: bool = True) -> Optional[dict]:
         """
         GET /v1/trains/{number}/route?format=geojson&stops=true
         GeoJSON polyline + stop coordinates for a train.
@@ -110,9 +108,7 @@ class RailRadarClient:
             params={"format": fmt, "stops": "true" if stops else "false"},
         )
 
-    async def get_trains_between(
-        self, from_code: str, to_code: str, date: Optional[str] = None
-    ) -> list:
+    async def get_trains_between(self, from_code: str, to_code: str, date: Optional[str] = None) -> list:
         """
         GET /v1/trains/between/{from}/{to}[?date=YYYY-MM-DD]
         All trains running between two station codes.
@@ -121,9 +117,7 @@ class RailRadarClient:
         params = {}
         if date:
             params["date"] = date
-        data = await _request(
-            self._client, "GET", f"/trains/between/{from_code}/{to_code}", params=params
-        )
+        data = await _request(self._client, "GET", f"/trains/between/{from_code}/{to_code}", params=params)
         if not data:
             return []
         return data.get("trains", data) if isinstance(data, dict) else data
@@ -147,9 +141,7 @@ class RailRadarClient:
         Live arrivals/departures board for a station (up to `hours` ahead).
         Returns: { station, window, trains: [{train, liveStatus, scheduledArrival, ...}] }
         """
-        return await _request(
-            self._client, "GET", f"/stations/{code}/live", params={"hours": hours}
-        )
+        return await _request(self._client, "GET", f"/stations/{code}/live", params={"hours": hours})
 
     # ─── Lookup endpoints ───────────────────────────────────────
 

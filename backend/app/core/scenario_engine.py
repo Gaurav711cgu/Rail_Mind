@@ -46,7 +46,7 @@ class ScenarioEngine:
 
                 with torch.no_grad():
                     res = model(x, edge_index, edge_attr, time_of_day=0.5)
-                    probs = res["cascade_probability"].numpy() if isinstance(res, dict) else np.array([0.5]*50)
+                    probs = res["cascade_probability"].numpy() if isinstance(res, dict) else np.array([0.5] * 50)
 
                 step_data["gnn_inference"] = {
                     "active_gnn_model": "RailwayGNN (GraphSAGE + GAT, 128-dim)",
@@ -168,8 +168,7 @@ class ScenarioEngine:
                 "[MonitorAgent] ANOMALY: Train 12002 departure delay exceeded 20m variance thresholds.",
                 "[MonitorAgent] Source verified: Interlocking status code 0x4F (Red Alert).",
                 "[ConflictDetector] Creating section disruption alert for route NDLS -> GZB.",
-                "[AuditAgent] Logged disruption disp-001. Current Hash: "
-                + self._hash("disp-001-step1"),
+                "[AuditAgent] Logged disruption disp-001. Current Hash: " + self._hash("disp-001-step1"),
             ],
             "audit_entries": [
                 {
@@ -232,8 +231,7 @@ class ScenarioEngine:
             "logs": [
                 "[ConflictDetector] Downstream path conflict calculated on GZB-ALJN section between 12002 and BOXN-902.",
                 "[ConflictDetector] Overlap window: 19:40 - 20:15. P(conflict) = 0.94.",
-                "[AuditAgent] Logged route conflict event. Current Hash: "
-                + self._hash("conflict-step2"),
+                "[AuditAgent] Logged route conflict event. Current Hash: " + self._hash("conflict-step2"),
             ],
             "audit_entries": [
                 {
@@ -297,8 +295,7 @@ class ScenarioEngine:
                 "[CascadePredictor] Simulating delay transfer function across timetable nodes.",
                 "[CascadePredictor] Predicted delay addition: 22415 (+15m), 12301 Rajdhani (+20m), 12560 Shramik (+45m).",
                 "[CascadePredictor] Passenger volume analysis: estimated 4,820 passengers impacted by cumulative delays.",
-                "[AuditAgent] Logged cascade model output. Current Hash: "
-                + self._hash("cascade-step3"),
+                "[AuditAgent] Logged cascade model output. Current Hash: " + self._hash("cascade-step3"),
             ],
             "audit_entries": [
                 {
@@ -374,8 +371,7 @@ class ScenarioEngine:
                 "[DispatchAgent] Invoking Claude Sonnet hold-proceed resolution model.",
                 "[DispatchAgent] Optimal hold target identified: BOXN-902 at GZB loop line.",
                 "[DispatchAgent] Confidence score 0.78 < threshold 0.85. Triggering manual Tier-2 Escalation Alert.",
-                "[AuditAgent] Logged dispatch recommendation rec-001. Current Hash: "
-                + self._hash("dispatch-step4"),
+                "[AuditAgent] Logged dispatch recommendation rec-001. Current Hash: " + self._hash("dispatch-step4"),
             ],
             "audit_entries": [
                 {
@@ -452,8 +448,7 @@ class ScenarioEngine:
                 "[NotificationAgent] Calling RAC Predictor model to calculate confirmation chances for Vande Bharat 22415.",
                 "[NotificationAgent] RAC Predictor returned confirmation score: 88.4%.",
                 "[NotificationAgent] Advisory published. Disseminated to passenger panels.",
-                "[AuditAgent] Logged rerouting advisories. Current Hash: "
-                + self._hash("advisory-step5"),
+                "[AuditAgent] Logged rerouting advisories. Current Hash: " + self._hash("advisory-step5"),
             ],
             "audit_entries": [
                 {

@@ -221,18 +221,14 @@ class DispatchAgent(BaseAgent):
             logger.warning("[DispatchAgent] LLM failed: %s — using deterministic rules", exc)
             action, reasoning, confidence = _deterministic_recommendation(active, trains)
 
-        rec = self._build_rec(
-            active, action, reasoning, confidence, trains, crew_alert, delay_saving
-        )
+        rec = self._build_rec(active, action, reasoning, confidence, trains, crew_alert, delay_saving)
         tier = 1 if confidence >= self._threshold else 2
         rec["tier"] = tier
 
         updates = {"recommendations": recommendations + [rec]}  # type: Dict[str, Any]
         if tier == 2:
             updates["escalated"] = True
-            self.log(
-                f"Confidence {confidence:.2f} < threshold {self._threshold} → Tier 2 escalation"
-            )
+            self.log(f"Confidence {confidence:.2f} < threshold {self._threshold} → Tier 2 escalation")
 
         return updates, confidence, reasoning
 

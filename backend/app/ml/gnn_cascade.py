@@ -136,9 +136,7 @@ class RailwayGNN(nn.Module):
 
         self.node_proj = nn.Linear(node_feat_dim, hidden_dim)
 
-        self.sage_layers = nn.ModuleList(
-            [SAGEConv(hidden_dim, hidden_dim) for _ in range(n_sage_layers)]
-        )
+        self.sage_layers = nn.ModuleList([SAGEConv(hidden_dim, hidden_dim) for _ in range(n_sage_layers)])
 
         self.gat = GATConv(
             hidden_dim,
@@ -148,9 +146,7 @@ class RailwayGNN(nn.Module):
             edge_dim=edge_feat_dim,
         )
 
-        self.layer_norms = nn.ModuleList(
-            [nn.LayerNorm(hidden_dim) for _ in range(n_sage_layers + 1)]
-        )
+        self.layer_norms = nn.ModuleList([nn.LayerNorm(hidden_dim) for _ in range(n_sage_layers + 1)])
 
         self.time_embed = nn.Sequential(
             nn.Linear(2, hidden_dim // 4),
@@ -263,8 +259,6 @@ class CascadeLoss(nn.Module):
             # Compatibility mode for older tests
             assert isinstance(pred, torch.Tensor) and isinstance(target, torch.Tensor)
             if cascade_weights is not None:
-                return torch.nn.functional.binary_cross_entropy(
-                    pred, target, weight=cascade_weights
-                )
+                return torch.nn.functional.binary_cross_entropy(pred, target, weight=cascade_weights)
             else:
                 return torch.nn.functional.binary_cross_entropy(pred, target)
