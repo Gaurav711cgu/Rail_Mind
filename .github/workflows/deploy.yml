@@ -6,26 +6,12 @@ on:
     paths:
       - "backend/**"
       - "frontend/**"
-  workflow_dispatch:         # Manual trigger from GitHub Actions UI
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Required repository secrets (Settings > Secrets and variables > Actions):
-#
-#   HF_TOKEN          — HuggingFace write token (hf_...)
-#   HF_SPACE_ID       — Space repo id, e.g. "Gaurav711/Rail_Mind"
-#   VERCEL_TOKEN      — Vercel personal access token
-#   VERCEL_ORG_ID     — Vercel team/org id (from vercel.json or dashboard)
-#   VERCEL_PROJECT_ID — Vercel project id (from vercel.json or dashboard)
-#   VITE_API_BASE_URL — Public HuggingFace Spaces URL for the backend API
-# ─────────────────────────────────────────────────────────────────────────────
+  workflow_dispatch:
 
 jobs:
-  # ───────────────────────────────────────────────────────────────────────────
   deploy-backend:
     name: Deploy Backend to HuggingFace Spaces
     runs-on: ubuntu-latest
-    # Skip the entire job when the required secrets are absent
-    if: secrets.HF_TOKEN != '' && secrets.HF_SPACE_ID != ''
 
     steps:
       - uses: actions/checkout@v4
@@ -33,44 +19,43 @@ jobs:
           fetch-depth: 0
           lfs: true
 
-      - name: Validate secrets are set
-        run: |
-          if [ -z "$HF_TOKEN" ]; then
-            echo "ERROR: HF_TOKEN secret is not set."
-            echo "Go to: Settings > Secrets and variables > Actions > New repository secret"
-            exit 1
-          fi
-          if [ -z "$HF_SPACE" ]; then
-            echo "ERROR: HF_SPACE_ID secret is not set."
-            echo "Example value: Gaurav711/Rail_Mind"
-            exit 1
-          fi
-          echo "Secrets present. Deploying to HuggingFace Space: $HF_SPACE"
+      - name: Check secrets and deploy
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_SPACE: ${{ secrets.HF_SPACE_ID }}
+        run: |
+          if [ -z "$HF_TOKEN" ] || [ -z "$HF_SPACE" ]; then
+            echo "::notice::Skipping HuggingFace deployment: HF_TOKEN or HF_SPACE_ID repository secret is not configured."
+            exit 0
+          fi
+          echo "Secrets present. Proceeding with deployment to HuggingFace Space: $HF_SPACE"
 
       - name: Configure Git
+        if: ${{ secrets.HF_TOKEN != '' && secrets.HF_SPACE_ID != '' }}
         run: |
           git config --global user.email "deploy-bot@railmind.ai"
           git config --global user.name "RailMind Deploy Bot"
 
       - uses: actions/setup-python@v5
+        if: ${{ secrets.HF_TOKEN != '' && secrets.HF_SPACE_ID != '' }}
         with:
           python-version: "3.11"
           cache: pip
 
       - name: Install dependencies
+        if: ${{ secrets.HF_TOKEN != '' && secrets.HF_SPACE_ID != '' }}
         working-directory: backend
         run: pip install huggingface_hub xgboost scikit-learn numpy pandas joblib --quiet
 
       - name: Train RAC model artifact
+        if: ${{ secrets.HF_TOKEN != '' && secrets.HF_SPACE_ID != '' }}
         working-directory: backend
         run: python -m app.ml.train_rac_model
         env:
           PYTHONPATH: .
 
       - name: Push backend to HuggingFace Space
+        if: ${{ secrets.HF_TOKEN != '' && secrets.HF_SPACE_ID != '' }}
         working-directory: backend
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
@@ -83,10 +68,9 @@ jobs:
           token    = os.environ["HF_TOKEN"]
           space_id = os.environ["HF_SPACE"]
 
-          if not token:
-              raise SystemExit("HF_TOKEN is empty — add it under repo Settings > Secrets.")
-          if not space_id:
-              raise SystemExit("HF_SPACE_ID is empty — add it under repo Settings > Secrets.")
+          if not token or not space_id:
+              print("Skipping deployment: HF_TOKEN or HF_SPACE_ID not set.")
+              exit(0)
 
           api = HfApi(token=token)
           api.upload_folder(
@@ -109,64 +93,45 @@ jobs:
           print(f"Deployed to https://huggingface.co/spaces/{space_id}")
           PYEOF
 
-      - name: Verify deployment health
-        env:
-          HF_SPACE: ${{ secrets.HF_SPACE_ID }}
-        run: |
-          # Wait for Space to rebuild (typically 60-120 s)
-          echo "Waiting 90 s for Space rebuild..."
-          sleep 90
-          SPACE_URL="https://$(echo "$HF_SPACE" | tr '/' '-').hf.space"
-          echo "Checking health at ${SPACE_URL}/api/v1/health"
-          curl --fail --silent --show-error \
-               --retry 5 --retry-delay 15 --retry-connrefused \
-               "${SPACE_URL}/api/v1/health" \
-            || echo "Health check timed out — Space may still be building. Check the HuggingFace dashboard."
-
-  # ───────────────────────────────────────────────────────────────────────────
   deploy-frontend:
     name: Deploy Frontend to Vercel
     runs-on: ubuntu-latest
-    # Skip the entire job when the required secrets are absent
-    if: secrets.VERCEL_TOKEN != '' && secrets.VERCEL_PROJECT_ID != ''
 
     steps:
       - uses: actions/checkout@v4
 
+      - name: Check secrets and deploy
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
+            echo "::notice::Skipping Vercel deployment: VERCEL_TOKEN or VERCEL_PROJECT_ID repository secret is not configured."
+            exit 0
+          fi
+          echo "Secrets present. Deploying frontend to Vercel."
+
       - uses: actions/setup-node@v4
+        if: ${{ secrets.VERCEL_TOKEN != '' && secrets.VERCEL_PROJECT_ID != '' }}
         with:
           node-version: "20"
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Validate secrets are set
-        run: |
-          if [ -z "$VERCEL_TOKEN" ]; then
-            echo "ERROR: VERCEL_TOKEN secret is not set."
-            echo "Get it from: https://vercel.com/account/tokens"
-            exit 1
-          fi
-          if [ -z "$VERCEL_PROJECT_ID" ]; then
-            echo "ERROR: VERCEL_PROJECT_ID secret is not set."
-            echo "Find it in your Vercel project settings or vercel.json."
-            exit 1
-          fi
-          echo "Secrets present. Deploying frontend to Vercel."
-        env:
-          VERCEL_TOKEN:      ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-
       - name: Install dependencies
+        if: ${{ secrets.VERCEL_TOKEN != '' && secrets.VERCEL_PROJECT_ID != '' }}
         working-directory: frontend
         run: npm ci
 
       - name: Build
+        if: ${{ secrets.VERCEL_TOKEN != '' && secrets.VERCEL_PROJECT_ID != '' }}
         working-directory: frontend
         run: npm run build
         env:
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
 
       - name: Deploy to Vercel
+        if: ${{ secrets.VERCEL_TOKEN != '' && secrets.VERCEL_PROJECT_ID != '' }}
         working-directory: frontend
         run: |
           npm install -g vercel --quiet

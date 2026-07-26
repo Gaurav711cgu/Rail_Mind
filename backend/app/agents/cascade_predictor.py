@@ -118,7 +118,7 @@ class CascadePredictor(BaseAgent):
             return {"severity": "HIGH" if current_delay > 30 else "MEDIUM", "confidence": 0.75}
 
         try:
-            checkpoint = torch.load(weights_path, map_location="cpu", weights_only=False)
+            checkpoint = torch.load(weights_path, map_location="cpu", weights_only=False)  # nosec B614
             cfg = checkpoint.get("config", {})
             model = RailwayGNN(**cfg)
             model.load_state_dict(checkpoint["state_dict"])

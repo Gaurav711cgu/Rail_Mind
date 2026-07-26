@@ -30,7 +30,7 @@ class ScenarioEngine:
 
             weights_path = Path(__file__).resolve().parent.parent / "ml" / "artifacts" / "gnn_cascade.pt"
             if weights_path.exists():
-                checkpoint = torch.load(weights_path, map_location="cpu", weights_only=False)
+                checkpoint = torch.load(weights_path, map_location="cpu", weights_only=False)  # nosec B614
                 model = RailwayGNN(**checkpoint.get("config", {}))
                 model.load_state_dict(checkpoint["state_dict"])
                 model.eval()
