@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import logoImg from './assets/logo.jpg';
 import TelemetryMap from './components/TelemetryMap';
 import AgentLogs from './components/AgentLogs';
 import Recommendations from './components/Recommendations';
@@ -168,7 +169,35 @@ export default function App() {
       {/* ── HEADER ── */}
       <header className="app-header">
         <div className="brand-section">
-          <img src="/logo.jpg" className="brand-logo-img" alt="RailMind Logo" />
+          <img
+            src={logoImg}
+            className="brand-logo-img"
+            alt="RailMind Logo"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+              if (e.currentTarget.nextSibling) {
+                e.currentTarget.nextSibling.style.display = 'flex';
+              }
+            }}
+          />
+          <div
+            style={{
+              display: 'none',
+              width: 32,
+              height: 32,
+              borderRadius: 6,
+              background: 'rgba(245, 158, 11, 0.15)',
+              border: '1px solid rgba(245, 158, 11, 0.4)',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#F59E0B',
+              fontWeight: 800,
+              fontSize: 14,
+              flexShrink: 0
+            }}
+          >
+            🚆
+          </div>
           <div>
             <div className="brand-title">RailMind</div>
             <div className="brand-tagline">Operations Solver · Indian Railways</div>
