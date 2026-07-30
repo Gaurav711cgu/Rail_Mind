@@ -42,6 +42,13 @@ class RACPredictor:
             except Exception as e:
                 print(f"[RACPredictor] Retraining failed: {e}")
 
+        import warnings
+        try:
+            from sklearn.exceptions import InconsistentVersionWarning
+            warnings.filterwarnings("ignore", category=InconsistentVersionWarning)
+        except ImportError:
+            pass
+
         try:
             import joblib
             import shap
