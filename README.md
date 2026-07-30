@@ -13,7 +13,7 @@ RailMind is an enterprise-grade multi-agent autonomous dispatching and punctuali
 
 ---
 
-## ⚡ Key Performance Indicators & Research Benchmarks
+## Key Performance Indicators & Research Benchmarks
 
 Evaluated against a **100,000 station delay observation dataset** (`runningstatus.in` delay logs) across a **3-way temporal split**:
 
@@ -30,7 +30,7 @@ Evaluated against a **100,000 station delay observation dataset** (`runningstatu
 
 ---
 
-## 🏗️ System Architecture
+##  System Architecture
 
 ```mermaid
 graph TB
@@ -70,7 +70,7 @@ graph TB
 
 ---
 
-## 🤖 Agentic Workflow (LangGraph 6-Agent Pipeline)
+##  Agentic Workflow (LangGraph 6-Agent Pipeline)
 
 ```mermaid
 graph LR
@@ -96,7 +96,7 @@ graph LR
 
 ---
 
-## 📂 Repository Structure
+##  Repository Structure
 
 ```yaml
 railmind/
@@ -117,7 +117,7 @@ railmind/
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### 1. Backend Setup
 ```bash
