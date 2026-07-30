@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import logoImg from './assets/logo.jpg';
+import { LOGO_DATA_URI } from './assets/logoData';
 import TelemetryMap from './components/TelemetryMap';
 import AgentLogs from './components/AgentLogs';
 import Recommendations from './components/Recommendations';
@@ -170,7 +170,7 @@ export default function App() {
       <header className="app-header">
         <div className="brand-section">
           <img
-            src={logoImg || "/logo.jpg"}
+            src={LOGO_DATA_URI}
             className="brand-logo-img"
             alt="RailMind Logo"
             style={{ width: 34, height: 34, borderRadius: 6, objectFit: 'cover', display: 'block', border: '1px solid rgba(245, 158, 11, 0.4)' }}
