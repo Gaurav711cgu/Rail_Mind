@@ -17,16 +17,16 @@ RailMind is an enterprise-grade multi-agent autonomous dispatching and punctuali
 
 | **Operational Control Overview** | **Live Telemetry & KAVACH Radar** |
 | :---: | :---: |
-| ![Dashboard Overview](assets/dashboard_overview.jpg) | ![Live Telemetry Map](assets/live_telemetry_map.jpg) |
+| ![Dashboard Overview](screenshots/dashboard_overview.jpg) | ![Live Telemetry Map](screenshots/live_telemetry_map.jpg) |
 | *Real-time Network Command Center & System Metrics* | *Live KAVACH Radar & Intersecting Route Grid* |
 
 | **RAC Confirmation Predictor** | **Autonomous Agent Logs** |
 | :---: | :---: |
-| ![RAC Prediction Engine](assets/rac_prediction_engine.jpg) | ![Agent Orchestration Logs](assets/agent_orchestration_logs.jpg) |
+| ![RAC Prediction Engine](screenshots/rac_prediction_engine.jpg) | ![Agent Orchestration Logs](screenshots/agent_orchestration_logs.jpg) |
 | *XGBoost & Isotonic Calibrated RAC Probabilities* | *LangGraph 6-Agent Execution & Reasoning Trace* |
 
 ### **Tamper-Proof SHA-256 Audit Ledger**
-![Audit Ledger Security](assets/audit_ledger_security.jpg)  
+![Audit Ledger Security](screenshots/audit_ledger_security.jpg)  
 *Cryptographically Sealed Audit Ledger & Immutable Dispatch Verification*
 
 ---
