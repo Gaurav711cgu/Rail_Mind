@@ -17,18 +17,18 @@ RailMind is an enterprise-grade multi-agent autonomous dispatching and punctuali
 
 | **Operational Control Overview** | **Live Telemetry & KAVACH Radar** |
 | :---: | :---: |
-| ![Dashboard Overview](./docs/assets/dashboard_overview.jpg) | ![Live Telemetry Map](./docs/assets/live_telemetry_map.jpg) |
+| <img src="https://raw.githubusercontent.com/Gaurav711cgu/Rail_Mind/main/docs/assets/dashboard_overview.jpg" alt="Dashboard Overview" width="100%" /> | <img src="https://raw.githubusercontent.com/Gaurav711cgu/Rail_Mind/main/docs/assets/live_telemetry_map.jpg" alt="Live Telemetry Map" width="100%" /> |
 | *Real-time Network Command Center & System Metrics* | *Live KAVACH Radar & Intersecting Route Grid* |
 
 | **RAC Confirmation Predictor** | **Autonomous Agent Logs** |
 | :---: | :---: |
-| ![RAC Prediction Engine](./docs/assets/rac_prediction_engine.jpg) | ![Agent Orchestration Logs](./docs/assets/agent_orchestration_logs.jpg) |
+| <img src="https://raw.githubusercontent.com/Gaurav711cgu/Rail_Mind/main/docs/assets/rac_prediction_engine.jpg" alt="RAC Prediction Engine" width="100%" /> | <img src="https://raw.githubusercontent.com/Gaurav711cgu/Rail_Mind/main/docs/assets/agent_orchestration_logs.jpg" alt="Agent Orchestration Logs" width="100%" /> |
 | *XGBoost & Isotonic Calibrated RAC Probabilities* | *LangGraph 6-Agent Execution & Reasoning Trace* |
 
 <div align="center">
 
 ### **Tamper-Proof SHA-256 Audit Ledger**
-![Audit Ledger Security](./docs/assets/audit_ledger_security.jpg)  
+<img src="https://raw.githubusercontent.com/Gaurav711cgu/Rail_Mind/main/docs/assets/audit_ledger_security.jpg" alt="Audit Ledger Security" width="90%" />  
 *Cryptographically Sealed Audit Ledger & Immutable Dispatch Verification*
 
 </div>
