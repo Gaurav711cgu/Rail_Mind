@@ -72,39 +72,30 @@
 ## System Architecture
 
 ```mermaid
-graph TB
-    subgraph Frontend["Vite + React Dashboard"]
-        WS["WebSocket Hook"] --> UI["7 Glass-Card Components"]
-        SSE["SSE Fallback"] -.-> UI
-        UI --> MAP["Telemetry Radar Map"]
-        UI --> SHAP["SHAP Impact Bars"]
-        UI --> AUDIT_UI["Audit Ledger Viewer"]
+flowchart TD
+    subgraph UI["Frontend Layer (Vite + React)"]
+        FE["7 Glass-Card Dashboard & Radar Map"]
     end
 
-    subgraph Backend["FastAPI Application Server"]
-        API["62 REST Endpoints"] --> PIPE["Agent Pipeline"]
-        API --> ML["3-Way Temporal Split RAC Predictor"]
-        API --> ROUTE["NetworkX Router"]
-        
-        subgraph Pipeline["LangGraph 6-Agent Orchestrator"]
-            M["MonitorAgent"] --> CD["ConflictDetector"]
-            CD --> CP["CascadePredictor"]
-            CP --> DA["DispatchAgent + Groq LLM"]
-            DA --> NA["NotificationAgent"]
-            NA --> AA["AuditAgent + SHA-256"]
-        end
+    subgraph API_LAYER["Backend Layer (FastAPI)"]
+        API["62 REST & WebSocket Endpoints"]
+        ML["3-Way Temporal RAC & NetworkX Router"]
     end
 
-    subgraph Data["Persistence and Streaming Layer"]
-        PG[("PostgreSQL / SQLite")]
-        RD[("Redis Streams")]
-        ALM["Alembic Migrations"]
+    subgraph AGENTS["LangGraph 6-Agent Orchestrator"]
+        ORCH["Monitor -> Conflict -> Cascade -> Dispatch -> Notify -> Audit"]
     end
 
-    Frontend -->|WebSocket + REST| Backend
-    Backend --> Data
-    ML -->|SHAP Values| SHAP
-    DA -->|Groq API Llama 3.3 70B| LLM_EXT["Groq Cloud"]
+    subgraph DATA_LAYER["Persistence & Cache Layer"]
+        DB[(PostgreSQL & SQLite Database)]
+        CACHE[(Redis Telemetry Streams)]
+    end
+
+    UI -->|WebSocket & REST| API
+    API --> ML
+    API --> AGENTS
+    AGENTS -->|Groq Llama 3.3 70B| LLM["Groq Cloud"]
+    AGENTS --> DATA_LAYER
 ```
 
 ---
