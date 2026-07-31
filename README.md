@@ -17,16 +17,16 @@ RailMind is an enterprise-grade multi-agent autonomous dispatching and punctuali
 
 | **Operational Control Overview** | **Live Telemetry & KAVACH Radar** |
 | :---: | :---: |
-| ![Dashboard Overview](screenshots/dashboard_overview.jpg) | ![Live Telemetry Map](screenshots/live_telemetry_map.jpg) |
+| ![Dashboard Overview](https://raw.githubusercontent.com/Gaurav711cgu/Rail_Mind/main/screenshots/dashboard_overview.jpg) | ![Live Telemetry Map](https://raw.githubusercontent.com/Gaurav711cgu/Rail_Mind/main/screenshots/live_telemetry_map.jpg) |
 | *Real-time Network Command Center & System Metrics* | *Live KAVACH Radar & Intersecting Route Grid* |
 
 | **RAC Confirmation Predictor** | **Autonomous Agent Logs** |
 | :---: | :---: |
-| ![RAC Prediction Engine](screenshots/rac_prediction_engine.jpg) | ![Agent Orchestration Logs](screenshots/agent_orchestration_logs.jpg) |
+| ![RAC Prediction Engine](https://raw.githubusercontent.com/Gaurav711cgu/Rail_Mind/main/screenshots/rac_prediction_engine.jpg) | ![Agent Orchestration Logs](https://raw.githubusercontent.com/Gaurav711cgu/Rail_Mind/main/screenshots/agent_orchestration_logs.jpg) |
 | *XGBoost & Isotonic Calibrated RAC Probabilities* | *LangGraph 6-Agent Execution & Reasoning Trace* |
 
 ### **Tamper-Proof SHA-256 Audit Ledger**
-![Audit Ledger Security](screenshots/audit_ledger_security.jpg)  
+![Audit Ledger Security](https://raw.githubusercontent.com/Gaurav711cgu/Rail_Mind/main/screenshots/audit_ledger_security.jpg)  
 *Cryptographically Sealed Audit Ledger & Immutable Dispatch Verification*
 
 ---
