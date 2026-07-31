@@ -74,37 +74,37 @@
 ```mermaid
 graph TB
     subgraph Frontend["Vite + React Dashboard"]
-        WS[WebSocket Hook] --> UI[7 Glass-Card Components]
-        SSE[SSE Fallback] -.-> UI
-        UI --> MAP[Telemetry Radar Map]
-        UI --> SHAP[SHAP Impact Bars]
-        UI --> AUDIT_UI[Audit Ledger Viewer]
+        WS["WebSocket Hook"] --> UI["7 Glass-Card Components"]
+        SSE["SSE Fallback"] -.-> UI
+        UI --> MAP["Telemetry Radar Map"]
+        UI --> SHAP["SHAP Impact Bars"]
+        UI --> AUDIT_UI["Audit Ledger Viewer"]
     end
 
     subgraph Backend["FastAPI Application Server"]
-        API[62 REST Endpoints] --> PIPE[Agent Pipeline]
-        API --> ML[3-Way Temporal Split RAC Predictor]
-        API --> ROUTE[NetworkX Router]
+        API["62 REST Endpoints"] --> PIPE["Agent Pipeline"]
+        API --> ML["3-Way Temporal Split RAC Predictor"]
+        API --> ROUTE["NetworkX Router"]
         
         subgraph Pipeline["LangGraph 6-Agent Orchestrator"]
-            M[MonitorAgent] --> CD[ConflictDetector]
-            CD --> CP[CascadePredictor]
-            CP --> DA[DispatchAgent + Groq LLM]
-            DA --> NA[NotificationAgent]
-            NA --> AA[AuditAgent + SHA-256]
+            M["MonitorAgent"] --> CD["ConflictDetector"]
+            CD --> CP["CascadePredictor"]
+            CP --> DA["DispatchAgent + Groq LLM"]
+            DA --> NA["NotificationAgent"]
+            NA --> AA["AuditAgent + SHA-256"]
         end
     end
 
     subgraph Data["Persistence and Streaming Layer"]
-        PG[(PostgreSQL / SQLite)]
-        RD[(Redis Streams)]
-        ALM[Alembic Migrations]
+        PG[("PostgreSQL / SQLite")]
+        RD[("Redis Streams")]
+        ALM["Alembic Migrations"]
     end
 
-    Frontend <-->|WebSocket + REST| Backend
+    Frontend -->|WebSocket + REST| Backend
     Backend --> Data
     ML -->|SHAP Values| SHAP
-    DA -->|"Groq API (Llama 3.3 70B)"| LLM_EXT[Groq Cloud]
+    DA -->|Groq API Llama 3.3 70B| LLM_EXT["Groq Cloud"]
 ```
 
 ---
