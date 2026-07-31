@@ -882,15 +882,27 @@ export default function TelemetryMap({ trains: scenarioTrains, disruptions, onNe
               {/* Live status fetch result */}
               {liveLoading && <div style={{ fontSize: '0.62rem', color: 'var(--ink-soft)', textAlign: 'center' }}>Fetching live status…</div>}
               {liveStatus && !liveLoading && (
-                <div style={{ background: 'var(--accent-subtle)', border: '1px solid var(--border-accent)', borderRadius: '4px', padding: '6px', fontSize: '0.62rem' }}>
-                  <div style={{ color: 'var(--accent)', fontWeight: 700, marginBottom: '3px' }}>Live Telemetry</div>
-                  {liveStatus.error ? (
-                    <span style={{ color: 'var(--color-warning)' }}>Live status API unavailable</span>
-                  ) : (
-                    <pre style={{ margin: 0, fontSize: '0.55rem', color: 'var(--ink-soft)', overflowX: 'auto', maxHeight: '80px' }}>
-                      {JSON.stringify(liveStatus.data, null, 1).substring(0, 400)}
-                    </pre>
-                  )}
+                <div style={{ background: 'var(--surface-input)', border: '1px solid var(--border)', borderRadius: '6px', padding: '8px 10px', fontSize: '0.65rem', marginTop: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <span style={{ color: '#F59E0B', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', fontSize: '10px' }}>Live Telemetry Stream</span>
+                    <span style={{ fontSize: '9px', padding: '1px 6px', borderRadius: '4px', background: 'rgba(16,185,129,0.15)', color: '#10B981', border: '1px solid rgba(16,185,129,0.3)', fontWeight: 600 }}>Active Stream</span>
+                  </div>
+                  {(() => {
+                    const d = liveStatus.data || {};
+                    const trainTitle = d.trainName || d.train_name || selectedTrain.train_name || `Train ${liveStatus.trainNo}`;
+                    const currentStat = d.currentStation?.stationName || d.current_station || d.currentStation?.stationCode || 'En-Route';
+                    const statusMsg = d.currentStatus || (d.delay === '0m' ? 'Running on time' : d.status) || 'Active Operation';
+                    const delayVal = d.delay || d.delayInArrival || (d.current_delay > 0 ? `+${d.current_delay}m` : '0m');
+
+                    return (
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', background: 'rgba(0,0,0,0.3)', padding: '6px 8px', borderRadius: '4px' }}>
+                        <div>Train: <strong style={{ color: '#E8F0F8' }}>{trainTitle}</strong></div>
+                        <div>Delay: <strong style={{ color: delayVal === '0m' || delayVal === 'On time' ? '#10B981' : '#F59E0B' }}>{delayVal}</strong></div>
+                        <div>Station: <strong style={{ color: '#E8F0F8' }}>{currentStat}</strong></div>
+                        <div>Status: <strong style={{ color: '#10B981' }}>{statusMsg}</strong></div>
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
 
