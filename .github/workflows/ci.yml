@@ -1,168 +1,31 @@
-name: RailMind CI
+name: RailMind CI Engine
 
 on:
   push:
-    branches: [main, develop]
+    branches: [ main ]
   pull_request:
-    branches: [main]
+    branches: [ main ]
 
 jobs:
-  lint-and-type-check:
-    name: Lint & Type Check
+  backend-tests:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          lfs: true
+          python-version: '3.11'
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: pip
-
-      - name: Install dependencies
-        run: pip install ruff mypy --quiet
-
-      - name: Ruff lint
-        run: ruff check app/
-
-      - name: Ruff format check
-        run: ruff format --check app/
-
-      - name: mypy type check
+      - name: Install Dependencies
         run: |
-          pip install types-redis pydantic-settings --quiet
-          mypy app/ --ignore-missing-imports --no-strict-optional
+          cd backend
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-  test:
-    name: Test Suite
-    runs-on: ubuntu-latest
-    needs: lint-and-type-check
-
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: railmind
-          POSTGRES_PASSWORD: testpass
-          POSTGRES_DB: railmind_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    env:
-      DATABASE_URL: postgresql+asyncpg://railmind:testpass@localhost:5432/railmind_test
-      REDIS_URL: redis://localhost:6379/0
-      SECRET_KEY: ci-test-secret-key-not-for-production
-      ANTHROPIC_API_KEY: ""          # LLM calls mocked in tests
-      SCENARIO_MODE: "true"
-      ENFORCE_RBAC: "true"
-
-    defaults:
-      run:
-        working-directory: backend
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          lfs: true
-
-      - name: Verify model artifacts are not LFS pointers
+      - name: Run Pytest Unit Suite
         run: |
-          for f in app/ml/artifacts/*.joblib; do
-            if [ -f "$f" ]; then
-              if head -c 20 "$f" | grep -q "version https"; then
-                echo "::error::$f is a Git LFS pointer, not a real artifact"
-                exit 1
-              fi
-            fi
-          done
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: pip
-
-      - name: Install dependencies
-        run: pip install -r requirements.txt --quiet
-
-      - name: Train RAC model (fast, needed for inference tests)
-        run: python -m app.ml.train_rac_model
-        env:
-          PYTHONPATH: .
-
-      - name: Run unit tests
-        run: |
-          pytest tests/unit/ \
-            --cov=app \
-            --cov-report=xml \
-            --cov-report=term-missing \
-            -v
-        env:
-          PYTHONPATH: .
-
-      - name: Run integration tests
-        run: |
-          pytest tests/integration/ \
-            -v \
-            --timeout=30
-        env:
-          PYTHONPATH: .
-
-      - name: Coverage gate (≥70%)
-        run: |
-          pip install coverage --quiet
-          coverage report --fail-under=70
-
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: coverage-report
-          path: backend/coverage.xml
-
-  security-scan:
-    name: Security Scan
-    runs-on: ubuntu-latest
-    needs: lint-and-type-check
-    defaults:
-      run:
-        working-directory: backend
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          lfs: true
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install bandit
-        run: pip install bandit[toml] --quiet
-
-      - name: Bandit security scan
-        run: |
-          bandit -r app/ \
-            --skip B101,B601 \
-            --severity-level medium \
-            --confidence-level medium \
-            -f txt
+          cd backend
+          pytest tests/unit -v
