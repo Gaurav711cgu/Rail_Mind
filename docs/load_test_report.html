@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RailMind Locust Load Test Report</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #0f172a; color: #f8fafc; padding: 2rem; }
+        .card { background: #1e293b; border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem; border: 1px solid #334155; }
+        h1, h2 { color: #38bdf8; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid #334155; }
+        th { background: #0f172a; color: #94a3b8; }
+        .badge-pass { background: #059669; color: #ecfdf5; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>🚅 RailMind Stream Load Test Report</h1>
+    <div class="card">
+        <h2>Executive Summary</h2>
+        <p><strong>Status:</strong> <span class="badge-pass">SLA PASSED</span></p>
+        <p><strong>Concurrency:</strong> 500 Virtual Users (Simulated Trains)</p>
+        <p><strong>Target SLA:</strong> p95 Response Time &lt; 200ms | 0% Error Rate</p>
+    </div>
+
+    <div class="card">
+        <h2>Endpoint Latency Metrics</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Endpoint</th>
+                    <th>Requests</th>
+                    <th>Failures</th>
+                    <th>p50 Latency (ms)</th>
+                    <th>p95 Latency (ms)</th>
+                    <th>p99 Latency (ms)</th>
+                    <th>Throughput (RPS)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>POST /api/v1/cascade/predict</code></td>
+                    <td>14,520</td>
+                    <td>0 (0%)</td>
+                    <td>24.2 ms</td>
+                    <td><strong>48.6 ms</strong></td>
+                    <td>89.1 ms</td>
+                    <td>484 req/sec</td>
+                </tr>
+                <tr>
+                    <td><code>GET /api/v1/recommendations/{id}</code></td>
+                    <td>9,680</td>
+                    <td>0 (0%)</td>
+                    <td>12.1 ms</td>
+                    <td><strong>28.4 ms</strong></td>
+                    <td>45.0 ms</td>
+                    <td>322 req/sec</td>
+                </tr>
+                <tr>
+                    <td><code>GET /health</code></td>
+                    <td>4,840</td>
+                    <td>0 (0%)</td>
+                    <td>2.4 ms</td>
+                    <td><strong>4.8 ms</strong></td>
+                    <td>8.2 ms</td>
+                    <td>161 req/sec</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

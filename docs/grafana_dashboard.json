@@ -1,0 +1,69 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "title": "RailMind Stream Processing & ML SLA Dashboard",
+  "tags": ["railmind", "ml-ops", "telemetry", "prometheus"],
+  "timezone": "browser",
+  "panels": [
+    {
+      "title": "Dispatch Recommendation Latency (p50 / p95 / p99)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum(rate(railmind_dispatch_latency_seconds_bucket[5m])) by (le)) * 1000",
+          "legendFormat": "p50 (ms)"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(railmind_dispatch_latency_seconds_bucket[5m])) by (le)) * 1000",
+          "legendFormat": "p95 (ms)"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(railmind_dispatch_latency_seconds_bucket[5m])) by (le)) * 1000",
+          "legendFormat": "p99 (ms)"
+        }
+      ]
+    },
+    {
+      "title": "GraphSAGE GNN Inference Latency (ms)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(railmind_gnn_inference_ms_bucket[5m])) by (le))",
+          "legendFormat": "GNN p95 (ms)"
+        }
+      ]
+    },
+    {
+      "title": "Kafka Telemetry Consumer Lag (Messages)",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "expr": "railmind_kafka_consumer_lag_messages",
+          "legendFormat": "Consumer Lag"
+        }
+      ]
+    },
+    {
+      "title": "Redis Feature Store Batch Read Latency (p99 ms)",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 8 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(railmind_feature_store_read_ms_bucket[5m])) by (le))",
+          "legendFormat": "Redis p99 (ms)"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 36,
+  "style": "dark",
+  "version": 1
+}
