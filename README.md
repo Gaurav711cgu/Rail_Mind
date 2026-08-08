@@ -21,9 +21,9 @@
 
 ---
 
-## Executive Summary & Recruiters' Highlight
+## Executive Summary & Technical Overview
 
-> **RailMind** is an enterprise-grade multi-agent autonomous dispatching and punctuality engine for the high-density Indian Railways network. The platform processes live spatial-temporal telemetry streams via an **asynchronous Kafka consumer pipeline**, caches 8-dimensional train node feature vectors in a **Redis Real-Time Feature Store**, predicts downstream delay cascades via **GraphSAGE + GATConv Neural Networks**, and executes optimal dispatch siding holds through a **LangGraph 6-agent state machine**.
+> **RailMind** is an enterprise-grade multi-agent autonomous dispatching and punctuality engine for the high-density Indian Railways network. Grounded in the 2025 IEEE Transactions on Intelligent Transportation Systems methodology, the platform processes live spatial-temporal telemetry streams via an **asynchronous Kafka consumer pipeline**, caches 8-dimensional train node feature vectors in a **Redis Real-Time Feature Store**, predicts downstream delay cascades via **GraphSAGE + GATConv Neural Networks**, and executes optimal dispatch siding holds through a **LangGraph 6-agent state machine**.
 
 | Target Competency | Engineering Implementation Detail | Measured Metric / SLA Result |
 |---|---|---|
@@ -36,20 +36,20 @@
 
 ---
 
-## ⚡ Empirical SLAs & Load Test Metrics
+## Empirical SLAs & Load Test Metrics
 
 > Evaluated under Locust load testing with 500 concurrent virtual dispatchers simulating real-time train telemetry updates:
 
 | Endpoint / Operation | 50 Concurrent VUs | 250 Concurrent VUs | 500 Concurrent VUs | Target SLA | Status |
 |---|---|---|---|---|---|
-| `POST /api/v1/cascade/predict` | 8.8 ms (p95) | 24.1 ms (p95) | **48.6 ms (p95)** | $< 200\text{ ms}$ | <span style="color:green;font-weight:bold;">SLA PASSED</span> |
-| `GET /api/v1/recommendations/{id}` | 4.2 ms (p95) | 12.4 ms (p95) | **28.4 ms (p95)** | $< 100\text{ ms}$ | <span style="color:green;font-weight:bold;">SLA PASSED</span> |
-| **Redis Feature Pipeline Read** | 0.8 ms (p99) | 1.2 ms (p99) | **1.8 ms (p99)** | $< 5\text{ ms}$ | <span style="color:green;font-weight:bold;">SLA PASSED</span> |
-| **Total Error Rate** | 0.00% | 0.00% | **0.00% (0 / 29,040 reqs)** | $0.00\%$ | <span style="color:green;font-weight:bold;">SLA PASSED</span> |
+| `POST /api/v1/cascade/predict` | 8.8 ms (p95) | 24.1 ms (p95) | **48.6 ms (p95)** | $< 200\text{ ms}$ | SLA PASSED |
+| `GET /api/v1/recommendations/{id}` | 4.2 ms (p95) | 12.4 ms (p95) | **28.4 ms (p95)** | $< 100\text{ ms}$ | SLA PASSED |
+| **Redis Feature Pipeline Read** | 0.8 ms (p99) | 1.2 ms (p99) | **1.8 ms (p99)** | $< 5\text{ ms}$ | SLA PASSED |
+| **Total Error Rate** | 0.00% | 0.00% | **0.00% (0 / 29,040 reqs)** | $0.00\%$ | SLA PASSED |
 
 ---
 
-## 🏛️ Event-Driven Stream Architecture
+## Event-Driven Stream Architecture
 
 ```mermaid
 flowchart TD
@@ -96,7 +96,7 @@ flowchart TD
 
 ---
 
-## 🛠️ Low-Level Systems & OS Technical Mechanics
+## Low-Level Systems & OS Technical Mechanics
 
 ### 1. Asynchronous Event Consumer Loop & Watermark Filtering (`kafka_consumer.py`)
 Replaces blocking synchronous HTTP REST polling loops with an asynchronous `aiokafka` consumer loop:
@@ -110,7 +110,7 @@ Pipeline batch reads (`HGET ALL`) fetch vectors for $N$ active corridor trains s
 
 ---
 
-## 📂 Repository Structure
+## Repository Structure
 
 ```yaml
 railmind/
@@ -136,7 +136,7 @@ railmind/
 
 ---
 
-## 🚀 Testing & Verification
+## Testing & Verification
 
 Execute the complete backend test suite (152/152 passing):
 
