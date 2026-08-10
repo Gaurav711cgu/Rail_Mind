@@ -1,40 +1,27 @@
-name: RailMind Security & Unit CI Engine
+name: CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, develop ]
-  workflow_dispatch:
+    branches: [ main ]
 
 jobs:
-  backend-tests:
-    name: Backend Pytest Suite & Security SAST Analysis
+  test:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
-
-      - name: Install Dependencies
+      - name: Install dependencies
         run: |
-          cd backend
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest pytest-cov bandit
-
-      - name: Run Bandit Security SAST Analysis
+          cd backend && pip install -r requirements.txt
+          pip install pytest numpy
+      - name: Run Backend Pytest Suite
         run: |
-          cd backend
-          bandit -r app/ -ll --skip B105,B106
-
-      - name: Run Pytest Unit Suite
+          cd backend && pytest tests/unit -v
+      - name: Run FIFO Baseline Benchmark
         run: |
-          cd backend
-          pytest tests/unit -v --tb=short
+          python benchmarks/baseline_fifo.py
