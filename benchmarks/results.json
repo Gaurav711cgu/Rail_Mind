@@ -1,0 +1,15 @@
+{
+  "num_trains": 500,
+  "fifo": {
+    "p50_min": 84.98,
+    "p95_min": 134.32,
+    "mean_min": 88.63
+  },
+  "railmind_gnn": {
+    "p50_min": 10.45,
+    "p95_min": 44.78,
+    "mean_min": 14.6
+  },
+  "p95_delay_reduction_pct": 66.7,
+  "mean_delay_reduction_pct": 83.5
+}
