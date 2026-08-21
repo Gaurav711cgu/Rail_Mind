@@ -1,1 +1,6 @@
-app/ml/artifacts/*.joblib filter=lfs diff=lfs merge=lfs -text
+# Video and heavy binary media
+*.webm filter=lfs diff=lfs merge=lfs -text
+*.mp4 filter=lfs diff=lfs merge=lfs -text
+*.mov filter=lfs diff=lfs merge=lfs -text
+
+# ML Model weights under 10MB are committed directly to standard git
