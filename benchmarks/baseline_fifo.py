@@ -1,9 +1,10 @@
 """
 RailMind Real GNN Delay Cascade & Dispatch Optimization Benchmark
+Simulation-based benchmark using synthetic delay distributions. Not measured on real railway data. Demonstrates dispatch optimization algorithm structure.
 Simulates dynamic railway network section dispatches comparing:
 1. Naive First-In-First-Out (FIFO) siding hold policy
 2. GraphSAGE + GNN dynamic cascade mitigation policy
-Measures real delay distributions, p50, p95, and reduction ratios.
+Measures simulated delay distributions, p50, p95, and reduction ratios.
 """
 
 import os
@@ -65,8 +66,9 @@ def run_gnn_vs_fifo_benchmark(num_trains=500):
             predicted_cascade = float(np.mean(cascade_prediction))
 
         # Dynamic dispatch routing mitigates cascading holds by preemptively balancing siding loads
-        mitigated_delay = delay * (1.0 - 0.35 * (1.0 / (1.0 + np.exp(-predicted_cascade))))
-        gnn_accumulated.append(mitigated_delay)
+        # SIMULATED: Replace with real delay measurements for production benchmarking
+        simulated_ai_delay = delay * (1.0 - 0.35 * (1.0 / (1.0 + np.exp(-predicted_cascade))))
+        gnn_accumulated.append(simulated_ai_delay)
 
     gnn_p50 = float(np.percentile(gnn_accumulated, 50))
     gnn_p95 = float(np.percentile(gnn_accumulated, 95))

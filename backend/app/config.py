@@ -17,6 +17,11 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     ENFORCE_RBAC: bool = True  # ALWAYS on
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if os.environ.get('RAILMIND_ENV') == 'production' and self.SECRET_KEY == 'change-me-before-any-deployment-this-is-not-safe':
+            raise RuntimeError('SECRET_KEY must be set in production')
+
     # ------------------------------------------------------------------ #
     #  Hosts / CORS — never wildcard in production                        #
     # ------------------------------------------------------------------ #

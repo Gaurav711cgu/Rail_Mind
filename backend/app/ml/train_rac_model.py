@@ -9,7 +9,12 @@ import joblib
 from app.config import settings
 
 
-def generate_synthetic_data(num_rows: int = 5000) -> pd.DataFrame:
+import logging
+logger = logging.getLogger(__name__)
+
+def generate_development_data(num_rows: int = 5000) -> pd.DataFrame:
+    """Generates synthetic development data for local testing. Production training requires real PNR status transition data in data/pnr_history.csv."""
+    logger.warning('Training on synthetic development data. Use real PNR data for production.')
     np.random.seed(42)
 
     days_to_journey = np.random.randint(1, 60, size=num_rows)
@@ -48,7 +53,7 @@ def generate_synthetic_data(num_rows: int = 5000) -> pd.DataFrame:
 
 
 def train_and_save_model():
-    df = generate_synthetic_data(5000)
+    df = generate_development_data(5000)
     X = df.drop(columns=["confirmed"])
     y = df["confirmed"]
 

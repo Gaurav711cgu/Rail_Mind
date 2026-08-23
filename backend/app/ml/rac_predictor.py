@@ -36,7 +36,11 @@ class RACPredictor:
         pipeline_path = Path(settings.RAC_PIPELINE_PATH)
 
         if not self._artifact_is_valid(model_path) or not self._artifact_is_valid(pipeline_path):
+            if os.environ.get('RAILMIND_ENV') == 'production':
+                raise RuntimeError('Model artifacts required in production. Run train_rac_model.py first.')
             print("[RACPredictor] Model artifacts missing or invalid (LFS pointer?). Training fresh model now...")
+            import logging
+            logging.getLogger(__name__).warning('Auto-training model in development mode. Run train_rac_model.py first in production.')
             try:
                 self._train_and_save()
             except Exception as e:
@@ -267,9 +271,10 @@ class RACPredictor:
 
     def get_drift_report(self) -> dict:
         """
-        Runs Evidently AI DataDriftPreset dynamically comparing current query distribution
-        against historical training baseline.
+        Development drift report using synthetic reference distribution. Production should compare against logged prediction distributions.
         """
+        import logging
+        logging.getLogger(__name__).warning('Drift report using synthetic baseline. Configure real baseline for production.')
         import random
         from datetime import datetime, timezone
 

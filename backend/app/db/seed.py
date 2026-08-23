@@ -5,9 +5,13 @@ from app.api.v1.routes.auth import get_password_hash
 
 async def seed_topology():
     """Seeds the database with the initial railway topology (stations, sections, users) if empty."""
+    import os
+    import logging
     async with AsyncSessionLocal() as session:
         result = await session.execute(select(DBStation).limit(1))
         if not result.scalars().first():
+            if not os.environ.get('RAILMIND_ADMIN_PASSWORD') or not os.environ.get('RAILMIND_CONTROLLER_PASSWORD'):
+                logging.getLogger(__name__).warning('Using default seed passwords. Set environment variables for production.')
             print("[Lifespan] Seeding railway topology...")
             stations = [
                 DBStation(
@@ -205,14 +209,15 @@ async def seed_topology():
                 DBUser(
                     username="controller_north",
                     email="controller@railmind.gov.in",
-                    password_hash=get_password_hash("controller123"),
+                    # Production: Set RAILMIND_ADMIN_PASSWORD and RAILMIND_CONTROLLER_PASSWORD env vars
+                    password_hash=get_password_hash(os.environ.get('RAILMIND_CONTROLLER_PASSWORD', 'dev_only_ctrl_123')),
                     role="CONTROLLER",
                     zone="NR",
                 ),
                 DBUser(
                     username="admin",
                     email="admin@railmind.gov.in",
-                    password_hash=get_password_hash("admin123"),
+                    password_hash=get_password_hash(os.environ.get('RAILMIND_ADMIN_PASSWORD', 'dev_only_admin_123')),
                     role="ADMIN",
                     zone="NR",
                 ),

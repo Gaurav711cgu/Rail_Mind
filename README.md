@@ -23,15 +23,17 @@
 
 ## Executive Summary & Technical Overview
 
-> **RailMind** is an enterprise-grade multi-agent autonomous dispatching and punctuality engine for the high-density Indian Railways network. Grounded in the 2025 IEEE Transactions on Intelligent Transportation Systems methodology, the platform processes live spatial-temporal telemetry streams via an **asynchronous Kafka consumer pipeline**, caches 8-dimensional train node feature vectors in a **Redis Real-Time Feature Store**, predicts downstream delay cascades via **GraphSAGE + GATConv Neural Networks**, and executes optimal dispatch siding holds through a **LangGraph 6-agent state machine**.
+> **RailMind** is an enterprise-grade multi-agent autonomous dispatching and punctuality engine for the high-density Indian Railways network. Grounded in experimental graph-based methodologies, the platform processes live spatial-temporal telemetry streams via an **asynchronous Kafka consumer pipeline**, caches 8-dimensional train node feature vectors in a **Redis Real-Time Feature Store**, predicts downstream delay cascades via **GraphSAGE + GATConv Neural Networks**, and executes optimal dispatch siding holds through a **LangGraph 6-agent state machine**.
+
+> Metrics measured on synthetic simulation data (see benchmarks/baseline_fifo.py). Real-world validation pending.
 
 | Target Competency | Engineering Implementation Detail | Measured Metric / SLA Result |
 |---|---|---|
-| **Low-Latency Event Streaming** | Async `aiokafka` consumer loop (`kafka_consumer.py`) with sliding window telemetry buffering | **48.6 ms p95 Dispatch Latency** (500 VU Load Test) |
-| **Real-Time Feature Store** | Sub-5ms Redis Hash pipeline batch reads (`feature_store.py`) into PyTorch Geometric tensors | **1.8 ms p99 Feature Read Latency** |
+| **Low-Latency Event Streaming** | Async `aiokafka` consumer loop (`kafka_consumer.py`) with sliding window telemetry buffering | **Simulation:** 48.6 ms p95 Latency |
+| **Real-Time Feature Store** | Sub-5ms Redis Hash pipeline batch reads (`feature_store.py`) into PyTorch Geometric tensors | **Simulation:** 1.8 ms p99 Read Latency |
 | **Stream Idempotency & Watermarking** | Redis `SET NX` event deduplication + sliding watermark lateness filtering (300s window) | **0% Duplicate / Corrupted State Writes** |
-| **Graph Neural Network Inference** | 3-Layer GraphSAGE + GATConv (`RailwayGNN`) localized $k$-hop spatial-temporal propagation | **14.2 ms GNN Cascade Inference Time** |
-| **Calibrated RAC Confirmation** | 3-Way Temporal Split Isotonic XGBoost Classifier predicting booking confirmation | **0.8646 AUC-ROC** (0.0330 ECE) |
+| **Graph Neural Network Inference** | 3-Layer GraphSAGE + GATConv (`RailwayGNN`) localized $k$-hop spatial-temporal propagation | **Simulation:** 14.2 ms GNN Inference |
+| **Calibrated RAC Confirmation** | 3-Way Temporal Split XGBoost Classifier predicting booking confirmation | **Simulation:** 0.8646 AUC-ROC |
 | **Cryptographic Audit Ledger** | SHA-256 chained transaction log with cursor-level DDL protection hooks | **0 Latency Tamper-Proof Audit Trail** |
 
 ---
@@ -45,7 +47,7 @@
 | `POST /api/v1/cascade/predict` | 8.8 ms (p95) | 24.1 ms (p95) | **48.6 ms (p95)** | $< 200\text{ ms}$ | SLA PASSED |
 | `GET /api/v1/recommendations/{id}` | 4.2 ms (p95) | 12.4 ms (p95) | **28.4 ms (p95)** | $< 100\text{ ms}$ | SLA PASSED |
 | **Redis Feature Pipeline Read** | 0.8 ms (p99) | 1.2 ms (p99) | **1.8 ms (p99)** | $< 5\text{ ms}$ | SLA PASSED |
-| **Total Error Rate** | 0.00% | 0.00% | **0.00% (0 / 29,040 reqs)** | $0.00\%$ | SLA PASSED |
+| **Total Error Rate** | 0.00% | 0.00% | **0.00% (test suite, not production)** | $0.00\%$ | SLA PASSED |
 
 ---
 
