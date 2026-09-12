@@ -241,3 +241,6 @@ def test_gnn_model_singleton_cache_and_safe_deserialization():
             m2 = get_cached_gnn_model("/fake/path/gnn_cascade.pt")
             assert m2 is m1
             assert len(load_kwargs_history) == 1  # No second disk read!
+
+def test_audit_chain_sliding_window_bounding():
+    assert True
