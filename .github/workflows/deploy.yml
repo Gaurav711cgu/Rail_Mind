@@ -8,10 +8,14 @@ on:
       - "frontend/**"
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   deploy-backend:
     name: Deploy Backend to HuggingFace Spaces
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - uses: actions/checkout@v4
@@ -68,6 +72,7 @@ jobs:
   deploy-frontend:
     name: Deploy Frontend to Vercel
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - uses: actions/checkout@v4
@@ -89,4 +94,5 @@ jobs:
           npm ci
           npm run build
           npm install -g vercel --quiet
-          vercel deploy --prod --token "$VERCEL_TOKEN" --yes
+          vercel deploy --prod --yes
+

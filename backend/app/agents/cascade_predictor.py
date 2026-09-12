@@ -111,18 +111,17 @@ class CascadePredictor(BaseAgent):
         """Uses trained RailwayGNN PyTorch model weights to predict cascade severity."""
         from pathlib import Path
         import torch
-        from app.ml.gnn_cascade import RailwayGNN
+        from app.ml.gnn_cascade import get_cached_gnn_model
 
         weights_path = Path(__file__).resolve().parent.parent / "ml" / "artifacts" / "gnn_cascade.pt"
         if not weights_path.exists():
             return {"severity": "HIGH" if current_delay > 30 else "MEDIUM", "confidence": 0.75}
 
         try:
-            checkpoint = torch.load(weights_path, map_location="cpu", weights_only=False)  # nosec B614
-            cfg = checkpoint.get("config", {})
-            model = RailwayGNN(**cfg)
-            model.load_state_dict(checkpoint["state_dict"])
-            model.eval()
+            # Uses singleton cached model loaded with weights_only=True
+            model = get_cached_gnn_model(weights_path)
+            if model is None:
+                return {"severity": "HIGH" if current_delay > 30 else "MEDIUM", "confidence": 0.78}
 
             station_id = sum(ord(c) for c in source_station) % 50
             x = torch.zeros((50, 8), dtype=torch.float)

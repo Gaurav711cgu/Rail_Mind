@@ -262,3 +262,48 @@ class CascadeLoss(nn.Module):
                 return torch.nn.functional.binary_cross_entropy(pred, target, weight=cascade_weights)
             else:
                 return torch.nn.functional.binary_cross_entropy(pred, target)
+
+
+from pathlib import Path
+import logging
+
+_logger = logging.getLogger(__name__)
+
+_GNN_MODEL_CACHE: Dict[str, "RailwayGNN"] = {}
+
+
+def get_cached_gnn_model(weights_path: Optional[Union[str, Path]] = None, reload: bool = False) -> Optional["RailwayGNN"]:
+    """
+    Singleton model cache loader for RailwayGNN.
+    Enforces torch.load(..., weights_only=True) to eliminate arbitrary pickle deserialization vulnerabilities.
+    Caches the instantiated and evaluated model in memory to eliminate disk reloads on every cycle.
+    """
+    global _GNN_MODEL_CACHE
+
+    if weights_path is None:
+        weights_path = Path(__file__).resolve().parent / "artifacts" / "gnn_cascade.pt"
+    else:
+        weights_path = Path(weights_path)
+
+    cache_key = str(weights_path.resolve()) if weights_path.exists() else str(weights_path)
+
+    if not reload and cache_key in _GNN_MODEL_CACHE:
+        return _GNN_MODEL_CACHE[cache_key]
+
+    if not weights_path.exists():
+        _logger.warning("GNN weights file not found at %s", weights_path)
+        return None
+
+    try:
+        checkpoint = torch.load(weights_path, map_location="cpu", weights_only=True)
+        cfg = checkpoint.get("config", {})
+        model = RailwayGNN(**cfg)
+        model.load_state_dict(checkpoint["state_dict"])
+        model.eval()
+        _GNN_MODEL_CACHE[cache_key] = model
+        _logger.info("Successfully loaded and cached RailwayGNN model from %s (weights_only=True)", weights_path)
+        return model
+    except Exception as exc:
+        _logger.error("Failed to load RailwayGNN model weights from %s: %s", weights_path, exc)
+        return None
+

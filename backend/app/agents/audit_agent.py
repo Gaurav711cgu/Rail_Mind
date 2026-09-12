@@ -43,15 +43,66 @@ def _compute_entry_hash(
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
+MAX_AUDIT_CHAIN_SIZE = 100
+
+
+async def persist_audit_entries(entries: List[Dict]) -> None:
+    """
+    Persists historical or new audit entries to the database ledger (DBAuditEntry)
+    so that entries pruned from in-memory sliding window are permanently retained.
+    """
+    if not entries:
+        return
+    try:
+        from app.db.database import AsyncSessionLocal, DBAuditEntry
+        from sqlalchemy import select
+        async with AsyncSessionLocal() as session:
+            for entry in entries:
+                cur_hash = entry.get("hash", "")
+                if not cur_hash:
+                    continue
+                # Idempotency check via current_hash
+                existing = await session.execute(
+                    select(DBAuditEntry.id).where(DBAuditEntry.current_hash == cur_hash)
+                )
+                if existing.scalar_one_or_none() is None:
+                    raw_ts = entry.get("timestamp", "")
+                    if isinstance(raw_ts, str):
+                        try:
+                            parsed_ts = datetime.fromisoformat(raw_ts.replace("Z", "+00:00"))
+                        except Exception:
+                            parsed_ts = datetime.utcnow()
+                    elif isinstance(raw_ts, datetime):
+                        parsed_ts = raw_ts
+                    else:
+                        parsed_ts = datetime.utcnow()
+
+                    db_entry = DBAuditEntry(
+                        agent_name=str(entry.get("agent", "AuditAgent"))[:100],
+                        action_type=str(entry.get("action", "RECOMMENDATION"))[:100],
+                        target=str(entry.get("target", "system"))[:200],
+                        reasoning=str(entry.get("reasoning", ""))[:500],
+                        confidence=float(entry.get("confidence", 1.0)),
+                        timestamp=parsed_ts,
+                        prev_hash=str(entry.get("prev_hash", GENESIS_HASH)),
+                        current_hash=cur_hash,
+                    )
+                    session.add(db_entry)
+            await session.commit()
+    except Exception as exc:
+        logger.warning("[AuditAgent] Failed to persist audit entries to DB ledger: %s", exc)
+
+
 def verify_chain(audit_entries: List[Dict]) -> Tuple[bool, int, str]:
     """
     Recomputes the hash chain from scratch.
     Returns (is_valid, failing_index, error_message).
+    Supports verifying full chains or sliding window sub-chains.
     """
     if not audit_entries:
         return True, -1, "Empty chain — valid by convention."
 
-    prev_hash = GENESIS_HASH
+    prev_hash = audit_entries[0].get("prev_hash", GENESIS_HASH)
 
     for i, entry in enumerate(audit_entries):
         expected = _compute_entry_hash(
@@ -73,6 +124,7 @@ def verify_chain(audit_entries: List[Dict]) -> Tuple[bool, int, str]:
         prev_hash = stored
 
     return True, -1, "Chain intact."
+
 
 
 class AuditAgent(BaseAgent):
@@ -168,6 +220,18 @@ class AuditAgent(BaseAgent):
             prev_hash = entry_hash
 
         # ------------------------------------------------------------------ #
+        #  Persist new entries to DB ledger & bound in-memory sliding window  #
+        # ------------------------------------------------------------------ #
+        if new_entries:
+            await persist_audit_entries(new_entries)
+
+        # Sliding window bounding: keep at most MAX_AUDIT_CHAIN_SIZE in RAM
+        if len(new_chain) > MAX_AUDIT_CHAIN_SIZE:
+            pruned_entries = new_chain[:-MAX_AUDIT_CHAIN_SIZE]
+            await persist_audit_entries(pruned_entries)
+            new_chain = new_chain[-MAX_AUDIT_CHAIN_SIZE:]
+
+        # ------------------------------------------------------------------ #
         #  Verify chain integrity after update                                #
         # ------------------------------------------------------------------ #
         chain_valid, fail_idx, err_msg = verify_chain(new_chain)
@@ -181,7 +245,7 @@ class AuditAgent(BaseAgent):
         tail_hash = new_chain[-1]["hash"] if new_chain else GENESIS_HASH
         reasoning = (
             f"Sealed {len(new_entries)} new entries. "
-            f"Chain length: {len(new_chain)}. "
+            f"Chain length (sliding window): {len(new_chain)}. "
             f"Integrity: {'✓ valid' if chain_valid else '✗ COMPROMISED'}. "
             f"Tail hash: {tail_hash[:16]}…"
         )

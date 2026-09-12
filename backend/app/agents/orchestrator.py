@@ -266,7 +266,7 @@ class AgentOrchestrator:
             "disruptions": initial_state.get("disruptions", []),
             "recommendations": initial_state.get("recommendations", []),
             "audit_entries": initial_state.get("audit_entries", []),
-            "audit_chain": initial_state.get("audit_chain", []),
+            "audit_chain": initial_state.get("audit_chain", [])[-100:],  # Bound to sliding window of max 100 entries
             "logs": initial_state.get("logs", []),
             "outbox_events": initial_state.get("outbox_events", []),
             "escalated": initial_state.get("escalated", False),
@@ -275,14 +275,26 @@ class AgentOrchestrator:
         }
 
         try:
-            from app.db.database import AsyncSessionLocal, DBOutboxEvent
+            from app.db.database import AsyncSessionLocal, DBOutboxEvent, DBAuditEntry
+            from sqlalchemy import select
             import json
 
-            result = await _graph.ainvoke(state)
+            # Wrap LangGraph invocation with 30.0s timeout to prevent hung agent loops
+            try:
+                result = await asyncio.wait_for(_graph.ainvoke(state), timeout=30.0)
+            except asyncio.TimeoutError:
+                logger.error("[Orchestrator] Pipeline execution timed out after 30.0s")
+                state["logs"] = state.get("logs", []) + ["[Orchestrator] ERROR: Pipeline execution timed out after 30.0s"]
+                return dict(state)
 
-            # TRANSACTIONAL OUTBOX: Persist all accumulated side-effects in a single DB transaction
+            # Ensure in-memory audit_chain in result is bounded to sliding window
+            if "audit_chain" in result and len(result["audit_chain"]) > 100:
+                result["audit_chain"] = result["audit_chain"][-100:]
+
+            # TRANSACTIONAL OUTBOX & AUDIT LEDGER: Persist all accumulated side-effects in a single DB transaction
             outbox_events = result.get("outbox_events", [])
-            if outbox_events:
+            audit_entries = result.get("audit_entries", [])
+            if outbox_events or audit_entries:
                 async with AsyncSessionLocal() as session:
                     for evt in outbox_events:
                         db_event = DBOutboxEvent(
@@ -292,6 +304,36 @@ class AgentOrchestrator:
                             payload=json.dumps(evt.get("payload", {})),
                         )
                         session.add(db_event)
+
+                    for entry in audit_entries:
+                        cur_hash = entry.get("hash", "")
+                        if cur_hash:
+                            existing = await session.execute(
+                                select(DBAuditEntry.id).where(DBAuditEntry.current_hash == cur_hash)
+                            )
+                            if existing.scalar_one_or_none() is None:
+                                raw_ts = entry.get("timestamp", "")
+                                if isinstance(raw_ts, str):
+                                    try:
+                                        pts = datetime.datetime.fromisoformat(raw_ts.replace("Z", "+00:00"))
+                                    except Exception:
+                                        pts = datetime.datetime.utcnow()
+                                elif isinstance(raw_ts, datetime.datetime):
+                                    pts = raw_ts
+                                else:
+                                    pts = datetime.datetime.utcnow()
+                                db_entry = DBAuditEntry(
+                                    agent_name=str(entry.get("agent", "AuditAgent"))[:100],
+                                    action_type=str(entry.get("action", "RECOMMENDATION"))[:100],
+                                    target=str(entry.get("target", "system"))[:200],
+                                    reasoning=str(entry.get("reasoning", ""))[:500],
+                                    confidence=float(entry.get("confidence", 1.0)),
+                                    timestamp=pts,
+                                    prev_hash=str(entry.get("prev_hash", "0" * 64)),
+                                    current_hash=cur_hash,
+                                )
+                                session.add(db_entry)
+
                     await session.commit()
 
             return dict(result)
